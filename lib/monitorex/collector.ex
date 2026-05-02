@@ -1,17 +1,17 @@
 defmodule Monitorex.Collector do
   @moduledoc """
-  Collector GenServer responsible for monitoring HTTP endpoints.
+  GenServer responsible for collecting HTTP monitoring data.
   """
 
   use GenServer
 
   @doc false
-  def start_link(_args) do
-    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
   @impl true
-  def init(_args) do
+  def init(:ok) do
     {:ok, %{}}
   end
 end
