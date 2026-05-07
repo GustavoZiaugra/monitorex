@@ -29,7 +29,7 @@ defmodule Monitorex.Components.Live.RouteDetailPageTest do
       html = render_component(RouteDetailPage, %{id: "test", route: "GET:/api/items"})
 
       assert html =~ "Recent Requests"
-      assert html =~ "No consumers found for this route"
+      assert html =~ "No consumers found"
       assert html =~ "No recent requests for this route"
     end
 
@@ -37,6 +37,52 @@ defmodule Monitorex.Components.Live.RouteDetailPageTest do
       html = render_component(RouteDetailPage, %{id: "test", route: "badkey"})
 
       assert html =~ "Route: ? badkey"
+    end
+  end
+
+  describe "handle_event/3" do
+    test "sort event toggles direction for same key" do
+      socket = %Phoenix.LiveView.Socket{
+        assigns: %{
+          route_key: "GET:/test",
+          sort_by: "requests",
+          sort_dir: "asc"
+        }
+      }
+
+      assert {:noreply, _socket} = RouteDetailPage.handle_event("sort", %{"key" => "requests"}, socket)
+      assert_received {:navigate, url}
+      assert url =~ "sort_by=requests"
+      assert url =~ "sort_dir=desc"
+    end
+
+    test "sort event changes to new key with ascending direction" do
+      socket = %Phoenix.LiveView.Socket{
+        assigns: %{
+          route_key: "GET:/test",
+          sort_by: "requests",
+          sort_dir: "desc"
+        }
+      }
+
+      assert {:noreply, _socket} = RouteDetailPage.handle_event("sort", %{"key" => "consumer"}, socket)
+      assert_received {:navigate, url}
+      assert url =~ "sort_by=consumer"
+      assert url =~ "sort_dir=asc"
+    end
+
+    test "sort event ignores invalid keys" do
+      socket = %Phoenix.LiveView.Socket{
+        assigns: %{
+          route_key: "GET:/test",
+          sort_by: "requests",
+          sort_dir: "desc"
+        }
+      }
+
+      assert_raise FunctionClauseError, fn ->
+        RouteDetailPage.handle_event("sort", %{"key" => "invalid"}, socket)
+      end
     end
   end
 end

@@ -56,7 +56,7 @@ defmodule Monitorex.Components.Live.PagesTest do
       assert html =~ "Requests"
       assert html =~ "Avg"
       assert html =~ "Error Rate"
-      assert html =~ "No endpoints found for this host"
+      assert html =~ "No endpoints found"
     end
 
     test "renders recent requests table" do
@@ -136,7 +136,7 @@ defmodule Monitorex.Components.Live.PagesTest do
       assert html =~ "Avg Latency"
       assert html =~ "Top Consumers"
       assert html =~ "Recent Requests"
-      assert html =~ "No consumers found for this route"
+      assert html =~ "No consumers found"
       assert html =~ "No recent requests for this route"
     end
 

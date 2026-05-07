@@ -40,4 +40,62 @@ defmodule Monitorex.Components.Live.InboundRecentPageTest do
       assert html =~ "Recent Inbound Requests"
     end
   end
+
+  describe "handle_event/3" do
+    test "filter_status_class sends navigation" do
+      socket = %Phoenix.LiveView.Socket{
+        assigns: %{
+          filter_status_class: "",
+          filter_consumer: "",
+          filter_route: ""
+        }
+      }
+
+      assert {:noreply, _socket} = InboundRecentPage.handle_event("filter_status_class", %{"status_class" => "4xx"}, socket)
+      assert_received {:navigate, url}
+      assert url =~ "status_class=4xx"
+    end
+
+    test "filter_consumer sends navigation" do
+      socket = %Phoenix.LiveView.Socket{
+        assigns: %{
+          filter_status_class: "",
+          filter_consumer: "",
+          filter_route: ""
+        }
+      }
+
+      assert {:noreply, _socket} = InboundRecentPage.handle_event("filter_consumer", %{"consumer" => "myapp"}, socket)
+      assert_received {:navigate, url}
+      assert url =~ "consumer=myapp"
+    end
+
+    test "filter_route sends navigation" do
+      socket = %Phoenix.LiveView.Socket{
+        assigns: %{
+          filter_status_class: "",
+          filter_consumer: "",
+          filter_route: ""
+        }
+      }
+
+      assert {:noreply, _socket} = InboundRecentPage.handle_event("filter_route", %{"route" => "GET:/api"}, socket)
+      assert_received {:navigate, url}
+      assert url =~ "route=GET:/api"
+    end
+
+    test "go_page sends navigation with page number" do
+      socket = %Phoenix.LiveView.Socket{
+        assigns: %{
+          filter_status_class: "",
+          filter_consumer: "",
+          filter_route: ""
+        }
+      }
+
+      assert {:noreply, _socket} = InboundRecentPage.handle_event("go_page", %{"page" => "3"}, socket)
+      assert_received {:navigate, url}
+      assert url =~ "page=3"
+    end
+  end
 end
