@@ -27,6 +27,8 @@ defmodule Monitorex.Components.Core do
   attr :columns, :list, required: true
   attr :rows, :list, default: []
   attr :empty_message, :string, default: "No data"
+  attr :sort_by, :string, default: nil
+  attr :sort_dir, :string, default: nil
 
   def data_table(assigns) do
     ~H"""
@@ -36,12 +38,15 @@ defmodule Monitorex.Components.Core do
           <tr>
             <th :for={col <- @columns} class={["data-table-th", if(col[:sortable?], do: "sortable")]} phx-click={if(col[:sortable?], do: "sort")} phx-value-key={col[:key]}>
               <%= col.label %>
+              <%= if @sort_by == col[:key] do %>
+                <span class="sort-indicator"><%= if @sort_dir == "asc", do: "▲", else: "▼" %></span>
+              <% end %>
             </th>
           </tr>
         </thead>
         <tbody>
           <tr :for={row <- @rows} class="data-table-row">
-            <td :for={col <- @columns} class="data-table-td">
+            <td :for={col <- @columns} class="data-table-td" data-label={col.label}>
               <%= Map.get(row, col.key) %>
             </td>
           </tr>

@@ -1,0 +1,51 @@
+%{
+  configs: [
+    %{
+      name: "default",
+      files: %{included: ["lib/", "test/", "config/"]},
+      checks: [
+        {Credo.Check.Consistency.ExceptionNames},
+        {Credo.Check.Consistency.LinesInFileName},
+        {Credo.Check.Consistency.ParameterPatternMatching},
+        {Credo.Check.Consistency.SpaceAroundOperators},
+        {Credo.Check.Consistency.SpaceInParentheses},
+        {Credo.Check.Consistency.TabsOrSpaces},
+        {Credo.Check.Design.AliasUsage, priority: :low},
+        {Credo.Check.Design.DuplicatedCode, excluded_macros: [:test, :describe, :setup]},
+        {Credo.Check.Design.TagFIXME},
+        {Credo.Check.Readability.AliasOrder},
+        {Credo.Check.Readability.FunctionName},
+        {Credo.Check.Readability.LargeNumbers},
+        {Credo.Check.Readability.MaxLineLength, max_length: 160, priority: :low},
+        {Credo.Check.Readability.ModuleDoc},
+        {Credo.Check.Readability.ModuleName},
+        {Credo.Check.Readability.ParenthesesOnZeroArityDefs, priority: :low},
+        {Credo.Check.Readability.PredicateFunctionNames},
+        {Credo.Check.Readability.SinglePipe, priority: :low},
+        {Credo.Check.Readability.StringSigils},
+        {Credo.Check.Readability.TrailingBlankLine},
+        {Credo.Check.Readability.TrailingWhiteSpace},
+        {Credo.Check.Readability.UnnecessaryAliasExpansion},
+        {Credo.Check.Readability.VariableNames},
+        {Credo.Check.Refactor.CondStatements},
+        {Credo.Check.Refactor.CyclomaticComplexity, max_complexity: 15},
+        {Credo.Check.Refactor.FilterCount, priority: :low},
+        {Credo.Check.Refactor.MapInto, priority: :low},
+        {Credo.Check.Refactor.MapJoin, priority: :low},
+        {Credo.Check.Refactor.ModuleDependencies},
+        {Credo.Check.Refactor.NegatedConditionsInUnless},
+        {Credo.Check.Refactor.Nesting, max_nesting: 3},
+        {Credo.Check.Refactor.PipeChainStart, priority: :low},
+        {Credo.Check.Refactor.UnlessWithElse},
+        {Credo.Check.Refactor.VariableRebinding},
+        {Credo.Check.Warning.ApplicationConfigInModuleAttribute},
+        {Credo.Check.Warning.BoolOperationOnSameValues},
+        {Credo.Check.Warning.Dbg},
+        {Credo.Check.Warning.LeakyEnvironment},
+        {Credo.Check.Warning.MapGetUnsafePass},
+        {Credo.Check.Warning.MixEnv},
+        {Credo.Check.Warning.UnsafeToAtom}
+      ]
+    }
+  ]
+}

@@ -5,6 +5,8 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
   Displays summary cards (Total Requests, Routes, Error Rate), a node
   selector for filtering, and a routes data table. Clicking a route row
   navigates to `/route/Method:/path`.
+
+  Supports sortable columns with state persisted in URL params.
   """
   use Phoenix.LiveComponent
 
@@ -12,7 +14,7 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
   alias Monitorex.Components.Core
 
   @impl true
-  def update(_assigns, socket) do
+  def update(assigns, socket) do
     routes = Storage.list_routes()
 
     total_requests = Enum.reduce(routes, 0, &(&1.requests + &2))
@@ -20,15 +22,23 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
 
     error_rate = if total_requests > 0, do: total_errors / total_requests * 100, else: 0.0
 
-    route_rows = Enum.map(routes, &build_route_row/1)
+    sort_by = assigns[:sort_by] || "requests"
+    sort_dir = assigns[:sort_dir] || "desc"
+
+    sorted_routes = sort_routes(routes, sort_by, sort_dir)
+    route_rows = Enum.map(sorted_routes, &build_route_row/1)
+    table_columns = build_table_columns()
 
     socket =
       socket
-      |> assign(:routes, routes)
+      |> assign(:routes, sorted_routes)
       |> assign(:route_rows, route_rows)
+      |> assign(:table_columns, table_columns)
       |> assign(:total_requests, total_requests)
-      |> assign(:route_count, length(routes))
+      |> assign(:route_count, length(sorted_routes))
       |> assign(:error_rate, error_rate)
+      |> assign(:sort_by, sort_by)
+      |> assign(:sort_dir, sort_dir)
 
     {:ok, socket}
   end
@@ -36,6 +46,18 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
   @impl true
   def handle_event("navigate", %{"path" => path}, socket) do
     send(self(), {:navigate, path})
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("sort", %{"key" => key}, socket) do
+    %{sort_by: current_sort, sort_dir: current_dir} = socket.assigns
+
+    new_dir =
+      if key == current_sort and current_dir == "desc", do: "asc", else: "desc"
+
+    base = "?page=inbound&sort_by=#{key}&sort_dir=#{new_dir}"
+    send(self(), {:navigate, base})
     {:noreply, socket}
   end
 
@@ -52,30 +74,19 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
       </div>
 
       <div class="routes-table">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="data-table-th">Method</th>
-              <th class="data-table-th">Route</th>
-              <th class="data-table-th">Requests</th>
-              <th class="data-table-th">P95</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr :for={route <- @route_rows} class="data-table-row" phx-click="navigate" phx-value-path={"/route/" <> route.method <> ":" <> route.path}>
-              <td class="data-table-td"><%= route.method %></td>
-              <td class="data-table-td"><%= route.path %></td>
-              <td class="data-table-td"><%= route.requests %></td>
-              <td class="data-table-td"><%= route.p95 %></td>
-            </tr>
-            <tr :if={@route_rows == []}>
-              <td colspan="4" class="data-table-empty">No routes found</td>
-            </tr>
-          </tbody>
-        </table>
+        <Core.data_table columns={@table_columns} rows={@route_rows} empty_message="No routes found" sort_by={@sort_by} sort_dir={@sort_dir} />
       </div>
     </div>
     """
+  end
+
+  defp build_table_columns do
+    [
+      %{label: "Method", key: :method, sortable?: true},
+      %{label: "Route", key: :path, sortable?: true},
+      %{label: "Requests", key: :requests, sortable?: true},
+      %{label: "P95", key: :p95, sortable?: true}
+    ]
   end
 
   defp build_route_row(route) do
@@ -85,6 +96,19 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
       requests: format_number(route.requests),
       p95: format_ms(route.p95)
     }
+  end
+
+  defp sort_routes(routes, sort_by, sort_dir) do
+    sorted =
+      case sort_by do
+        "method" -> Enum.sort_by(routes, & &1.method)
+        "path" -> Enum.sort_by(routes, & &1.path)
+        "requests" -> Enum.sort_by(routes, & &1.requests)
+        "p95" -> Enum.sort_by(routes, &(&1.p95 || 0))
+        _ -> Enum.sort_by(routes, & &1.requests)
+      end
+
+    if sort_dir == "desc", do: Enum.reverse(sorted), else: sorted
   end
 
   defp format_number(n) when is_number(n), do: Integer.to_string(round(n))

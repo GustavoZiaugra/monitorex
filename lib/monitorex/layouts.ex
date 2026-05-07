@@ -33,8 +33,11 @@ defmodule Monitorex.Layouts do
       <body>
         <nav>
           <h1>Monitorex</h1>
-          <a href="/">Outbound</a>
-          <a href="/inbound">Inbound</a>
+          <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+          <div class="nav-links">
+            <a href="/">Outbound</a>
+            <a href="/inbound">Inbound</a>
+          </div>
         </nav>
         <main>
           <.flash_group flash={@flash} />

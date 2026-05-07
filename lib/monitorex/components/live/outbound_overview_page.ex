@@ -26,7 +26,7 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
     selected_node = assigns[:node] || ""
 
     sort_by = assigns[:sort_by] || "requests"
-    sort_dir = assigns[:sort_dir] || :desc
+    sort_dir = assigns[:sort_dir] || "desc"
 
     sorted_hosts = sort_hosts(hosts, sort_by, sort_dir)
     table_columns = build_table_columns()
@@ -59,9 +59,11 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
     %{sort_by: current_sort, sort_dir: current_dir} = socket.assigns
 
     new_dir =
-      if key == current_sort and current_dir == :desc, do: :asc, else: :desc
+      if key == current_sort and current_dir == "desc", do: "asc", else: "desc"
 
-    {:noreply, assign(socket, sort_by: key, sort_dir: new_dir)}
+    base = "?page=outbound&sort_by=#{key}&sort_dir=#{new_dir}"
+    send(self(), {:navigate, base})
+    {:noreply, socket}
   end
 
   @impl true
@@ -81,7 +83,7 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
       </div>
 
       <div class="hosts-table">
-        <Core.data_table columns={@table_columns} rows={@table_rows} empty_message="No hosts found" />
+        <Core.data_table columns={@table_columns} rows={@table_rows} empty_message="No hosts found" sort_by={@sort_by} sort_dir={@sort_dir} />
       </div>
     </div>
     """
@@ -123,7 +125,7 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
         _ -> Enum.sort_by(hosts, & &1.requests)
       end
 
-    if sort_dir == :desc, do: Enum.reverse(sorted), else: sorted
+    if sort_dir == "desc", do: Enum.reverse(sorted), else: sorted
   end
 
   defp format_number(n) when is_number(n), do: Integer.to_string(round(n))
