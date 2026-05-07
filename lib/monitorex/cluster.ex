@@ -183,9 +183,9 @@ defmodule Monitorex.Cluster do
 
   defp finalize_host(items) do
     first = hd(items)
-    total_requests = Enum.sum_by(items, & &1.requests)
-    total_errors = Enum.sum_by(items, & &1.errors)
-    total_duration = Enum.sum_by(items, & &1.total_duration)
+    total_requests = Enum.reduce(items, 0, &(&1.requests + &2))
+    total_errors = Enum.reduce(items, 0, &(&1.errors + &2))
+    total_duration = Enum.reduce(items, 0, &(&1.total_duration + &2))
     avg_latency = if total_requests > 0, do: total_duration / total_requests, else: 0.0
 
     %{
@@ -204,9 +204,9 @@ defmodule Monitorex.Cluster do
 
   defp finalize_endpoint(items) do
     first = hd(items)
-    total_requests = Enum.sum_by(items, & &1.requests)
-    total_errors = Enum.sum_by(items, & &1.errors)
-    total_duration = Enum.sum_by(items, & &1.total_duration)
+    total_requests = Enum.reduce(items, 0, &(&1.requests + &2))
+    total_errors = Enum.reduce(items, 0, &(&1.errors + &2))
+    total_duration = Enum.reduce(items, 0, &(&1.total_duration + &2))
     avg_latency = if total_requests > 0, do: total_duration / total_requests, else: 0.0
 
     %{
@@ -222,9 +222,9 @@ defmodule Monitorex.Cluster do
 
   defp finalize_route(items) do
     first = hd(items)
-    total_requests = Enum.sum_by(items, & &1.requests)
-    total_errors = Enum.sum_by(items, & &1.errors)
-    total_duration = Enum.sum_by(items, & &1.total_duration)
+    total_requests = Enum.reduce(items, 0, &(&1.requests + &2))
+    total_errors = Enum.reduce(items, 0, &(&1.errors + &2))
+    total_duration = Enum.reduce(items, 0, &(&1.total_duration + &2))
     avg_latency = if total_requests > 0, do: total_duration / total_requests, else: 0.0
 
     %{
@@ -244,9 +244,9 @@ defmodule Monitorex.Cluster do
 
   defp finalize_consumer(items) do
     first = hd(items)
-    total_requests = Enum.sum_by(items, & &1.requests)
-    total_errors = Enum.sum_by(items, & &1.errors)
-    total_duration = Enum.sum_by(items, & &1.total_duration)
+    total_requests = Enum.reduce(items, 0, &(&1.requests + &2))
+    total_errors = Enum.reduce(items, 0, &(&1.errors + &2))
+    total_duration = Enum.reduce(items, 0, &(&1.total_duration + &2))
     avg_latency = if total_requests > 0, do: total_duration / total_requests, else: 0.0
 
     %{
@@ -261,7 +261,7 @@ defmodule Monitorex.Cluster do
   end
 
   defp weighted_percentile(items, field) do
-    total_requests = Enum.sum_by(items, & &1.requests)
+    total_requests = Enum.reduce(items, 0, &(&1.requests + &2))
 
     if total_requests == 0 do
       nil
