@@ -12,12 +12,17 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   alias Monitorex.Storage
   alias Monitorex.Components.Core
 
+  @sortable_fields ~w(path requests avg_latency error_rate)
+
   @impl true
   def update(assigns, socket) do
     host = assigns[:host]
 
     endpoints = Storage.list_endpoints_for_host(host)
     recent = Storage.list_recent_outbound(host: host, limit: 20)
+
+    sort_by = assigns[:sort_by] || "requests"
+    sort_dir = assigns[:sort_dir] || "desc"
 
     total_requests = Enum.reduce(endpoints, 0, &(&1.requests + &2))
     total_errors = Enum.reduce(endpoints, 0, &(&1.errors + &2))
@@ -26,7 +31,8 @@ defmodule Monitorex.Components.Live.HostDetailPage do
     error_rate = if total_requests > 0, do: total_errors / total_requests * 100, else: 0.0
     avg_latency = if total_requests > 0, do: total_duration / total_requests, else: 0.0
 
-    endpoint_rows = Enum.map(endpoints, &build_endpoint_row/1)
+    sorted_endpoints = sort_endpoints(endpoints, sort_by, sort_dir)
+    endpoint_rows = Enum.map(sorted_endpoints, &build_endpoint_row/1)
     recent_rows = Enum.map(recent, &build_recent_row/1)
 
     socket =
@@ -41,8 +47,22 @@ defmodule Monitorex.Components.Live.HostDetailPage do
       |> assign(:endpoint_count, length(endpoints))
       |> assign(:recent_rows, recent_rows)
       |> assign(:recent, recent)
+      |> assign(:sort_by, sort_by)
+      |> assign(:sort_dir, sort_dir)
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("sort", %{"key" => key}, socket) when key in @sortable_fields do
+    %{sort_by: current_sort, sort_dir: current_dir} = socket.assigns
+
+    new_dir = if key == current_sort and current_dir == "asc", do: "desc", else: "asc"
+
+    base = "?page=host&host=#{URI.encode(socket.assigns.host)}"
+    send(self(), {:navigate, base <> "&sort_by=#{key}&sort_dir=#{new_dir}"})
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -60,27 +80,16 @@ defmodule Monitorex.Components.Live.HostDetailPage do
 
       <h3>Endpoints</h3>
       <div class="endpoints-table">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="data-table-th">Path</th>
-              <th class="data-table-th">Requests</th>
-              <th class="data-table-th">Avg</th>
-              <th class="data-table-th">Error Rate</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr :for={row <- @endpoint_rows} class="data-table-row">
-              <td class="data-table-td"><%= row.path %></td>
-              <td class="data-table-td"><%= row.requests %></td>
-              <td class="data-table-td"><%= row.avg_latency %></td>
-              <td class="data-table-td"><%= row.error_rate %></td>
-            </tr>
-            <tr :if={@endpoint_rows == []}>
-              <td colspan="4" class="data-table-empty">No endpoints found for this host</td>
-            </tr>
-          </tbody>
-        </table>
+        <Core.data_table columns={[
+          %{label: "Path", key: :path, sortable?: true},
+          %{label: "Requests", key: :requests, sortable?: true},
+          %{label: "Avg", key: :avg_latency, sortable?: true},
+          %{label: "Error Rate", key: :error_rate, sortable?: true}
+        ]}
+        rows={@endpoint_rows}
+        empty_message="No endpoints found"
+        sort_by={@sort_by}
+        sort_dir={@sort_dir} />
       </div>
 
       <h3>Recent Requests</h3>
@@ -134,6 +143,24 @@ defmodule Monitorex.Components.Live.HostDetailPage do
       status: event.status || 0,
       duration: format_duration(event.duration_ms)
     }
+  end
+
+  defp sort_endpoints(endpoints, sort_by, sort_dir) do
+    sorted =
+      case sort_by do
+        "path" -> Enum.sort_by(endpoints, & &1.path)
+        "requests" -> Enum.sort_by(endpoints, & &1.requests)
+        "avg_latency" -> Enum.sort_by(endpoints, &(&1.avg_latency || 0))
+        "error_rate" ->
+          Enum.sort_by(endpoints, fn ep ->
+            req = ep.requests || 0
+            err = ep.errors || 0
+            if req > 0, do: err / req, else: 0.0
+          end)
+        _ -> Enum.sort_by(endpoints, & &1.requests)
+      end
+
+    if sort_dir == "desc", do: Enum.reverse(sorted), else: sorted
   end
 
   defp format_number(n) when is_number(n), do: Integer.to_string(round(n))

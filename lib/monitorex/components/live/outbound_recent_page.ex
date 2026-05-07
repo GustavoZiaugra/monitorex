@@ -95,7 +95,7 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
 
         <label class="filter-label">
           Host:
-          <input type="text" class="filter-input" name="host" value={@filter_host} phx-change="filter_host" placeholder="Filter by host..." />
+          <input type="text" class="filter-input" name="host" value={@filter_host} phx-change="filter_host" phx-debounce="300" placeholder="Filter by host..." />
         </label>
       </div>
 

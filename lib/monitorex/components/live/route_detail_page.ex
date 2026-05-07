@@ -12,6 +12,8 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
   alias Monitorex.Storage
   alias Monitorex.Components.Core
 
+  @sortable_fields ~w(consumer requests error_rate avg_latency)
+
   @impl true
   def update(assigns, socket) do
     route = assigns[:route]
@@ -29,6 +31,11 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
     recent = Storage.list_recent_inbound(route: route, limit: 20)
     recent_rows = Enum.map(recent, &build_recent_row/1)
 
+    sort_by = assigns[:sort_by] || "requests"
+    sort_dir = assigns[:sort_dir] || "desc"
+    sorted_consumers = sort_consumers(consumers, sort_by, sort_dir)
+    consumer_rows = Enum.map(sorted_consumers, &build_consumer_row/1)
+
     [method, path] = split_route_key(route)
 
     socket =
@@ -37,11 +44,26 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
       |> assign(:method, method)
       |> assign(:path, path)
       |> assign(:route_summary, route_summary)
-      |> assign(:consumers, consumers)
+      |> assign(:consumers, sorted_consumers)
+      |> assign(:consumer_rows, consumer_rows)
       |> assign(:recent_rows, recent_rows)
       |> assign(:recent, recent)
+      |> assign(:sort_by, sort_by)
+      |> assign(:sort_dir, sort_dir)
 
     {:ok, socket}
+  end
+
+  @impl true
+  def handle_event("sort", %{"key" => key}, socket) when key in @sortable_fields do
+    %{sort_by: current_sort, sort_dir: current_dir} = socket.assigns
+
+    new_dir = if key == current_sort and current_dir == "asc", do: "desc", else: "asc"
+
+    base = "?page=route&host=#{URI.encode(socket.assigns.route_key)}"
+    send(self(), {:navigate, base <> "&sort_by=#{key}&sort_dir=#{new_dir}"})
+
+    {:noreply, socket}
   end
 
   @impl true
@@ -58,29 +80,17 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
 
       <h3>Top Consumers</h3>
       <div class="consumers-table">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="data-table-th">Consumer</th>
-              <th class="data-table-th">Requests</th>
-              <th class="data-table-th">Error Rate</th>
-              <th class="data-table-th">Avg Latency</th>
-              <th class="data-table-th">Last Seen</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr :for={consumer <- @consumers} class="data-table-row">
-              <td class="data-table-td"><%= consumer.consumer %></td>
-              <td class="data-table-td"><%= format_number(consumer.requests) %></td>
-              <td class="data-table-td"><%= format_percentage(error_rate(consumer)) %></td>
-              <td class="data-table-td"><%= format_duration(consumer.avg_latency) %></td>
-              <td class="data-table-td"><%= format_timestamp(consumer.last_seen) %></td>
-            </tr>
-            <tr :if={@consumers == []}>
-              <td colspan="5" class="data-table-empty">No consumers found for this route</td>
-            </tr>
-          </tbody>
-        </table>
+        <Core.data_table columns={[
+          %{label: "Consumer", key: :consumer, sortable?: true},
+          %{label: "Requests", key: :requests, sortable?: true},
+          %{label: "Error Rate", key: :error_rate, sortable?: true},
+          %{label: "Avg Latency", key: :avg_latency, sortable?: true},
+          %{label: "Last Seen", key: :last_seen}
+        ]}
+        rows={@consumer_rows}
+        empty_message="No consumers found"
+        sort_by={@sort_by}
+        sort_dir={@sort_dir} />
       </div>
 
       <h3>Recent Requests</h3>
@@ -123,10 +133,38 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
     }
   end
 
+  defp build_consumer_row(c) do
+    %{
+      consumer: c.consumer,
+      requests: format_number(c.requests || 0),
+      error_rate: format_percentage(error_rate(c)),
+      avg_latency: format_duration(c.avg_latency),
+      last_seen: format_timestamp(c.last_seen)
+    }
+  end
+
   defp error_rate(consumer) do
-    requests = consumer.requests || 0
-    errors = consumer.errors || 0
-    if requests > 0, do: errors / requests * 100, else: 0.0
+    req = consumer.requests || 0
+    err = consumer.errors || 0
+    if req > 0, do: err / req * 100, else: 0.0
+  end
+
+  defp sort_consumers(consumers, sort_by, sort_dir) do
+    sorted =
+      case sort_by do
+        "consumer" -> Enum.sort_by(consumers, &(&1.consumer || ""))
+        "requests" -> Enum.sort_by(consumers, &(&1.requests || 0))
+        "avg_latency" -> Enum.sort_by(consumers, &(&1.avg_latency || 0))
+        "error_rate" ->
+          Enum.sort_by(consumers, fn c ->
+            req = c.requests || 0
+            err = c.errors || 0
+            if req > 0, do: err / req, else: 0.0
+          end)
+        _ -> Enum.sort_by(consumers, &(&1.requests || 0))
+      end
+
+    if sort_dir == "desc", do: Enum.reverse(sorted), else: sorted
   end
 
   defp split_route_key(route_key) when is_binary(route_key) do
