@@ -20,11 +20,13 @@ defmodule Monitorex.Components.Live.OutboundRecentPageTest do
     test "renders filter controls" do
       html = render_component(OutboundRecentPage, %{id: "test"})
 
-      assert html =~ "All"
-      assert html =~ "Success"
-      assert html =~ "Client Error"
-      assert html =~ "Server Error"
+      assert html =~ "2xx"
+      assert html =~ "3xx"
+      assert html =~ "4xx"
+      assert html =~ "5xx"
       assert html =~ "Host"
+      assert html =~ "Prev"
+      assert html =~ "Next"
     end
   end
 end

@@ -20,9 +20,10 @@ defmodule Monitorex.Components.Live.PagesTest do
       assert html =~ "Status"
       assert html =~ "Duration"
       assert html =~ "No recent outbound requests"
-      assert html =~ "Success"
-      assert html =~ "Client Error"
-      assert html =~ "Server Error"
+      assert html =~ "2xx"
+      assert html =~ "3xx"
+      assert html =~ "4xx"
+      assert html =~ "5xx"
     end
 
     test "renders with host filter" do

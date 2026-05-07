@@ -6,4 +6,13 @@ document.addEventListener('DOMContentLoaded', () => {
   navLinks.forEach(link => {
     if (link.getAttribute('href') === path) link.classList.add('active');
   });
+
+  // Hamburger toggle for mobile nav
+  const hamburger = document.getElementById('nav-toggle');
+  const nav = document.querySelector('nav');
+  if (hamburger && nav) {
+    hamburger.addEventListener('click', () => {
+      nav.classList.toggle('nav-open');
+    });
+  }
 });

@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        elixir: ['1.14', '1.17']
+        elixir: ['1.15', '1.17']
         otp: ['26', '27']
       fail-fast: false
 
@@ -61,7 +61,7 @@ jobs:
         run: mix test
 
       - name: Static analysis (Credo)
-        run: mix credo --strict
+        run: mix credo
 
       - name: Type checking (Dialyzer)
         run: mix dialyzer

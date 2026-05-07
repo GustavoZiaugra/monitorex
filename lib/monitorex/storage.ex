@@ -63,6 +63,7 @@ defmodule Monitorex.Storage do
   ## Options
 
     * `:limit` — maximum number of events to return (default: 50, must be positive)
+    * `:offset` — number of events to skip (default: 0)
     * `:status_class` — filter by status class atom (e.g. `:error`, `:success`).
       `nil` or omission means no filter.
     * `:host` — filter by exact host match. `nil` or omission means no filter.
@@ -70,6 +71,7 @@ defmodule Monitorex.Storage do
   @spec list_recent_outbound(keyword()) :: [Event.t()]
   def list_recent_outbound(opts \\ []) do
     limit = Keyword.get(opts, :limit, @default_limit)
+    offset = Keyword.get(opts, :offset, 0)
     status_class = Keyword.get(opts, :status_class)
     host = Keyword.get(opts, :host)
 
@@ -78,6 +80,7 @@ defmodule Monitorex.Storage do
       |> :ets.tab2list()
       |> Enum.reverse()
       |> Enum.filter(fn {_ts, event} -> passes_outbound_filter?(event, status_class, host) end)
+      |> Enum.drop(offset)
       |> Enum.take(limit)
       |> Enum.map(fn {_ts, event} -> event end)
     end)
@@ -137,6 +140,7 @@ defmodule Monitorex.Storage do
   ## Options
 
     * `:limit` — maximum number of events to return (default: 50, must be positive)
+    * `:offset` — number of events to skip (default: 0)
     * `:status_class` — filter by status class atom (e.g. `:error`, `:success`).
       `nil` or omission means no filter.
     * `:consumer` — filter by exact consumer match.
@@ -145,6 +149,7 @@ defmodule Monitorex.Storage do
   @spec list_recent_inbound(keyword()) :: [Event.t()]
   def list_recent_inbound(opts \\ []) do
     limit = Keyword.get(opts, :limit, @default_limit)
+    offset = Keyword.get(opts, :offset, 0)
     status_class = Keyword.get(opts, :status_class)
     consumer = Keyword.get(opts, :consumer)
     route = Keyword.get(opts, :route)
@@ -156,6 +161,7 @@ defmodule Monitorex.Storage do
       |> Enum.filter(fn {_ts, event} ->
         passes_inbound_filter?(event, status_class, consumer, route)
       end)
+      |> Enum.drop(offset)
       |> Enum.take(limit)
       |> Enum.map(fn {_ts, event} -> event end)
     end)
@@ -312,6 +318,47 @@ defmodule Monitorex.Storage do
     len = length(samples)
     rank = max(1, round(len * p / 100))
     Enum.at(samples, rank - 1)
+  end
+
+  @doc """
+  Returns count of recent outbound events matching optional filters.
+
+  Same filtering as `list_recent_outbound/1` but returns count instead of events.
+  """
+  @spec count_recent_outbound(keyword()) :: non_neg_integer()
+  def count_recent_outbound(opts \\ []) do
+    status_class = Keyword.get(opts, :status_class)
+    host = Keyword.get(opts, :host)
+
+    with_table(:monitorex_outbound_recent, fn ->
+      :monitorex_outbound_recent
+      |> :ets.tab2list()
+      |> Enum.reverse()
+      |> Enum.filter(fn {_ts, event} -> passes_outbound_filter?(event, status_class, host) end)
+      |> length()
+    end)
+  end
+
+  @doc """
+  Returns count of recent inbound events matching optional filters.
+
+  Same filtering as `list_recent_inbound/1` but returns count instead of events.
+  """
+  @spec count_recent_inbound(keyword()) :: non_neg_integer()
+  def count_recent_inbound(opts \\ []) do
+    status_class = Keyword.get(opts, :status_class)
+    consumer = Keyword.get(opts, :consumer)
+    route = Keyword.get(opts, :route)
+
+    with_table(:monitorex_inbound_recent, fn ->
+      :monitorex_inbound_recent
+      |> :ets.tab2list()
+      |> Enum.reverse()
+      |> Enum.filter(fn {_ts, event} ->
+        passes_inbound_filter?(event, status_class, consumer, route)
+      end)
+      |> length()
+    end)
   end
 
   # ── Filtering helpers ──

@@ -2,28 +2,42 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
   @moduledoc """
   LiveComponent that renders a live feed of recent outbound requests.
 
-  Displays filter controls (status_class dropdown, host filter) and a table
-  with color-coded status badges. Auto-refreshes via parent DashboardLive's
-  refresh timer (sends `:refresh` every 2s), which triggers update/2 on
-  the component, re-querying Storage.
+  Displays filter controls (status_class chips, host filter) and a table
+  with color-coded status badges, with pagination. Auto-refreshes via
+  parent DashboardLive's refresh timer (sends `:refresh` every 2s), which
+  triggers update/2 on the component, re-querying Storage.
+
+  Sort/filter/page state persisted in URL query params.
   """
   use Phoenix.LiveComponent
 
   alias Monitorex.Storage
   alias Monitorex.Components.Core
 
+  @page_size 50
+
   @impl true
   def update(assigns, socket) do
     host = assigns[:host]
     status_class = parse_status_class(assigns[:status_class])
+    page = max(1, assigns[:page] || 1)
+    page_size = assigns[:page_size] || @page_size
+    offset = (page - 1) * page_size
 
     events = Storage.list_recent_outbound(
       host: host,
       status_class: status_class,
-      limit: assigns[:limit] || 50
+      limit: page_size,
+      offset: offset
+    )
+
+    total_count = Storage.count_recent_outbound(
+      host: host,
+      status_class: status_class
     )
 
     rows = Enum.map(events, &build_row/1)
+    total_pages = max(1, ceil(total_count / page_size))
 
     socket =
       socket
@@ -31,19 +45,34 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
       |> assign(:rows, rows)
       |> assign(:filter_host, host || "")
       |> assign(:filter_status_class, assigns[:status_class] || "")
+      |> assign(:page, page)
+      |> assign(:page_size, page_size)
+      |> assign(:total_count, total_count)
+      |> assign(:total_pages, total_pages)
 
     {:ok, socket}
   end
 
   @impl true
   def handle_event("filter_status_class", %{"status_class" => value}, socket) do
-    send(self(), {:navigate, "?page=outbound_recent&status_class=#{value}"})
+    base = base_filter_url(socket, value)
+    send(self(), {:navigate, base})
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("filter_host", %{"host" => value}, socket) do
-    send(self(), {:navigate, "?page=outbound_recent&host=#{value}"})
+    base = base_filter_url(socket, nil)
+    parts = if value != "", do: "&host=#{value}", else: ""
+    send(self(), {:navigate, base <> parts})
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("go_page", %{"page" => page_str}, socket) do
+    page = String.to_integer(page_str)
+    base = base_filter_url(socket, nil)
+    send(self(), {:navigate, base <> "&page=#{page}"})
     {:noreply, socket}
   end
 
@@ -56,13 +85,11 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
       <div class="filters">
         <label class="filter-label">
           Status:
-          <select class="filter-select" phx-change="filter_status_class">
-            <option value="">All</option>
-            <option value="success" selected={@filter_status_class == "success"}>Success (2xx)</option>
-            <option value="redirect" selected={@filter_status_class == "redirect"}>Redirect (3xx)</option>
-            <option value="client_error" selected={@filter_status_class == "client_error"}>Client Error (4xx)</option>
-            <option value="server_error" selected={@filter_status_class == "server_error"}>Server Error (5xx)</option>
-          </select>
+          <span class={status_chip_class("2xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="2xx">2xx</span>
+          <span class={status_chip_class("3xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="3xx">3xx</span>
+          <span class={status_chip_class("4xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="4xx">4xx</span>
+          <span class={status_chip_class("5xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="5xx">5xx</span>
+          <span :if={@filter_status_class != ""} class="filter-chip" phx-click="filter_status_class" phx-value-status_class="">Clear</span>
         </label>
 
         <label class="filter-label">
@@ -72,32 +99,92 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
       </div>
 
       <div class="recent-table">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th class="data-table-th">Time</th>
-              <th class="data-table-th">Method</th>
-              <th class="data-table-th">URL</th>
-              <th class="data-table-th">Status</th>
-              <th class="data-table-th">Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr :for={row <- @rows} class="data-table-row">
-              <td class="data-table-td"><%= row.time %></td>
-              <td class="data-table-td"><%= row.method %></td>
-              <td class="data-table-td"><%= row.url %></td>
-              <td class="data-table-td"><Core.status_badge status={row.status} /></td>
-              <td class="data-table-td"><%= row.duration %></td>
-            </tr>
-            <tr :if={@rows == []}>
-              <td colspan="5" class="data-table-empty">No recent outbound requests</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="data-table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th class="data-table-th">Time</th>
+                <th class="data-table-th">Method</th>
+                <th class="data-table-th">URL</th>
+                <th class="data-table-th">Status</th>
+                <th class="data-table-th hide-mobile">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr :for={row <- @rows} class="data-table-row">
+                <td class="data-table-td" data-label="Time"><%= row.time %></td>
+                <td class="data-table-td" data-label="Method"><%= row.method %></td>
+                <td class="data-table-td" data-label="URL"><%= row.url %></td>
+                <td class="data-table-td" data-label="Status"><Core.status_badge status={row.status} /></td>
+                <td class="data-table-td hide-mobile" data-label="Duration"><%= row.duration %></td>
+              </tr>
+              <tr :if={@rows == []}>
+                <td colspan="5" class="data-table-empty">No recent outbound requests</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      <.pagination current={@page} total={@total_pages} />
     </div>
     """
+  end
+
+  defp pagination(assigns) do
+    ~H"""
+    <div class="pagination">
+      <button class="page-btn" phx-click="go_page" phx-value-page={@current - 1} disabled={@current <= 1}>
+        &laquo; Prev
+      </button>
+      <span :for={p <- visible_pages(@current, @total)} class={["page-btn", if(p == @current, do: "active")]} phx-click="go_page" phx-value-page={p}>
+        <%= p %>
+      </span>
+      <button class="page-btn" phx-click="go_page" phx-value-page={@current + 1} disabled={@current >= @total}>
+        Next &raquo;
+      </button>
+      <span class="page-info"><%= @current %> / <%= @total %></span>
+    </div>
+    """
+  end
+
+  defp visible_pages(current, total) do
+    cond do
+      total <= 7 -> Enum.to_list(1..total)
+      current <= 4 -> [1, 2, 3, 4, 5, :ellipsis, total]
+      current >= total - 3 -> [1, :ellipsis, total - 4, total - 3, total - 2, total - 1, total]
+      true -> [1, :ellipsis, current - 1, current, current + 1, :ellipsis, total]
+    end
+  end
+
+  defp base_filter_url(socket, status_class_override) do
+    sc = if status_class_override != nil, do: status_class_override, else: socket.assigns.filter_status_class
+    host = socket.assigns.filter_host
+
+    params = %{
+      "page" => "outbound_recent"
+    }
+    |> then(fn p -> if sc != "", do: Map.put(p, "status_class", sc), else: p end)
+    |> then(fn p -> if host != "", do: Map.put(p, "host", host), else: p end)
+    |> Enum.map(fn {k, v} -> "#{k}=#{URI.encode(v)}" end)
+    |> Enum.join("&")
+
+    "?" <> params
+  end
+
+  defp status_chip_class(value, current) do
+    base = "filter-chip"
+    if value == current do
+      case value do
+        "2xx" -> "#{base} active-2xx"
+        "3xx" -> "#{base} active-3xx"
+        "4xx" -> "#{base} active-4xx"
+        "5xx" -> "#{base} active-5xx"
+        _ -> "#{base} active"
+      end
+    else
+      base
+    end
   end
 
   defp build_row(event) do
@@ -141,10 +228,10 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
   defp parse_status_class(nil), do: nil
   defp parse_status_class(str) when is_binary(str) do
     case str do
-      "success" -> :success
-      "redirect" -> :redirect
-      "client_error" -> :client_error
-      "server_error" -> :server_error
+      "2xx" -> :success
+      "3xx" -> :redirect
+      "4xx" -> :client_error
+      "5xx" -> :server_error
       _ -> nil
     end
   end
