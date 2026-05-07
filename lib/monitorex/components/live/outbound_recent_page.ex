@@ -10,6 +10,7 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
   Sort/filter/page state persisted in URL query params.
   """
   use Phoenix.LiveComponent
+  import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1]
 
   alias Monitorex.Storage
   alias Monitorex.Components.Core
@@ -197,20 +198,6 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
     }
   end
 
-  defp format_timestamp(nil), do: "-"
-  defp format_timestamp(ts) when is_integer(ts) do
-    try do
-      ts
-      |> DateTime.from_unix(:microsecond)
-      |> case do
-        {:ok, dt} -> Calendar.strftime(dt, "%H:%M:%S")
-        _ -> "-#{ts}-"
-      end
-    rescue
-      _ -> "#{trunc(ts / 1_000_000)}s ago"
-    end
-  end
-  defp format_timestamp(_), do: "-"
 
   defp truncate_url(url) when is_binary(url) do
     if String.length(url) > 60 do

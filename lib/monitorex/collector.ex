@@ -366,7 +366,7 @@ defmodule Monitorex.Collector do
       # Ordered set: first N entries (oldest) to delete
       first_keys =
         :ets.foldl(
-          fn {key, _}, acc when length(acc) < to_delete -> [key | acc]; _, acc -> acc end,
+          fn {key, _}, acc when length(acc) < to_delete -> [key | acc]; _other, acc -> acc end,
           [],
           table
         )
