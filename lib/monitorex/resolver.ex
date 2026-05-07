@@ -28,7 +28,7 @@ defmodule Monitorex.Resolver do
   Resolves the current user from the Plug connection.
   Returns a user struct of any shape.
   """
-  @callback resolve_user(conn :: Plug.Conn.t()) :: struct()
+  @callback resolve_user(conn :: Plug.Conn.t()) :: map()
 
   @doc """
   Resolves the access level for the given user.

@@ -312,8 +312,6 @@ defmodule Monitorex.Storage do
 
   # ── Percentile computation ──
 
-  defp compute_percentile([], _p), do: nil
-
   defp compute_percentile(samples, p) do
     len = length(samples)
     rank = max(1, round(len * p / 100))

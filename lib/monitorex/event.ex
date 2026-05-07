@@ -22,6 +22,22 @@ defmodule Monitorex.Event do
     :dedup_key
   ]
 
+  @type t :: %__MODULE__{
+          source: atom(),
+          direction: :inbound | :outbound,
+          method: String.t(),
+          host: String.t() | nil,
+          path: String.t() | nil,
+          full_url: String.t() | nil,
+          status: non_neg_integer() | nil,
+          status_class: atom(),
+          duration_ms: float(),
+          consumer: String.t() | nil,
+          error: String.t() | nil,
+          timestamp: integer(),
+          dedup_key: term()
+        }
+
   @doc """
   Classifies an HTTP status code into a status class atom.
 
