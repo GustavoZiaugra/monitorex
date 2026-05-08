@@ -70,16 +70,14 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
   def render(assigns) do
     ~H"""
     <div class="outbound-overview">
-      <h2>Outbound Overview</h2>
+      <Core.page_header title="Outbound Overview" subtitle="Monitor outbound HTTP requests by host">
+        <Core.node_selector nodes={@nodes} selected={@selected_node} event="select_node" />
+      </Core.page_header>
 
       <div class="summary-cards">
-        <Core.summary_card label="Total Requests" value={format_number(@total_requests)} />
-        <Core.summary_card label="Error Rate" value={format_percentage(@error_rate)} trend={if @error_rate > 0, do: :up, else: :down} />
-        <Core.summary_card label="Avg Latency" value={format_duration(@avg_latency)} />
-      </div>
-
-      <div class="filters">
-        <Core.node_selector nodes={@nodes} selected={@selected_node} event="select_node" />
+        <Core.summary_card label="Total Requests" value={format_number(@total_requests)} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>]} />
+        <Core.summary_card label="Error Rate" value={format_percentage(@error_rate)} trend={if @error_rate > 0, do: :up, else: :down} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>]} />
+        <Core.summary_card label="Avg Latency" value={format_duration(@avg_latency)} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>]} />
       </div>
 
       <div class="hosts-table">

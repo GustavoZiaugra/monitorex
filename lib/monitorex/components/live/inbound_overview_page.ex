@@ -65,12 +65,12 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
   def render(assigns) do
     ~H"""
     <div class="inbound-overview">
-      <h2>Inbound Overview</h2>
+      <Core.page_header title="Inbound Overview" subtitle="Monitor incoming HTTP requests and routes" />
 
       <div class="summary-cards">
-        <Core.summary_card label="Total Requests" value={format_number(@total_requests)} />
-        <Core.summary_card label="Routes" value={format_number(@route_count)} />
-        <Core.summary_card label="Error Rate" value={format_percentage(@error_rate)} trend={if @error_rate > 0, do: :up, else: :down} />
+        <Core.summary_card label="Total Requests" value={format_number(@total_requests)} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>]} />
+        <Core.summary_card label="Routes" value={format_number(@route_count)} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>]} />
+        <Core.summary_card label="Error Rate" value={format_percentage(@error_rate)} trend={if @error_rate > 0, do: :up, else: :down} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>]} />
       </div>
 
       <div class="routes-table">

@@ -69,13 +69,15 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   def render(assigns) do
     ~H"""
     <div class="host-detail">
-      <h2>Host: <%= @host %></h2>
+      <Core.back_link to="/" label="Back to Outbound" />
+
+      <Core.page_header title={@host} subtitle="Host detail and performance metrics" />
 
       <div class="summary-cards">
-        <Core.summary_card label="Total Requests" value={format_number(@total_requests)} />
-        <Core.summary_card label="Endpoints" value={format_number(@endpoint_count)} />
-        <Core.summary_card label="Avg Latency" value={format_duration(@avg_latency)} />
-        <Core.summary_card label="Error Rate" value={format_percentage(@error_rate)} trend={if @error_rate > 0, do: :up, else: :down} />
+        <Core.summary_card label="Total Requests" value={format_number(@total_requests)} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>]} />
+        <Core.summary_card label="Endpoints" value={format_number(@endpoint_count)} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>]} />
+        <Core.summary_card label="Avg Latency" value={format_duration(@avg_latency)} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>]} />
+        <Core.summary_card label="Error Rate" value={format_percentage(@error_rate)} trend={if @error_rate > 0, do: :up, else: :down} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>]} />
       </div>
 
       <h3>Endpoints</h3>
@@ -106,11 +108,11 @@ defmodule Monitorex.Components.Live.HostDetailPage do
           </thead>
           <tbody>
             <tr :for={row <- @recent_rows} class="data-table-row">
-              <td class="data-table-td"><%= row.time %></td>
-              <td class="data-table-td"><%= row.method %></td>
-              <td class="data-table-td"><%= row.url %></td>
-              <td class="data-table-td"><Core.status_badge status={row.status} /></td>
-              <td class="data-table-td"><%= row.duration %></td>
+              <td class="data-table-td" data-label="Time"><%= row.time %></td>
+              <td class="data-table-td" data-label="Method"><%= row.method %></td>
+              <td class="data-table-td" data-label="URL"><%= row.url %></td>
+              <td class="data-table-td" data-label="Status"><Core.status_badge status={row.status} /></td>
+              <td class="data-table-td" data-label="Duration"><%= row.duration %></td>
             </tr>
             <tr :if={@recent_rows == []}>
               <td colspan="5" class="data-table-empty">No recent requests for this host</td>

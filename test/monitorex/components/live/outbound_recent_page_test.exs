@@ -25,8 +25,6 @@ defmodule Monitorex.Components.Live.OutboundRecentPageTest do
       assert html =~ "4xx"
       assert html =~ "5xx"
       assert html =~ "Host"
-      assert html =~ "Prev"
-      assert html =~ "Next"
     end
   end
 

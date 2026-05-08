@@ -104,7 +104,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
   def render(assigns) do
     ~H"""
     <div class="inbound-recent">
-      <h2>Recent Inbound Requests</h2>
+      <Core.page_header title="Recent Inbound Requests" subtitle="Live feed of incoming HTTP requests" />
 
       <div class="filters">
         <label class="filter-label">
@@ -165,35 +165,9 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
         </div>
       </div>
 
-      <.pagination current={@page} total={@total_pages} />
+      <Core.pagination current={@page} total={@total_pages} event="go_page" />
     </div>
     """
-  end
-
-  defp pagination(assigns) do
-    ~H"""
-    <div class="pagination">
-      <button class="page-btn" phx-click="go_page" phx-value-page={@current - 1} disabled={@current <= 1}>
-        &laquo; Prev
-      </button>
-      <span :for={p <- visible_pages(@current, @total)} class={["page-btn", if(p == @current, do: "active")]} phx-click="go_page" phx-value-page={p}>
-        <%= if p == :ellipsis, do: "...", else: p %>
-      </span>
-      <button class="page-btn" phx-click="go_page" phx-value-page={@current + 1} disabled={@current >= @total}>
-        Next &raquo;
-      </button>
-      <span class="page-info"><%= @current %> / <%= @total %></span>
-    </div>
-    """
-  end
-
-  defp visible_pages(current, total) do
-    cond do
-      total <= 7 -> Enum.to_list(1..total)
-      current <= 4 -> [1, 2, 3, 4, 5, :ellipsis, total]
-      current >= total - 3 -> [1, :ellipsis, total - 4, total - 3, total - 2, total - 1, total]
-      true -> [1, :ellipsis, current - 1, current, current + 1, :ellipsis, total]
-    end
   end
 
   defp base_filter_url(socket, status_class_override) do

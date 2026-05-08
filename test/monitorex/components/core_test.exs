@@ -86,7 +86,7 @@ defmodule Monitorex.Components.CoreTest do
 
       html = render_component(&Core.summary_card/1, assigns)
 
-      assert html =~ "&#9650;"
+      assert html =~ "↑"
     end
 
     test "renders down trend indicator" do
@@ -94,7 +94,7 @@ defmodule Monitorex.Components.CoreTest do
 
       html = render_component(&Core.summary_card/1, assigns)
 
-      assert html =~ "&#9660;"
+      assert html =~ "↓"
     end
 
     test "does not render trend when nil" do
