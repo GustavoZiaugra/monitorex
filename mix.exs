@@ -4,18 +4,69 @@ defmodule Monitorex.MixProject do
   def project do
     [
       app: :monitorex,
-      version: "0.1.0",
+      version: "0.2.0",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      aliases: aliases(),
+      deps: deps(),
+      docs: docs()
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
     [
       extra_applications: [:logger],
       mod: {Monitorex.Application, []}
+    ]
+  end
+
+  defp aliases do
+    [
+      "assets.build": ["tailwind monitorex", "esbuild monitorex"],
+      setup: ["deps.get", "assets.build"]
+    ]
+  end
+
+  defp docs do
+    [
+      main: "readme",
+      extras: ["README.md"],
+      groups_for_extras: [guides: ~r/guides\/.?/],
+      groups_for_modules: [
+        Core: [
+          Monitorex,
+          Monitorex.Event,
+          Monitorex.Router,
+          Monitorex.Layouts,
+          Monitorex.Assets,
+          Monitorex.Authentication,
+          Monitorex.Resolver
+        ],
+        "Data Pipeline": [
+          Monitorex.Collector,
+          Monitorex.EventHandler,
+          Monitorex.Storage,
+          Monitorex.ClusterPage,
+          Monitorex.Cluster
+        ],
+        "UI Components": [
+          Monitorex.Components.Core,
+          Monitorex.Components.Live.Helpers,
+          Monitorex.Components.Live.OutboundOverviewPage,
+          Monitorex.Components.Live.OutboundRecentPage,
+          Monitorex.Components.Live.HostDetailPage,
+          Monitorex.Components.Live.InboundOverviewPage,
+          Monitorex.Components.Live.InboundConsumersPage,
+          Monitorex.Components.Live.InboundRecentPage,
+          Monitorex.Components.Live.RouteDetailPage,
+          Monitorex.DashboardLive
+        ],
+        Utilities: [
+          Monitorex.UrlNormalizer,
+          Monitorex.URLRedactor,
+          Monitorex.ConsumerIdentifier
+        ]
+      ]
     ]
   end
 
