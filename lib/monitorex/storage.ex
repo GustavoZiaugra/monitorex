@@ -219,6 +219,7 @@ defmodule Monitorex.Storage do
 
     %{
       host: host,
+      client: agg[:client],
       requests: requests,
       errors: errors,
       error_rate: error_rate,

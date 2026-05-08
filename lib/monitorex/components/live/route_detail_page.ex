@@ -9,7 +9,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
   use Phoenix.LiveComponent
   import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1]
 
-  alias Monitorex.Storage
+  alias Monitorex.ClusterPage
   alias Monitorex.Components.Core
 
   @sortable_fields ~w(consumer requests error_rate avg_latency)
@@ -18,17 +18,17 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
   def update(assigns, socket) do
     route = assigns[:route]
 
-    routes = Storage.list_routes()
+    routes = ClusterPage.list_routes()
     route_summary = Enum.find(routes, %{}, &("#{&1.method}:#{&1.path}" == route))
 
     consumers =
       try do
-        Storage.list_consumers_for_route(route)
+        ClusterPage.list_consumers_for_route(route)
       rescue
         _ -> []
       end
 
-    recent = Storage.list_recent_inbound(route: route, limit: 20)
+    recent = ClusterPage.list_recent_inbound(route: route, limit: 20)
     recent_rows = Enum.map(recent, &build_recent_row/1)
 
     sort_by = assigns[:sort_by] || "requests"

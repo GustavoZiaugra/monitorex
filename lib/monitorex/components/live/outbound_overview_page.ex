@@ -8,12 +8,12 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
   """
   use Phoenix.LiveComponent
 
-  alias Monitorex.Storage
+  alias Monitorex.ClusterPage
   alias Monitorex.Components.Core
 
   @impl true
   def update(assigns, socket) do
-    hosts = Storage.list_hosts()
+    hosts = ClusterPage.list_hosts()
 
     total_requests = Enum.reduce(hosts, 0, &(&1.requests + &2))
     total_errors = Enum.reduce(hosts, 0, &(&1.errors + &2))
