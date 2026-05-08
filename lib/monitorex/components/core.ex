@@ -2,17 +2,24 @@ defmodule Monitorex.Components.Core do
   @moduledoc """
   Reusable UI components for the Monitorex dashboard.
 
-  Provides:
-    * `data_table/1` — sortable, striped data table
-    * `summary_card/1` — card with label, value, and optional trend indicator
+  Provides a cohesive design system with dark theme, responsive layout,
+  and accessible touch-friendly targets.
+
+  Components:
+    * `data_table/1` — sortable, striped, responsive data table
+    * `summary_card/1` — card with icon, label, value, trend
     * `status_badge/1` — color-coded HTTP status badge
-    * `node_selector/1` — drop-down selector for nodes/hosts
+    * `node_selector/1` — dropdown node selector
+    * `page_header/1` — page title with optional subtitle and actions
+    * `metric_tile/1` — compact metric display
+    * `pagination/1` — page navigation with prev/next and numbered buttons
+    * `back_link/1` — navigation back link
   """
 
   use Phoenix.Component
 
   @doc """
-  Renders a sortable, striped data table.
+  Renders a sortable, striped data table with responsive card layout.
 
   ## Assigns
 
@@ -62,35 +69,67 @@ defmodule Monitorex.Components.Core do
   end
 
   @doc """
-  Renders a summary card with label, value, and optional trend indicator.
+  Renders a summary card with icon, label, value, and optional trend indicator.
 
   ## Assigns
 
     * `label` — card label string
     * `value` — display value string
     * `trend` — optional `:up` or `:down` atom for trend icon
+    * `icon` — optional SVG icon HTML string (default: chart icon)
     * `class` — additional CSS classes
   """
   attr :label, :string, required: true
   attr :value, :string, required: true
   attr :trend, :atom, values: [:up, :down, nil], default: nil
+  attr :icon, :string, default: nil
   attr :class, :string, default: ""
 
   def summary_card(assigns) do
     ~H"""
     <div class={["card summary-card", @class]}>
       <div class="summary-card-icon">
-        <%= if @trend == :up do %>
-          <span class="trend-up">&#9650;</span>
-        <% end %>
-        <%= if @trend == :down do %>
-          <span class="trend-down">&#9660;</span>
+        <%= if @icon do %>
+          <%= Phoenix.HTML.raw(@icon) %>
+        <% else %>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10" />
+            <line x1="12" y1="20" x2="12" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="14" />
+          </svg>
         <% end %>
       </div>
       <div class="summary-card-body">
         <div class="summary-card-label"><%= @label %></div>
         <div class="summary-card-value"><%= @value %></div>
+        <div :if={@trend} class="summary-card-trend">
+          <span class={if @trend == :up, do: "trend-up", else: "trend-down"}>
+            <%= if @trend == :up do %>↑<% else %>↓<% end %>
+          </span>
+        </div>
       </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders a compact metric tile.
+
+  ## Assigns
+
+    * `label` — metric label
+    * `value` — metric value string
+    * `class` — additional CSS classes
+  """
+  attr :label, :string, required: true
+  attr :value, :string, required: true
+  attr :class, :string, default: ""
+
+  def metric_tile(assigns) do
+    ~H"""
+    <div class={["metric-tile", @class]}>
+      <div class="metric-tile-label"><%= @label %></div>
+      <div class="metric-tile-value"><%= @value %></div>
     </div>
     """
   end
@@ -168,6 +207,102 @@ defmodule Monitorex.Components.Core do
         <%= node %>
       </option>
     </select>
+    """
+  end
+
+  @doc """
+  Renders a page header with title, optional subtitle, and actions slot.
+
+  ## Assigns
+
+    * `title` — page title string
+    * `subtitle` — optional subtitle string
+    * `inner_block` — optional content for the actions area (right side)
+  """
+  attr :title, :string, required: true
+  attr :subtitle, :string, default: nil
+
+  slot :inner_block, required: false
+
+  def page_header(assigns) do
+    ~H"""
+    <div class="page-header">
+      <div>
+        <h2><%= @title %></h2>
+        <p :if={@subtitle} class="page-subtitle"><%= @subtitle %></p>
+      </div>
+      <div :if={assigns[:inner_block]} class="page-header-actions">
+        <%= render_slot(@inner_block) %>
+      </div>
+    </div>
+    """
+  end
+
+  @doc """
+  Renders a pagination control.
+
+  ## Assigns
+
+    * `current` — current page number (integer)
+    * `total` — total number of pages (integer)
+    * `event` — event name to send on page change (default: "go_page")
+  """
+  attr :current, :integer, required: true
+  attr :total, :integer, required: true
+  attr :event, :string, default: "go_page"
+
+  def pagination(assigns) do
+    ~H"""
+    <div :if={@total > 1} class="pagination">
+      <button class="page-btn" :if={@current > 1} phx-click={@event} phx-value-page={@current - 1} disabled={@current <= 1}>
+        ‹ Prev
+      </button>
+
+      <button :for={page <- visible_pages(@current, @total)}
+        class={["page-btn", if(page == @current, do: "active")]}
+        phx-click={@event} phx-value-page={page}
+        disabled={page == @current}>
+        <%= page %>
+      </button>
+
+      <button class="page-btn" :if={@current < @total} phx-click={@event} phx-value-page={@current + 1} disabled={@current >= @total}>
+        Next ›
+      </button>
+
+      <span class="page-info"><%= @current %> / <%= @total %></span>
+    </div>
+    """
+  end
+
+  defp visible_pages(current, total) do
+    cond do
+      total <= 7 -> Enum.to_list(1..total)
+      current <= 4 -> [1, 2, 3, 4, 5, :ellipsis, total]
+      current >= total - 3 -> [1, :ellipsis, total - 4, total - 3, total - 2, total - 1, total]
+      true -> [1, :ellipsis, current - 1, current, current + 1, :ellipsis, total]
+    end
+  end
+
+  @doc """
+  Renders a back link for detail pages.
+
+  ## Assigns
+
+    * `to` — the URL to navigate back to
+    * `label` — link text (default: "Back")
+  """
+  attr :to, :string, required: true
+  attr :label, :string, default: "Back"
+
+  def back_link(assigns) do
+    ~H"""
+    <a href={@to} class="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12" />
+        <polyline points="12 19 5 12 12 5" />
+      </svg>
+      <%= @label %>
+    </a>
     """
   end
 end

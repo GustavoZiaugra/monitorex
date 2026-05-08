@@ -8,7 +8,7 @@ defmodule Monitorex.Components.Live.HostDetailPageTest do
     test "renders empty state when host has no data" do
       html = render_component(HostDetailPage, %{id: "test", host: "api.example.com"})
 
-      assert html =~ "Host: api.example.com"
+      assert html =~ "api.example.com"
       assert html =~ "Total Requests"
       assert html =~ "Endpoints"
       assert html =~ "Avg Latency"

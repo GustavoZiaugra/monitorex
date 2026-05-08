@@ -1,18 +1,80 @@
-// Monitorex Dashboard — Client JS
-document.addEventListener('DOMContentLoaded', () => {
-  // Highlight active nav link
-  const navLinks = document.querySelectorAll('nav a');
-  const path = window.location.pathname;
-  navLinks.forEach(link => {
-    if (link.getAttribute('href') === path) link.classList.add('active');
-  });
+// Monitorex Dashboard — Client JS v2
+(function() {
+  'use strict';
 
-  // Hamburger toggle for mobile nav
-  const hamburger = document.getElementById('nav-toggle');
-  const nav = document.querySelector('nav');
-  if (hamburger && nav) {
-    hamburger.addEventListener('click', () => {
-      nav.classList.toggle('nav-open');
+  const NAV_KEY = 'monitorex_nav_open';
+
+  // ── Active nav link ──
+  function highlightActiveNav() {
+    const path = window.location.pathname;
+    document.querySelectorAll('nav a').forEach(link => {
+      const href = link.getAttribute('href');
+      link.classList.toggle('active', href === path);
     });
   }
-});
+
+  // ── Mobile nav toggle ──
+  function setupNavToggle() {
+    const hamburger = document.getElementById('nav-toggle');
+    const nav = document.querySelector('nav');
+    if (!hamburger || !nav) return;
+
+    // Restore previous state
+    const saved = sessionStorage.getItem(NAV_KEY);
+    if (saved === 'true' && window.innerWidth <= 768) {
+      nav.classList.add('nav-open');
+      hamburger.classList.add('nav-open');
+      document.body.classList.add('nav-open');
+    }
+
+    hamburger.addEventListener('click', () => {
+      const isOpen = nav.classList.toggle('nav-open');
+      hamburger.classList.toggle('nav-open', isOpen);
+      document.body.classList.toggle('nav-open', isOpen);
+      try {
+        if (isOpen) {
+          sessionStorage.setItem(NAV_KEY, 'true');
+        } else {
+          sessionStorage.removeItem(NAV_KEY);
+        }
+      } catch (_) {}
+    });
+
+    // Close nav on link click (mobile)
+    nav.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        if (window.innerWidth <= 768) {
+          nav.classList.remove('nav-open');
+          hamburger.classList.remove('nav-open');
+          document.body.classList.remove('nav-open');
+          try { sessionStorage.removeItem(NAV_KEY); } catch (_) {}
+        }
+      });
+    });
+  }
+
+  // ── Close nav on resize from mobile to desktop ──
+  function setupResizeHandler() {
+    let prevWidth = window.innerWidth;
+    window.addEventListener('resize', () => {
+      const width = window.innerWidth;
+      if (prevWidth <= 768 && width > 768) {
+        const nav = document.querySelector('nav');
+        const hamburger = document.getElementById('nav-toggle');
+        if (nav && hamburger) {
+          nav.classList.remove('nav-open');
+          hamburger.classList.remove('nav-open');
+          document.body.classList.remove('nav-open');
+          try { sessionStorage.removeItem(NAV_KEY); } catch (_) {}
+        }
+      }
+      prevWidth = width;
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    highlightActiveNav();
+    setupNavToggle();
+    setupResizeHandler();
+  });
+})();

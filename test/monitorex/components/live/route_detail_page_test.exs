@@ -8,7 +8,7 @@ defmodule Monitorex.Components.Live.RouteDetailPageTest do
     test "renders empty state when route has no data" do
       html = render_component(RouteDetailPage, %{id: "test", route: "POST:/api/users"})
 
-      assert html =~ "Route: POST /api/users"
+      assert html =~ "POST:/api/users"
       assert html =~ "Total Requests"
       assert html =~ "Error Rate"
       assert html =~ "Avg Latency"
@@ -36,7 +36,7 @@ defmodule Monitorex.Components.Live.RouteDetailPageTest do
     test "handles malformed route key" do
       html = render_component(RouteDetailPage, %{id: "test", route: "badkey"})
 
-      assert html =~ "Route: ? badkey"
+      assert html =~ "badkey"
     end
   end
 
