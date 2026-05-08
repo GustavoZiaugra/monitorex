@@ -6,7 +6,7 @@
 
 Monitorex monitors outbound (Tesla, Finch/Req) and inbound (Phoenix) HTTP traffic, aggregates it into ETS-backed metrics, and renders a live-updating dark-theme dashboard — no database required.
 
-![Outbound Overview](https://via.placeholder.com/800x450?text=Monitorex+Dashboard)
+![Outbound Overview](assets/screenshots/outbound-overview.png)
 
 ## Features
 
@@ -23,6 +23,12 @@ Monitorex monitors outbound (Tesla, Finch/Req) and inbound (Phoenix) HTTP traffi
 - **Prometheus metrics** — `GET /monitorex/metrics` for requests, errors, latency, ETS sizes
 - **Alert webhooks** — configurable thresholds (error_rate, host_down, high_latency) with debounced dispatch
 - **No database** — all data lives in ETS tables (in-memory)
+
+## Screenshots
+
+| Outbound Overview | Host Detail | Timeline Inspector |
+|:---:|:---:|:---:|
+| ![Overview](assets/screenshots/outbound-overview.png) | ![Host Detail](assets/screenshots/host-detail.png) | ![Timeline](assets/screenshots/timeline.png) |
 
 ## Installation
 
