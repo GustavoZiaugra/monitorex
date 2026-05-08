@@ -25,4 +25,25 @@ defmodule Monitorex.Components.Live.Helpers do
     end
   end
   def format_timestamp(_), do: "-"
+
+  @doc """
+  Returns the CSS class for a status filter chip.
+
+  When `value` matches `current`, returns an active variant. Otherwise returns
+  the base class.
+  """
+  def status_chip_class(value, current) do
+    base = "filter-chip"
+    if value == current do
+      case value do
+        "2xx" -> "#{base} active-2xx"
+        "3xx" -> "#{base} active-3xx"
+        "4xx" -> "#{base} active-4xx"
+        "5xx" -> "#{base} active-5xx"
+        _ -> "#{base} active"
+      end
+    else
+      base
+    end
+  end
 end

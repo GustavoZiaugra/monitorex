@@ -12,7 +12,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
   Sort/filter/page state persisted in URL query params.
   """
   use Phoenix.LiveComponent
-  import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1]
+  import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1, status_chip_class: 2]
 
   alias Monitorex.ClusterPage
   alias Monitorex.Components.Core
@@ -183,21 +183,6 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
     |> Enum.join("&")
 
     "?" <> params
-  end
-
-  defp status_chip_class(value, current) do
-    base = "filter-chip"
-    if value == current do
-      case value do
-        "2xx" -> "#{base} active-2xx"
-        "3xx" -> "#{base} active-3xx"
-        "4xx" -> "#{base} active-4xx"
-        "5xx" -> "#{base} active-5xx"
-        _ -> "#{base} active"
-      end
-    else
-      base
-    end
   end
 
   defp build_row(event) do
