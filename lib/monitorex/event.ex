@@ -64,11 +64,12 @@ defmodule Monitorex.Event do
       :server_error
 
   """
-  @spec classify_status(status :: integer()) :: :success | :redirect | :client_error | :server_error
+  @spec classify_status(status :: integer()) :: :success | :redirect | :client_error | :server_error | :default
   def classify_status(status) when status >= 200 and status < 300, do: :success
   def classify_status(status) when status >= 300 and status < 400, do: :redirect
   def classify_status(status) when status >= 400 and status < 500, do: :client_error
   def classify_status(status) when status >= 500, do: :server_error
+  def classify_status(_), do: :default
 
   @doc """
   Converts a time value from the native time unit to milliseconds as a float.
