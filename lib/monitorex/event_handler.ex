@@ -94,30 +94,98 @@ defmodule Monitorex.EventHandler do
           config :: keyword()
         ) :: Event.t()
   def handle_finch_event([:finch, :request, :stop], measurements, metadata, _config) do
-    url_str = url_to_string(metadata.url)
-    host = Event.extract_host(metadata.url)
-    uri = URI.parse(url_str)
+    {url_str, method, host, path, req_headers, status} =
+      case metadata do
+        %{request: %{method: m} = req} ->
+          # New Finch telemetry format (Finch.Request struct)
+          url = build_finch_url(req)
+          {url, Event.normalize_method(m), req.host, URI.parse(url).path,
+           redact_headers_from_metadata(req.headers || []),
+           extract_finch_status(metadata)}
 
-    req_headers = redact_headers_from_metadata(metadata[:req_headers])
-    resp_headers = redact_headers_from_metadata(metadata[:resp_headers])
+        %{url: url, method: m, status: s} ->
+          # Legacy Finch telemetry format
+          url_str = url_to_string(url)
+          uri = URI.parse(url_str)
+          {url_str, Event.normalize_method(m), Event.extract_host(url), uri.path,
+           redact_headers_from_metadata(metadata[:req_headers] || []), s}
+      end
+
+    resp_headers = redact_headers_from_metadata(metadata[:resp_headers] || [])
 
     %Event{
       source: :finch,
       direction: :outbound,
-      method: Event.normalize_method(metadata.method),
+      method: method,
       host: host,
-      path: uri.path,
+      path: path,
       full_url: URLRedactor.redact(url_str),
-      status: metadata.status,
-      status_class: Event.classify_status(metadata.status),
+      status: status,
+      status_class: Event.classify_status(status || 0),
       duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: metadata.monotonic_time,
-      dedup_key: {metadata.pid, metadata.monotonic_time},
+      timestamp: metadata.monotonic_time || System.monotonic_time(),
+      dedup_key: {metadata.pid || self(), metadata.monotonic_time || System.monotonic_time()},
       request_headers: req_headers,
       response_headers: resp_headers,
       request_body: maybe_store_body(metadata[:request_body], :request),
       response_body: maybe_store_body(metadata[:response_body], :response)
     }
+  end
+
+  def handle_finch_event([:finch, :request, :exception], measurements, metadata, _config) do
+    case metadata do
+      %{request: request} ->
+        url_str = build_finch_url(request)
+
+        %Event{
+          source: :finch,
+          direction: :outbound,
+          method: Event.normalize_method(request.method),
+          host: request.host,
+          path: URI.parse(url_str).path,
+          full_url: URLRedactor.redact(url_str),
+          status: nil,
+          status_class: :server_error,
+          duration_ms: Event.duration_ms(measurements.duration),
+          timestamp: metadata.monotonic_time || System.monotonic_time(),
+          dedup_key: {metadata.pid || self(), metadata.monotonic_time || System.monotonic_time()},
+          error: inspect(metadata.reason || "Finch exception"),
+          request_headers: redact_headers_from_metadata(request.headers || []),
+          response_headers: nil
+        }
+
+      _ ->
+        %Event{
+          source: :finch,
+          direction: :outbound,
+          method: nil,
+          host: nil,
+          path: nil,
+          full_url: "unknown",
+          status: nil,
+          status_class: :server_error,
+          duration_ms: Event.duration_ms(measurements.duration),
+          timestamp: metadata.monotonic_time || System.monotonic_time(),
+          dedup_key: {metadata.pid || self(), metadata.monotonic_time || System.monotonic_time()},
+          error: "Finch exception",
+          request_headers: [],
+          response_headers: nil
+        }
+    end
+  end
+
+  defp build_finch_url(%{scheme: scheme, host: host, port: port, path: path} = req) do
+    query = if req.query && req.query != "", do: "?#{req.query}", else: ""
+    "#{scheme}://#{host}#{if port != 443 && port != 80, do: ":#{port}"}#{path}#{query}"
+  end
+
+  defp build_finch_url(_), do: nil
+
+  defp extract_finch_status(metadata) do
+    case metadata[:response] do
+      %{status: status} -> status
+      _ -> metadata[:status]
+    end
   end
 
   @doc """
@@ -196,6 +264,7 @@ defmodule Monitorex.EventHandler do
     if Application.get_env(:monitorex, :store_response_body, false), do: body, else: nil
   end
 
+  # Converts a URI struct or string URL to a string
   defp url_to_string(%URI{} = uri), do: URI.to_string(uri)
   defp url_to_string(url) when is_binary(url), do: url
 
