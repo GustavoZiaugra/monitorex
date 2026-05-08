@@ -382,11 +382,12 @@ defmodule Monitorex.Collector do
     prune_set(state.inbound_consumers, now, ttl)
   end
 
-  defp prune_set(table, now, ttl) do
+  defp prune_set(table, now, ttl_ms) do
     to_delete =
       :ets.foldl(
         fn {key, agg}, acc ->
-          if now - agg.last_seen > ttl, do: [key | acc], else: acc
+          elapsed_ms = System.convert_time_unit(now - agg.last_seen, :native, :millisecond)
+          if elapsed_ms > ttl_ms, do: [key | acc], else: acc
         end,
         [],
         table
@@ -465,12 +466,13 @@ defmodule Monitorex.Collector do
   end
 
   defp prune_dedup(dedup_table, now) do
-    dedup_ttl = Application.get_env(:monitorex, :dedup_ttl, :timer.seconds(60))
+    dedup_ttl_ms = Application.get_env(:monitorex, :dedup_ttl, :timer.seconds(60))
 
     to_delete =
       :ets.foldl(
         fn {key, ts}, acc ->
-          if now - ts > dedup_ttl, do: [key | acc], else: acc
+          elapsed_ms = System.convert_time_unit(now - ts, :native, :millisecond)
+          if elapsed_ms > dedup_ttl_ms, do: [key | acc], else: acc
         end,
         [],
         dedup_table
