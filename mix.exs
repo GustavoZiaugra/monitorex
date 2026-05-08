@@ -101,7 +101,7 @@ defmodule Monitorex.MixProject do
         "GitHub" => "https://github.com/GustavoZiaugra/monitorex"
       },
       files:
-        ~w(lib priv/assets priv/static .formatter.exs mix.exs README.md LICENSE.md CHANGELOG.md)
+        ~w(lib priv/static .formatter.exs mix.exs README.md LICENSE.md CHANGELOG.md)
     ]
   end
 end
