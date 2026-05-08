@@ -11,6 +11,7 @@ defmodule Monitorex.EventHandler do
   alias Monitorex.UrlNormalizer
   alias Monitorex.URLRedactor
   alias Monitorex.ConsumerIdentifier
+  alias Monitorex.HeaderRedactor
 
   @doc """
   Handles a Tesla telemetry event (`[:tesla, :request, :stop]`).
@@ -56,7 +57,9 @@ defmodule Monitorex.EventHandler do
       status_class: Event.classify_status(metadata.status),
       duration_ms: Event.duration_ms(measurements.duration),
       timestamp: metadata.monotonic_time,
-      dedup_key: {metadata.pid, metadata.monotonic_time}
+      dedup_key: {metadata.pid, metadata.monotonic_time},
+      request_headers: redact_headers(metadata[:req_headers]),
+      response_headers: redact_headers(metadata[:resp_headers])
     }
   end
 
@@ -101,7 +104,9 @@ defmodule Monitorex.EventHandler do
       status_class: Event.classify_status(metadata.status),
       duration_ms: Event.duration_ms(measurements.duration),
       timestamp: metadata.monotonic_time,
-      dedup_key: {metadata.pid, metadata.monotonic_time}
+      dedup_key: {metadata.pid, metadata.monotonic_time},
+      request_headers: redact_headers(metadata[:req_headers]),
+      response_headers: redact_headers(metadata[:resp_headers])
     }
   end
 
@@ -150,7 +155,9 @@ defmodule Monitorex.EventHandler do
         duration_ms: Event.duration_ms(measurements.duration),
         consumer: ConsumerIdentifier.identify(conn),
         timestamp: System.monotonic_time(),
-        dedup_key: {self(), System.monotonic_time()}
+        dedup_key: {self(), System.monotonic_time()},
+        request_headers: redact_headers(conn.req_headers),
+        response_headers: redact_headers(conn.resp_headers)
       }
     end
   end
@@ -163,5 +170,12 @@ defmodule Monitorex.EventHandler do
   defp accepts_path?(_path, nil), do: true
   defp accepts_path?(path, prefixes) when is_list(prefixes) do
     Enum.any?(prefixes, &String.starts_with?(path, &1))
+  end
+
+  defp redact_headers(nil), do: nil
+
+  defp redact_headers(headers) when is_list(headers) do
+    redacted_list = Application.get_env(:monitorex, :redacted_headers, HeaderRedactor.default_redacted_headers())
+    HeaderRedactor.redact_headers(headers, redacted_list)
   end
 end

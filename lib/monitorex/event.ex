@@ -19,7 +19,11 @@ defmodule Monitorex.Event do
     :consumer,
     :error,
     :timestamp,
-    :dedup_key
+    :dedup_key,
+    :request_headers,
+    :response_headers,
+    :request_body,
+    :response_body
   ]
 
   @type t :: %__MODULE__{
@@ -35,7 +39,11 @@ defmodule Monitorex.Event do
           consumer: String.t() | nil,
           error: String.t() | nil,
           timestamp: integer(),
-          dedup_key: term()
+          dedup_key: term(),
+          request_headers: keyword() | nil,
+          response_headers: keyword() | nil,
+          request_body: binary() | nil,
+          response_body: binary() | nil
         }
 
   @doc """
