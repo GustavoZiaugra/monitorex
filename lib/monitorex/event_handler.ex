@@ -49,6 +49,9 @@ defmodule Monitorex.EventHandler do
     req_headers = redact_headers_from_metadata(metadata[:req_headers])
     resp_headers = redact_headers_from_metadata(metadata[:resp_headers])
 
+    ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
+    pid = metadata[:pid] || self()
+
     %Event{
       source: :tesla,
       direction: :outbound,
@@ -57,10 +60,10 @@ defmodule Monitorex.EventHandler do
       path: path,
       full_url: redacted_url,
       status: metadata.status,
-      status_class: Event.classify_status(metadata.status),
+      status_class: Event.classify_status(metadata.status || 0),
       duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: metadata.monotonic_time,
-      dedup_key: {metadata.pid, metadata.monotonic_time},
+      timestamp: ts,
+      dedup_key: {pid, ts},
       request_headers: req_headers,
       response_headers: resp_headers,
       request_body: maybe_store_body(metadata[:request_body], :request),
@@ -113,6 +116,9 @@ defmodule Monitorex.EventHandler do
 
     resp_headers = redact_headers_from_metadata(metadata[:resp_headers] || [])
 
+    ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
+    pid = metadata[:pid] || self()
+
     %Event{
       source: :finch,
       direction: :outbound,
@@ -123,8 +129,8 @@ defmodule Monitorex.EventHandler do
       status: status,
       status_class: Event.classify_status(status || 0),
       duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: metadata.monotonic_time || System.monotonic_time(),
-      dedup_key: {metadata.pid || self(), metadata.monotonic_time || System.monotonic_time()},
+      timestamp: ts,
+      dedup_key: {pid, ts},
       request_headers: req_headers,
       response_headers: resp_headers,
       request_body: maybe_store_body(metadata[:request_body], :request),
@@ -133,6 +139,9 @@ defmodule Monitorex.EventHandler do
   end
 
   def handle_finch_event([:finch, :request, :exception], measurements, metadata, _config) do
+    ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
+    pid = metadata[:pid] || self()
+
     case metadata do
       %{request: request} ->
         url_str = build_finch_url(request)
@@ -147,9 +156,9 @@ defmodule Monitorex.EventHandler do
           status: nil,
           status_class: :server_error,
           duration_ms: Event.duration_ms(measurements.duration),
-          timestamp: metadata.monotonic_time || System.monotonic_time(),
-          dedup_key: {metadata.pid || self(), metadata.monotonic_time || System.monotonic_time()},
-          error: inspect(metadata.reason || "Finch exception"),
+          timestamp: ts,
+          dedup_key: {pid, ts},
+          error: inspect(metadata[:reason] || metadata[:result] || "Finch exception"),
           request_headers: redact_headers_from_metadata(request.headers || []),
           response_headers: nil
         }
@@ -165,8 +174,8 @@ defmodule Monitorex.EventHandler do
           status: nil,
           status_class: :server_error,
           duration_ms: Event.duration_ms(measurements.duration),
-          timestamp: metadata.monotonic_time || System.monotonic_time(),
-          dedup_key: {metadata.pid || self(), metadata.monotonic_time || System.monotonic_time()},
+          timestamp: ts,
+          dedup_key: {pid, ts},
           error: "Finch exception",
           request_headers: [],
           response_headers: nil
@@ -184,7 +193,11 @@ defmodule Monitorex.EventHandler do
   defp extract_finch_status(metadata) do
     case metadata[:response] do
       %{status: status} -> status
-      _ -> metadata[:status]
+      _ ->
+        case metadata[:result] do
+          {:ok, %{status: status}} -> status
+          _ -> metadata[:status]
+        end
     end
   end
 

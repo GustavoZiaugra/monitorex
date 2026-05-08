@@ -53,7 +53,6 @@ defmodule Monitorex.EventHandlerTest do
 
   describe "duration_ms/1" do
     test "converts native time to milliseconds" do
-      # 1_000_000 native units ≈ 1 ms on a nanosecond clock
       ms = Event.duration_ms(1_000_000)
       assert is_float(ms)
       assert_in_delta ms, 1.0, 0.01
@@ -315,9 +314,9 @@ defmodule Monitorex.EventHandlerTest do
     end
   end
 
-  # ── Finch handler ──
+  # ── Finch handler (legacy format) ──
 
-  describe "handle_finch_event/4" do
+  describe "handle_finch_event/4 — legacy format" do
     test "parses Finch telemetry with URI url into Event" do
       url = %URI{scheme: "https", host: "finch.example.com", path: "/v2/resource"}
       pid = self()
@@ -449,6 +448,135 @@ defmodule Monitorex.EventHandlerTest do
              ]
 
       assert event.response_headers == [{"authorization", "••••redacted••••"}]
+    end
+  end
+
+  # ── Finch handler (new format — Finch.Request struct) ──
+
+  describe "handle_finch_event/4 — new format (Finch.Request)" do
+    test "parses new Finch telemetry format with Finch.Request" do
+      request = %{
+        scheme: :https,
+        host: "jsonplaceholder.typicode.com",
+        port: 443,
+        method: "GET",
+        path: "/posts/1",
+        headers: [{"accept", "application/json"}],
+        body: nil,
+        query: nil,
+        unix_socket: nil,
+        private: %{}
+      }
+
+      metadata = %{
+        name: :test_pool,
+        request: request,
+        result: {:ok, %{status: 200, body: "[]", headers: [{"content-type", "application/json"}]}}
+      }
+
+      measurements = %{duration: 2_500_000}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.source == :finch
+      assert event.direction == :outbound
+      assert event.method == "GET"
+      assert event.host == "jsonplaceholder.typicode.com"
+      assert event.path == "/posts/1"
+      assert event.status == 200
+      assert event.status_class == :success
+      assert event.request_headers == [{"accept", "application/json"}]
+    end
+
+    test "handles new Finch format with monotonic_time in measurements" do
+      request = %{
+        scheme: :https, host: "httpbin.org", port: 443,
+        method: "POST", path: "/anything", headers: [],
+        body: ~S({"key":"value"}), query: nil
+      }
+
+      metadata = %{
+        name: :test_pool,
+        request: request,
+        result: {:ok, %{status: 201, body: "{}", headers: []}}
+      }
+
+      measurements = %{duration: 500_000, monotonic_time: System.monotonic_time()}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.method == "POST"
+      assert event.status == 201
+      assert event.status_class == :success
+      assert is_integer(event.timestamp)
+    end
+
+    test "handles new Finch format exception event" do
+      request = %{
+        scheme: :https, host: "bad.example.com", port: 443,
+        method: "GET", path: "/fail", headers: [], body: nil, query: nil
+      }
+
+      metadata = %{
+        name: :test_pool,
+        request: request,
+        result: {:error, :timeout}
+      }
+
+      measurements = %{duration: 10_000_000}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :exception],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.source == :finch
+      assert event.direction == :outbound
+      assert event.status == nil
+      assert event.status_class == :server_error
+      assert event.error != nil
+    end
+
+    test "new format with query string builds full URL" do
+      request = %{
+        scheme: :https, host: "api.example.com", port: 443,
+        method: "GET", path: "/search", headers: [], body: nil,
+        query: "q=hello&page=1"
+      }
+
+      metadata = %{
+        name: :test_pool,
+        request: request,
+        result: {:ok, %{status: 200, body: "[]", headers: []}}
+      }
+
+      measurements = %{duration: 100_000}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.full_url =~ "q=hello"
+      assert event.full_url =~ "page=1"
     end
   end
 
@@ -623,7 +751,7 @@ defmodule Monitorex.EventHandlerTest do
         |> Map.put(:status, 201)
         |> Map.put(:host, "example.com")
 
-      metadata = %{conn: conn, request_body: "{\"id\":1}", response_body: "{\"ok\":true}"}
+      metadata = %{conn: conn, request_body: ~S({"id":1}), response_body: ~S({"ok":true})}
       measurements = %{duration: 1_000_000}
 
       event =
@@ -634,8 +762,8 @@ defmodule Monitorex.EventHandlerTest do
           []
         )
 
-      assert event.request_body == "{\"id\":1}"
-      assert event.response_body == "{\"ok\":true}"
+      assert event.request_body == ~S({"id":1})
+      assert event.response_body == ~S({"ok":true})
 
       Application.delete_env(:monitorex, :store_request_body)
       Application.delete_env(:monitorex, :store_response_body)
