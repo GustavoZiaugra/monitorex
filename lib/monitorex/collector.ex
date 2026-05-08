@@ -192,6 +192,8 @@ defmodule Monitorex.Collector do
   # ── Event writing ──
 
   defp write_event(%Monitorex.Event{} = event, state) do
+    event = truncate_bodies(event)
+
     # Dedup check for Tesla-over-Finch
     if event.dedup_key && state.dedup do
       case :ets.insert_new(state.dedup, {event.dedup_key, System.monotonic_time()}) do
@@ -319,7 +321,25 @@ defmodule Monitorex.Collector do
   defp error_status?(status) when is_integer(status) and status >= 400, do: true
   defp error_status?(_), do: false
 
-  # ── Timers ──
+  defp truncate_bodies(event) do
+    max = Application.get_env(:monitorex, :max_body_bytes, 10_000)
+
+    %{
+      event
+      | request_body: maybe_truncate(event.request_body, max),
+        response_body: maybe_truncate(event.response_body, max)
+    }
+  end
+
+  defp maybe_truncate(nil, _max), do: nil
+
+  defp maybe_truncate(body, max) when is_binary(body) do
+    if byte_size(body) > max do
+      binary_part(body, 0, max)
+    else
+      body
+    end
+  end
 
   defp schedule_cleanup do
     interval = Application.get_env(:monitorex, :cleanup_interval_ms, @default_cleanup_interval)

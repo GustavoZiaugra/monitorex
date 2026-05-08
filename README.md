@@ -155,6 +155,37 @@ When both Tesla and Finch are used in the same application, the same HTTP reques
 config :monitorex, :clients, [:tesla, :finch]
 ```
 
+### Request/Response Detail Capture
+
+Monitorex can capture HTTP headers and bodies for detailed inspection.
+
+**Header redaction**
+
+Sensitive header values are automatically redacted before storage:
+
+```elixir
+config :monitorex, :redacted_headers, [
+  "authorization",
+  "cookie",
+  "set-cookie",
+  "x-api-key",
+  "x-auth-token"
+]
+```
+
+**Body storage**
+
+Body capture is disabled by default to limit memory usage:
+
+```elixir
+# Store request and/or response bodies on the Event struct
+config :monitorex, :store_request_body, true
+config :monitorex, :store_response_body, true
+
+# Truncate bodies larger than N bytes (default: 10_000)
+config :monitorex, :max_body_bytes, 10_000
+```
+
 ## Pages
 
 | Page | URL | Description |

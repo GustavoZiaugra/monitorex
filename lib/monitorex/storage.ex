@@ -196,6 +196,39 @@ defmodule Monitorex.Storage do
     end)
   end
 
+  @doc """
+  Fetches a specific event from the recent tables by timestamp key.
+
+  Searches both outbound and inbound recent tables and returns the first
+  match, or `nil` if no event is found.
+  """
+  @spec get_event(integer()) :: Event.t() | nil
+  def get_event(timestamp) when is_integer(timestamp) do
+    outbound_exists = :ets.info(:monitorex_outbound_recent) != :undefined
+    inbound_exists = :ets.info(:monitorex_inbound_recent) != :undefined
+
+    cond do
+      outbound_exists ->
+        case :ets.lookup(:monitorex_outbound_recent, timestamp) do
+          [{^timestamp, event}] -> event
+          [] -> if inbound_exists, do: lookup_inbound(timestamp), else: nil
+        end
+
+      inbound_exists ->
+        lookup_inbound(timestamp)
+
+      true ->
+        nil
+    end
+  end
+
+  defp lookup_inbound(timestamp) do
+    case :ets.lookup(:monitorex_inbound_recent, timestamp) do
+      [{^timestamp, event}] -> event
+      [] -> nil
+    end
+  end
+
   # ── Private helpers ──
 
   # Guards against missing ETS tables — returns [] if the table doesn't exist.
