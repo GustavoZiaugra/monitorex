@@ -1,13 +1,15 @@
 defmodule Monitorex.ResolverTest do
   use ExUnit.Case, async: true
 
-  alias Monitorex.Resolver
   alias Monitorex.Resolver.Default
 
   describe "behaviour contract" do
-    test "Default module implements the Resolver behaviour" do
-      assert function_exported?(Default, :resolve_user, 1)
-      assert function_exported?(Default, :resolve_access, 1)
+    test "Default module implements resolve_user/1" do
+      assert is_function(&Default.resolve_user/1)
+    end
+
+    test "Default module implements resolve_access/1" do
+      assert is_function(&Default.resolve_access/1)
     end
 
     test "resolve_user/1 returns a map with id and name" do
@@ -30,10 +32,8 @@ defmodule Monitorex.ResolverTest do
     end
 
     test "Resolver behaviour can be implemented without resolve_refresh" do
-      # Verify that Default is a valid behaviour implementation
-      # by checking it exports the required callbacks
-      assert function_exported?(Default, :resolve_user, 1)
-      assert function_exported?(Default, :resolve_access, 1)
+      assert is_function(&Default.resolve_user/1)
+      assert is_function(&Default.resolve_access/1)
     end
   end
 end
