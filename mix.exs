@@ -94,12 +94,14 @@ defmodule Monitorex.MixProject do
   defp package do
     [
       name: "monitorex",
-      description: "HTTP telemetry dashboard for Elixir/Phoenix — monitor outbound & inbound requests with LiveView",
+      description:
+        "HTTP telemetry dashboard for Elixir/Phoenix — monitor outbound & inbound requests with LiveView",
       licenses: ["MIT"],
       links: %{
         "GitHub" => "https://github.com/GustavoZiaugra/monitorex"
       },
-      files: ~w(lib priv/assets priv/static .formatter.exs mix.exs README.md LICENSE.md CHANGELOG.md)
+      files:
+        ~w(lib priv/assets priv/static .formatter.exs mix.exs README.md LICENSE.md CHANGELOG.md)
     ]
   end
 end

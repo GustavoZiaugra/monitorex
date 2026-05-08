@@ -78,9 +78,20 @@ defmodule Monitorex.StorageTest do
     test "returns host aggregates sorted by requests descending" do
       create_tables()
 
-      :ets.insert(@outbound_hosts, {"host-a", %{requests: 5, errors: 1, total_duration: 250.0, last_seen: 1000}})
-      :ets.insert(@outbound_hosts, {"host-b", %{requests: 10, errors: 2, total_duration: 500.0, last_seen: 2000}})
-      :ets.insert(@outbound_hosts, {"host-c", %{requests: 3, errors: 0, total_duration: 90.0, last_seen: 3000}})
+      :ets.insert(
+        @outbound_hosts,
+        {"host-a", %{requests: 5, errors: 1, total_duration: 250.0, last_seen: 1000}}
+      )
+
+      :ets.insert(
+        @outbound_hosts,
+        {"host-b", %{requests: 10, errors: 2, total_duration: 500.0, last_seen: 2000}}
+      )
+
+      :ets.insert(
+        @outbound_hosts,
+        {"host-c", %{requests: 3, errors: 0, total_duration: 90.0, last_seen: 3000}}
+      )
 
       result = Storage.list_hosts()
       assert length(result) == 3
@@ -90,7 +101,10 @@ defmodule Monitorex.StorageTest do
     test "computes avg_latency and error_rate" do
       create_tables()
 
-      :ets.insert(@outbound_hosts, {"host-a", %{requests: 10, errors: 2, total_duration: 500.0, last_seen: 1000}})
+      :ets.insert(
+        @outbound_hosts,
+        {"host-a", %{requests: 10, errors: 2, total_duration: 500.0, last_seen: 1000}}
+      )
 
       [entry] = Storage.list_hosts()
       assert entry.host == "host-a"
@@ -104,7 +118,10 @@ defmodule Monitorex.StorageTest do
     test "handles zero requests gracefully" do
       create_tables()
 
-      :ets.insert(@outbound_hosts, {"host-a", %{requests: 0, errors: 0, total_duration: 0.0, last_seen: 1000}})
+      :ets.insert(
+        @outbound_hosts,
+        {"host-a", %{requests: 0, errors: 0, total_duration: 0.0, last_seen: 1000}}
+      )
 
       [entry] = Storage.list_hosts()
       assert entry.avg_latency == 0.0
@@ -114,7 +131,10 @@ defmodule Monitorex.StorageTest do
     test "computes percentiles from duration samples" do
       create_tables()
 
-      :ets.insert(@outbound_hosts, {"host-a", %{requests: 5, errors: 0, total_duration: 150.0, last_seen: 1000}})
+      :ets.insert(
+        @outbound_hosts,
+        {"host-a", %{requests: 5, errors: 0, total_duration: 150.0, last_seen: 1000}}
+      )
 
       # Insert duration samples
       Enum.each([10.0, 20.0, 30.0, 40.0, 50.0], fn ms ->
@@ -133,7 +153,10 @@ defmodule Monitorex.StorageTest do
     test "returns nil percentiles when no duration samples" do
       create_tables()
 
-      :ets.insert(@outbound_hosts, {"host-a", %{requests: 5, errors: 0, total_duration: 150.0, last_seen: 1000}})
+      :ets.insert(
+        @outbound_hosts,
+        {"host-a", %{requests: 5, errors: 0, total_duration: 150.0, last_seen: 1000}}
+      )
 
       [entry] = Storage.list_hosts()
       assert entry.p50 == nil
@@ -147,7 +170,10 @@ defmodule Monitorex.StorageTest do
       # Delete the duration samples table
       :ets.delete(@outbound_duration_samples)
 
-      :ets.insert(@outbound_hosts, {"host-a", %{requests: 5, errors: 0, total_duration: 150.0, last_seen: 1000}})
+      :ets.insert(
+        @outbound_hosts,
+        {"host-a", %{requests: 5, errors: 0, total_duration: 150.0, last_seen: 1000}}
+      )
 
       [entry] = Storage.list_hosts()
       assert entry.p50 == nil
@@ -166,9 +192,20 @@ defmodule Monitorex.StorageTest do
     test "returns endpoints for matching host only" do
       create_tables()
 
-      :ets.insert(@outbound_endpoints, {{"host-a", "/users"}, %{requests: 5, errors: 1, total_duration: 250.0, last_seen: 1000}})
-      :ets.insert(@outbound_endpoints, {{"host-a", "/posts"}, %{requests: 3, errors: 0, total_duration: 90.0, last_seen: 2000}})
-      :ets.insert(@outbound_endpoints, {{"host-b", "/other"}, %{requests: 10, errors: 2, total_duration: 500.0, last_seen: 3000}})
+      :ets.insert(
+        @outbound_endpoints,
+        {{"host-a", "/users"}, %{requests: 5, errors: 1, total_duration: 250.0, last_seen: 1000}}
+      )
+
+      :ets.insert(
+        @outbound_endpoints,
+        {{"host-a", "/posts"}, %{requests: 3, errors: 0, total_duration: 90.0, last_seen: 2000}}
+      )
+
+      :ets.insert(
+        @outbound_endpoints,
+        {{"host-b", "/other"}, %{requests: 10, errors: 2, total_duration: 500.0, last_seen: 3000}}
+      )
 
       result = Storage.list_endpoints_for_host("host-a")
       assert length(result) == 2
@@ -180,7 +217,10 @@ defmodule Monitorex.StorageTest do
     test "computes avg_latency" do
       create_tables()
 
-      :ets.insert(@outbound_endpoints, {{"host-a", "/path"}, %{requests: 10, errors: 2, total_duration: 500.0, last_seen: 1000}})
+      :ets.insert(
+        @outbound_endpoints,
+        {{"host-a", "/path"}, %{requests: 10, errors: 2, total_duration: 500.0, last_seen: 1000}}
+      )
 
       [entry] = Storage.list_endpoints_for_host("host-a")
       assert entry.path == "/path"
@@ -194,7 +234,10 @@ defmodule Monitorex.StorageTest do
     test "returns empty list for host with no endpoints" do
       create_tables()
 
-      :ets.insert(@outbound_endpoints, {{"host-b", "/path"}, %{requests: 1, errors: 0, total_duration: 10.0, last_seen: 1000}})
+      :ets.insert(
+        @outbound_endpoints,
+        {{"host-b", "/path"}, %{requests: 1, errors: 0, total_duration: 10.0, last_seen: 1000}}
+      )
 
       assert Storage.list_endpoints_for_host("host-a") == []
     end
@@ -210,8 +253,27 @@ defmodule Monitorex.StorageTest do
     test "returns recent outbound events in reverse chronological order" do
       create_tables()
 
-      e1 = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/users", status: 200, status_class: :success, duration_ms: 10.0}
-      e2 = %Event{source: :tesla, direction: :outbound, method: "POST", host: "host-a", path: "/posts", status: 201, status_class: :success, duration_ms: 20.0}
+      e1 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-a",
+        path: "/users",
+        status: 200,
+        status_class: :success,
+        duration_ms: 10.0
+      }
+
+      e2 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "POST",
+        host: "host-a",
+        path: "/posts",
+        status: 201,
+        status_class: :success,
+        duration_ms: 20.0
+      }
 
       insert_outbound_recent(1, e1)
       insert_outbound_recent(2, e2)
@@ -226,7 +288,16 @@ defmodule Monitorex.StorageTest do
       create_tables()
 
       for i <- 1..3 do
-        e = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/#{i}", status: 200, status_class: :success}
+        e = %Event{
+          source: :tesla,
+          direction: :outbound,
+          method: "GET",
+          host: "host-a",
+          path: "/#{i}",
+          status: 200,
+          status_class: :success
+        }
+
         insert_outbound_recent(i, e)
       end
 
@@ -237,7 +308,16 @@ defmodule Monitorex.StorageTest do
       create_tables()
 
       for i <- 1..60 do
-        e = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/#{i}", status: 200, status_class: :success}
+        e = %Event{
+          source: :tesla,
+          direction: :outbound,
+          method: "GET",
+          host: "host-a",
+          path: "/#{i}",
+          status: 200,
+          status_class: :success
+        }
+
         insert_outbound_recent(i, e)
       end
 
@@ -247,7 +327,16 @@ defmodule Monitorex.StorageTest do
     test "returns all events when limit exceeds count" do
       create_tables()
 
-      e = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/1", status: 200, status_class: :success}
+      e = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-a",
+        path: "/1",
+        status: 200,
+        status_class: :success
+      }
+
       insert_outbound_recent(1, e)
 
       assert length(Storage.list_recent_outbound(limit: 100)) == 1
@@ -256,8 +345,25 @@ defmodule Monitorex.StorageTest do
     test "filters by status_class" do
       create_tables()
 
-      e1 = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/ok", status: 200, status_class: :success}
-      e2 = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/err", status: 500, status_class: :server_error}
+      e1 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-a",
+        path: "/ok",
+        status: 200,
+        status_class: :success
+      }
+
+      e2 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-a",
+        path: "/err",
+        status: 500,
+        status_class: :server_error
+      }
 
       insert_outbound_recent(1, e1)
       insert_outbound_recent(2, e2)
@@ -270,8 +376,25 @@ defmodule Monitorex.StorageTest do
     test "filters by host exact match" do
       create_tables()
 
-      e1 = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/a", status: 200, status_class: :success}
-      e2 = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-b", path: "/b", status: 200, status_class: :success}
+      e1 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-a",
+        path: "/a",
+        status: 200,
+        status_class: :success
+      }
+
+      e2 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-b",
+        path: "/b",
+        status: 200,
+        status_class: :success
+      }
 
       insert_outbound_recent(1, e1)
       insert_outbound_recent(2, e2)
@@ -284,9 +407,35 @@ defmodule Monitorex.StorageTest do
     test "filters by both status_class and host" do
       create_tables()
 
-      e1 = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/a", status: 500, status_class: :server_error}
-      e2 = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-b", path: "/b", status: 500, status_class: :server_error}
-      e3 = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/c", status: 200, status_class: :success}
+      e1 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-a",
+        path: "/a",
+        status: 500,
+        status_class: :server_error
+      }
+
+      e2 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-b",
+        path: "/b",
+        status: 500,
+        status_class: :server_error
+      }
+
+      e3 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-a",
+        path: "/c",
+        status: 200,
+        status_class: :success
+      }
 
       insert_outbound_recent(1, e1)
       insert_outbound_recent(2, e2)
@@ -300,8 +449,25 @@ defmodule Monitorex.StorageTest do
     test "nil status_class filter means no filter" do
       create_tables()
 
-      e1 = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/ok", status: 200, status_class: :success}
-      e2 = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/err", status: 500, status_class: :server_error}
+      e1 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-a",
+        path: "/ok",
+        status: 200,
+        status_class: :success
+      }
+
+      e2 = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-a",
+        path: "/err",
+        status: 500,
+        status_class: :server_error
+      }
 
       insert_outbound_recent(1, e1)
       insert_outbound_recent(2, e2)
@@ -321,8 +487,15 @@ defmodule Monitorex.StorageTest do
     test "returns route aggregates with parsed method and path" do
       create_tables()
 
-      :ets.insert(@inbound_routes, {"GET:/api/users", %{requests: 10, errors: 1, total_duration: 500.0, last_seen: 1000}})
-      :ets.insert(@inbound_routes, {"POST:/api/orders", %{requests: 5, errors: 0, total_duration: 250.0, last_seen: 2000}})
+      :ets.insert(
+        @inbound_routes,
+        {"GET:/api/users", %{requests: 10, errors: 1, total_duration: 500.0, last_seen: 1000}}
+      )
+
+      :ets.insert(
+        @inbound_routes,
+        {"POST:/api/orders", %{requests: 5, errors: 0, total_duration: 250.0, last_seen: 2000}}
+      )
 
       result = Storage.list_routes()
       assert length(result) == 2
@@ -334,8 +507,15 @@ defmodule Monitorex.StorageTest do
     test "sorts by requests descending" do
       create_tables()
 
-      :ets.insert(@inbound_routes, {"GET:/low", %{requests: 3, errors: 0, total_duration: 30.0, last_seen: 1000}})
-      :ets.insert(@inbound_routes, {"GET:/high", %{requests: 20, errors: 2, total_duration: 400.0, last_seen: 2000}})
+      :ets.insert(
+        @inbound_routes,
+        {"GET:/low", %{requests: 3, errors: 0, total_duration: 30.0, last_seen: 1000}}
+      )
+
+      :ets.insert(
+        @inbound_routes,
+        {"GET:/high", %{requests: 20, errors: 2, total_duration: 400.0, last_seen: 2000}}
+      )
 
       result = Storage.list_routes()
       assert Enum.map(result, & &1.path) == ["/high", "/low"]
@@ -344,7 +524,10 @@ defmodule Monitorex.StorageTest do
     test "computes error_rate, avg_latency, and percentiles" do
       create_tables()
 
-      :ets.insert(@inbound_routes, {"GET:/api/users", %{requests: 10, errors: 2, total_duration: 500.0, last_seen: 1000}})
+      :ets.insert(
+        @inbound_routes,
+        {"GET:/api/users", %{requests: 10, errors: 2, total_duration: 500.0, last_seen: 1000}}
+      )
 
       # Duration samples for percentiles
       Enum.each([10.0, 20.0, 30.0, 40.0, 50.0], fn ms ->
@@ -366,7 +549,10 @@ defmodule Monitorex.StorageTest do
     test "returns nil percentiles when no duration samples" do
       create_tables()
 
-      :ets.insert(@inbound_routes, {"GET:/api/users", %{requests: 5, errors: 0, total_duration: 150.0, last_seen: 1000}})
+      :ets.insert(
+        @inbound_routes,
+        {"GET:/api/users", %{requests: 5, errors: 0, total_duration: 150.0, last_seen: 1000}}
+      )
 
       [entry] = Storage.list_routes()
       assert entry.p50 == nil
@@ -385,8 +571,15 @@ defmodule Monitorex.StorageTest do
     test "returns consumer aggregates sorted by requests descending" do
       create_tables()
 
-      :ets.insert(@inbound_consumers, {"alice", %{requests: 10, errors: 1, total_duration: 500.0, last_seen: 1000}})
-      :ets.insert(@inbound_consumers, {"bob", %{requests: 20, errors: 2, total_duration: 1000.0, last_seen: 2000}})
+      :ets.insert(
+        @inbound_consumers,
+        {"alice", %{requests: 10, errors: 1, total_duration: 500.0, last_seen: 1000}}
+      )
+
+      :ets.insert(
+        @inbound_consumers,
+        {"bob", %{requests: 20, errors: 2, total_duration: 1000.0, last_seen: 2000}}
+      )
 
       result = Storage.list_consumers()
       assert length(result) == 2
@@ -396,7 +589,10 @@ defmodule Monitorex.StorageTest do
     test "includes all aggregate fields" do
       create_tables()
 
-      :ets.insert(@inbound_consumers, {"alice", %{requests: 10, errors: 1, total_duration: 500.0, last_seen: 1000}})
+      :ets.insert(
+        @inbound_consumers,
+        {"alice", %{requests: 10, errors: 1, total_duration: 500.0, last_seen: 1000}}
+      )
 
       [entry] = Storage.list_consumers()
       assert entry.consumer == "alice"
@@ -417,8 +613,27 @@ defmodule Monitorex.StorageTest do
     test "returns recent inbound events in reverse chronological order" do
       create_tables()
 
-      e1 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 200, status_class: :success, consumer: "alice", duration_ms: 10.0}
-      e2 = %Event{source: :phoenix, direction: :inbound, method: "POST", path: "/api/orders", status: 201, status_class: :success, consumer: "bob", duration_ms: 20.0}
+      e1 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 200,
+        status_class: :success,
+        consumer: "alice",
+        duration_ms: 10.0
+      }
+
+      e2 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "POST",
+        path: "/api/orders",
+        status: 201,
+        status_class: :success,
+        consumer: "bob",
+        duration_ms: 20.0
+      }
 
       insert_inbound_recent(1, e1)
       insert_inbound_recent(2, e2)
@@ -433,7 +648,16 @@ defmodule Monitorex.StorageTest do
       create_tables()
 
       for i <- 1..3 do
-        e = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/#{i}", status: 200, status_class: :success, consumer: "tester"}
+        e = %Event{
+          source: :phoenix,
+          direction: :inbound,
+          method: "GET",
+          path: "/#{i}",
+          status: 200,
+          status_class: :success,
+          consumer: "tester"
+        }
+
         insert_inbound_recent(i, e)
       end
 
@@ -443,8 +667,25 @@ defmodule Monitorex.StorageTest do
     test "filters by consumer" do
       create_tables()
 
-      e1 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/a", status: 200, status_class: :success, consumer: "alice"}
-      e2 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/b", status: 200, status_class: :success, consumer: "bob"}
+      e1 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/a",
+        status: 200,
+        status_class: :success,
+        consumer: "alice"
+      }
+
+      e2 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/b",
+        status: 200,
+        status_class: :success,
+        consumer: "bob"
+      }
 
       insert_inbound_recent(1, e1)
       insert_inbound_recent(2, e2)
@@ -457,8 +698,25 @@ defmodule Monitorex.StorageTest do
     test "filters by route" do
       create_tables()
 
-      e1 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 200, status_class: :success, consumer: "alice"}
-      e2 = %Event{source: :phoenix, direction: :inbound, method: "POST", path: "/api/orders", status: 201, status_class: :success, consumer: "bob"}
+      e1 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 200,
+        status_class: :success,
+        consumer: "alice"
+      }
+
+      e2 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "POST",
+        path: "/api/orders",
+        status: 201,
+        status_class: :success,
+        consumer: "bob"
+      }
 
       insert_inbound_recent(1, e1)
       insert_inbound_recent(2, e2)
@@ -471,9 +729,35 @@ defmodule Monitorex.StorageTest do
     test "filters by both consumer and route" do
       create_tables()
 
-      e1 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 200, status_class: :success, consumer: "alice"}
-      e2 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 200, status_class: :success, consumer: "bob"}
-      e3 = %Event{source: :phoenix, direction: :inbound, method: "POST", path: "/api/orders", status: 201, status_class: :success, consumer: "alice"}
+      e1 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 200,
+        status_class: :success,
+        consumer: "alice"
+      }
+
+      e2 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 200,
+        status_class: :success,
+        consumer: "bob"
+      }
+
+      e3 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "POST",
+        path: "/api/orders",
+        status: 201,
+        status_class: :success,
+        consumer: "alice"
+      }
 
       insert_inbound_recent(1, e1)
       insert_inbound_recent(2, e2)
@@ -496,10 +780,53 @@ defmodule Monitorex.StorageTest do
     test "returns consumer breakdown for a route grouped by consumer" do
       create_tables()
 
-      e1 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 200, status_class: :success, consumer: "alice", duration_ms: 10.0, timestamp: 100}
-      e2 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 200, status_class: :success, consumer: "bob", duration_ms: 20.0, timestamp: 200}
-      e3 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 500, status_class: :server_error, consumer: "alice", duration_ms: 30.0, timestamp: 300}
-      e4 = %Event{source: :phoenix, direction: :inbound, method: "POST", path: "/api/orders", status: 201, status_class: :success, consumer: "alice", duration_ms: 5.0, timestamp: 400}
+      e1 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 200,
+        status_class: :success,
+        consumer: "alice",
+        duration_ms: 10.0,
+        timestamp: 100
+      }
+
+      e2 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 200,
+        status_class: :success,
+        consumer: "bob",
+        duration_ms: 20.0,
+        timestamp: 200
+      }
+
+      e3 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 500,
+        status_class: :server_error,
+        consumer: "alice",
+        duration_ms: 30.0,
+        timestamp: 300
+      }
+
+      e4 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "POST",
+        path: "/api/orders",
+        status: 201,
+        status_class: :success,
+        consumer: "alice",
+        duration_ms: 5.0,
+        timestamp: 400
+      }
 
       insert_inbound_recent(1, e1)
       insert_inbound_recent(2, e2)
@@ -529,9 +856,41 @@ defmodule Monitorex.StorageTest do
     test "sorts by requests descending" do
       create_tables()
 
-      e1 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 200, status_class: :success, consumer: "bob", duration_ms: 10.0, timestamp: 100}
-      e2 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 200, status_class: :success, consumer: "alice", duration_ms: 10.0, timestamp: 200}
-      e3 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 200, status_class: :success, consumer: "alice", duration_ms: 10.0, timestamp: 300}
+      e1 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 200,
+        status_class: :success,
+        consumer: "bob",
+        duration_ms: 10.0,
+        timestamp: 100
+      }
+
+      e2 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 200,
+        status_class: :success,
+        consumer: "alice",
+        duration_ms: 10.0,
+        timestamp: 200
+      }
+
+      e3 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 200,
+        status_class: :success,
+        consumer: "alice",
+        duration_ms: 10.0,
+        timestamp: 300
+      }
 
       insert_inbound_recent(1, e1)
       insert_inbound_recent(2, e2)
@@ -546,7 +905,17 @@ defmodule Monitorex.StorageTest do
     test "ignores events with nil consumer" do
       create_tables()
 
-      e1 = %Event{source: :phoenix, direction: :inbound, method: "GET", path: "/api/users", status: 200, status_class: :success, consumer: nil, duration_ms: 10.0, timestamp: 100}
+      e1 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "GET",
+        path: "/api/users",
+        status: 200,
+        status_class: :success,
+        consumer: nil,
+        duration_ms: 10.0,
+        timestamp: 100
+      }
 
       insert_inbound_recent(1, e1)
 
@@ -556,7 +925,17 @@ defmodule Monitorex.StorageTest do
     test "ignores events from other routes" do
       create_tables()
 
-      e1 = %Event{source: :phoenix, direction: :inbound, method: "POST", path: "/api/orders", status: 200, status_class: :success, consumer: "alice", duration_ms: 10.0, timestamp: 100}
+      e1 = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "POST",
+        path: "/api/orders",
+        status: 200,
+        status_class: :success,
+        consumer: "alice",
+        duration_ms: 10.0,
+        timestamp: 100
+      }
 
       insert_inbound_recent(1, e1)
 
@@ -599,7 +978,17 @@ defmodule Monitorex.StorageTest do
     test "fetches outbound event by timestamp" do
       create_tables()
 
-      event = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/users", status: 200, status_class: :success, timestamp: 123}
+      event = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "host-a",
+        path: "/users",
+        status: 200,
+        status_class: :success,
+        timestamp: 123
+      }
+
       :ets.insert(:monitorex_outbound_recent, {123, event})
 
       assert Storage.get_event(123) == event
@@ -608,7 +997,16 @@ defmodule Monitorex.StorageTest do
     test "fetches inbound event by timestamp" do
       create_tables()
 
-      event = %Event{source: :phoenix, direction: :inbound, method: "POST", path: "/api/orders", status: 201, status_class: :success, timestamp: 456}
+      event = %Event{
+        source: :phoenix,
+        direction: :inbound,
+        method: "POST",
+        path: "/api/orders",
+        status: 201,
+        status_class: :success,
+        timestamp: 456
+      }
+
       :ets.insert(:monitorex_inbound_recent, {456, event})
 
       assert Storage.get_event(456) == event

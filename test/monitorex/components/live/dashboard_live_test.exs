@@ -22,11 +22,13 @@ defmodule Monitorex.DashboardLiveTest do
     end
 
     test "returns host for host page with host param" do
-      assert DashboardLive.resolve_page(%{"page" => "host", "host" => "api.example.com"}) == "host"
+      assert DashboardLive.resolve_page(%{"page" => "host", "host" => "api.example.com"}) ==
+               "host"
     end
 
     test "returns route for route page with host param as route key" do
-      assert DashboardLive.resolve_page(%{"page" => "route", "host" => "POST:/api/users"}) == "route"
+      assert DashboardLive.resolve_page(%{"page" => "route", "host" => "POST:/api/users"}) ==
+               "route"
     end
   end
 
@@ -44,17 +46,29 @@ defmodule Monitorex.DashboardLiveTest do
 
   describe "build_page_assigns/2" do
     test "drops page key and converts remaining keys to atoms" do
-      assigns = DashboardLive.build_page_assigns(%{"page" => "outbound", "node" => "node1"}, "outbound")
+      assigns =
+        DashboardLive.build_page_assigns(%{"page" => "outbound", "node" => "node1"}, "outbound")
+
       assert assigns == %{node: "node1"}
     end
 
     test "remaps host to route for route page" do
-      assigns = DashboardLive.build_page_assigns(%{"page" => "route", "host" => "POST:/api/users"}, "route")
+      assigns =
+        DashboardLive.build_page_assigns(
+          %{"page" => "route", "host" => "POST:/api/users"},
+          "route"
+        )
+
       assert assigns == %{route: "POST:/api/users"}
     end
 
     test "passes through non-route params unchanged" do
-      assigns = DashboardLive.build_page_assigns(%{"page" => "inbound_recent", "consumer" => "myapp"}, "inbound_recent")
+      assigns =
+        DashboardLive.build_page_assigns(
+          %{"page" => "inbound_recent", "consumer" => "myapp"},
+          "inbound_recent"
+        )
+
       assert assigns == %{consumer: "myapp"}
     end
   end
@@ -85,7 +99,9 @@ defmodule Monitorex.DashboardLiveTest do
 
     test "assigns host detail page when page=host and host param present" do
       socket = %Phoenix.LiveView.Socket{}
-      {:ok, socket} = DashboardLive.mount(%{"page" => "host", "host" => "api.example.com"}, %{}, socket)
+
+      {:ok, socket} =
+        DashboardLive.mount(%{"page" => "host", "host" => "api.example.com"}, %{}, socket)
 
       assert socket.assigns.page_name == "host"
       assert socket.assigns.page == Live.HostDetailPage
@@ -128,6 +144,7 @@ defmodule Monitorex.DashboardLiveTest do
 
       Enum.each(routes, fn {params, expected_module} ->
         {:noreply, socket} = DashboardLive.handle_params(params, "/", socket)
+
         assert socket.assigns.page == expected_module,
                "expected #{inspect(params)} to route to #{inspect(expected_module)}, got #{inspect(socket.assigns.page)}"
       end)

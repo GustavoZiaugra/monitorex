@@ -50,18 +50,18 @@ defmodule Monitorex.Router do
       import Phoenix.LiveView.Router
 
       # Health check endpoint (no auth)
-      get unquote(health_path), Monitorex.HealthPlug, :call
+      get(unquote(health_path), Monitorex.HealthPlug, :call)
 
       # Register asset routes
-      get unquote(assets_path <> "/*path"), Monitorex.Assets, :call
+      get(unquote(assets_path <> "/*path"), Monitorex.Assets, :call)
 
       # Define the live session with root layout and authentication
       live_session :monitorex_dashboard,
         root_layout: unquote(layout),
         on_mount: unquote(on_mount) do
-        live "/", unquote(live_view), :index
-        live "/:page", unquote(live_view), :index
-        live "/:page/:host", unquote(live_view), :index
+        live("/", unquote(live_view), :index)
+        live("/:page", unquote(live_view), :index)
+        live("/:page/:host", unquote(live_view), :index)
       end
     end
   end

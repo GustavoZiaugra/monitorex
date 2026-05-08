@@ -7,10 +7,11 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
 
   describe "update/2" do
     test "renders page header and empty state when no events" do
-      html = render_component(TimelinePage, %{
-        id: "timeline-test",
-        direction: "outbound"
-      })
+      html =
+        render_component(TimelinePage, %{
+          id: "timeline-test",
+          direction: "outbound"
+        })
 
       assert html =~ "Request Timeline"
       assert html =~ "Real-time request/response inspector"
@@ -20,10 +21,11 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
     end
 
     test "renders inbound tab selected when direction=inbound" do
-      html = render_component(TimelinePage, %{
-        id: "timeline-test",
-        direction: "inbound"
-      })
+      html =
+        render_component(TimelinePage, %{
+          id: "timeline-test",
+          direction: "inbound"
+        })
 
       assert html =~ "No recent inbound events"
     end
@@ -38,7 +40,9 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
         }
       }
 
-      assert {:noreply, _socket} = TimelinePage.handle_event("select_direction", %{"direction" => "inbound"}, socket)
+      assert {:noreply, _socket} =
+               TimelinePage.handle_event("select_direction", %{"direction" => "inbound"}, socket)
+
       assert_received {:navigate, url}
       assert url =~ "direction=inbound"
     end
@@ -51,7 +55,9 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
         }
       }
 
-      assert {:noreply, _socket} = TimelinePage.handle_event("select_event", %{"id" => "12345"}, socket)
+      assert {:noreply, _socket} =
+               TimelinePage.handle_event("select_event", %{"id" => "12345"}, socket)
+
       assert_received {:navigate, url}
       assert url =~ "selected=12345"
     end

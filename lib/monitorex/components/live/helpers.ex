@@ -12,6 +12,7 @@ defmodule Monitorex.Components.Live.Helpers do
   - `"Xs ago"` for timestamps that fail conversion (legacy format fallback)
   """
   def format_timestamp(nil), do: "-"
+
   def format_timestamp(ts) when is_integer(ts) do
     try do
       ts
@@ -24,6 +25,7 @@ defmodule Monitorex.Components.Live.Helpers do
       _ -> "#{trunc(ts / 1_000_000)}s ago"
     end
   end
+
   def format_timestamp(_), do: "-"
 
   @doc """
@@ -34,6 +36,7 @@ defmodule Monitorex.Components.Live.Helpers do
   """
   def status_chip_class(value, current) do
     base = "filter-chip"
+
     if value == current do
       case value do
         "2xx" -> "#{base} active-2xx"

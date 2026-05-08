@@ -19,8 +19,13 @@ defmodule Monitorex.Cluster do
   # ── Configuration ──
 
   defp cluster_mode, do: Application.get_env(:monitorex, :cluster_mode, @default_cluster_mode)
-  defp rpc_timeout, do: Application.get_env(:monitorex, :cluster_rpc_timeout, @default_cluster_rpc_timeout)
-  defp max_concurrency, do: Application.get_env(:monitorex, :cluster_max_concurrency, @default_cluster_max_concurrency)
+
+  defp rpc_timeout,
+    do: Application.get_env(:monitorex, :cluster_rpc_timeout, @default_cluster_rpc_timeout)
+
+  defp max_concurrency,
+    do:
+      Application.get_env(:monitorex, :cluster_max_concurrency, @default_cluster_max_concurrency)
 
   # ── connected_nodes/0 ──
 

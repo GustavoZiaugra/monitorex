@@ -39,7 +39,10 @@ defmodule Monitorex.Health do
           rescue
             _ -> 0
           end
-        elapsed = if start_time > 0, do: div(System.monotonic_time() - start_time, 1_000_000_000), else: 0
+
+        elapsed =
+          if start_time > 0, do: div(System.monotonic_time() - start_time, 1_000_000_000), else: 0
+
         {msg_q, elapsed}
       else
         {0, 0}
@@ -62,7 +65,12 @@ defmodule Monitorex.Health do
   @doc false
   def ets_table_sizes do
     Map.new(@tables, fn table ->
-      size = case :ets.info(table, :size) do; n when is_integer(n) -> n; _ -> 0; end
+      size =
+        case :ets.info(table, :size) do
+          n when is_integer(n) -> n
+          _ -> 0
+        end
+
       {table, size}
     end)
   end

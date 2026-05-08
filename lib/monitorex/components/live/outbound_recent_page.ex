@@ -25,17 +25,19 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
     page_size = assigns[:page_size] || @page_size
     offset = (page - 1) * page_size
 
-    events = ClusterPage.list_recent_outbound(
-      host: host,
-      status_class: status_class,
-      limit: page_size,
-      offset: offset
-    )
+    events =
+      ClusterPage.list_recent_outbound(
+        host: host,
+        status_class: status_class,
+        limit: page_size,
+        offset: offset
+      )
 
-    total_count = ClusterPage.count_recent_outbound(
-      host: host,
-      status_class: status_class
-    )
+    total_count =
+      ClusterPage.count_recent_outbound(
+        host: host,
+        status_class: status_class
+      )
 
     rows = Enum.map(events, &build_row/1)
     total_pages = max(1, ceil(total_count / page_size))
@@ -138,16 +140,21 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
   end
 
   defp base_filter_url(socket, status_class_override) do
-    sc = if status_class_override != nil, do: status_class_override, else: socket.assigns.filter_status_class
+    sc =
+      if status_class_override != nil,
+        do: status_class_override,
+        else: socket.assigns.filter_status_class
+
     host = socket.assigns.filter_host
 
-    params = %{
-      "page" => "outbound_recent"
-    }
-    |> then(fn p -> if sc != "", do: Map.put(p, "status_class", sc), else: p end)
-    |> then(fn p -> if host != "", do: Map.put(p, "host", host), else: p end)
-    |> Enum.map(fn {k, v} -> "#{k}=#{URI.encode(v)}" end)
-    |> Enum.join("&")
+    params =
+      %{
+        "page" => "outbound_recent"
+      }
+      |> then(fn p -> if sc != "", do: Map.put(p, "status_class", sc), else: p end)
+      |> then(fn p -> if host != "", do: Map.put(p, "host", host), else: p end)
+      |> Enum.map(fn {k, v} -> "#{k}=#{URI.encode(v)}" end)
+      |> Enum.join("&")
 
     "?" <> params
   end
@@ -162,7 +169,6 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
     }
   end
 
-
   defp truncate_url(url) when is_binary(url) do
     if String.length(url) > 60 do
       String.slice(url, 0, 57) <> "..."
@@ -170,6 +176,7 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
       url
     end
   end
+
   defp truncate_url(_), do: "-"
 
   defp format_duration(nil), do: "-"
@@ -177,6 +184,7 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
   defp format_duration(_), do: "-"
 
   defp parse_status_class(nil), do: nil
+
   defp parse_status_class(str) when is_binary(str) do
     case str do
       "2xx" -> :success
@@ -186,5 +194,6 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
       _ -> nil
     end
   end
+
   defp parse_status_class(atom) when is_atom(atom), do: atom
 end

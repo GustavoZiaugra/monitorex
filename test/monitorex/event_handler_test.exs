@@ -209,6 +209,7 @@ defmodule Monitorex.EventHandlerTest do
         )
 
       assert String.contains?(event.full_url, "page=1")
+
       assert String.contains?(event.full_url, "key=%5BREDACTED%5D") or
                String.contains?(event.full_url, "key=[REDACTED]")
     end
@@ -496,9 +497,14 @@ defmodule Monitorex.EventHandlerTest do
 
     test "handles new Finch format with monotonic_time in measurements" do
       request = %{
-        scheme: :https, host: "httpbin.org", port: 443,
-        method: "POST", path: "/anything", headers: [],
-        body: ~S({"key":"value"}), query: nil
+        scheme: :https,
+        host: "httpbin.org",
+        port: 443,
+        method: "POST",
+        path: "/anything",
+        headers: [],
+        body: ~S({"key":"value"}),
+        query: nil
       }
 
       metadata = %{
@@ -525,8 +531,14 @@ defmodule Monitorex.EventHandlerTest do
 
     test "handles new Finch format exception event" do
       request = %{
-        scheme: :https, host: "bad.example.com", port: 443,
-        method: "GET", path: "/fail", headers: [], body: nil, query: nil
+        scheme: :https,
+        host: "bad.example.com",
+        port: 443,
+        method: "GET",
+        path: "/fail",
+        headers: [],
+        body: nil,
+        query: nil
       }
 
       metadata = %{
@@ -554,8 +566,13 @@ defmodule Monitorex.EventHandlerTest do
 
     test "new format with query string builds full URL" do
       request = %{
-        scheme: :https, host: "api.example.com", port: 443,
-        method: "GET", path: "/search", headers: [], body: nil,
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/search",
+        headers: [],
+        body: nil,
         query: "q=hello&page=1"
       }
 
@@ -717,8 +734,14 @@ defmodule Monitorex.EventHandlerTest do
         Plug.Test.conn(:get, "/api/v1/orders", nil)
         |> Map.put(:status, 200)
         |> Map.put(:host, "example.com")
-        |> Map.put(:req_headers, [{"authorization", "Bearer secret"}, {"accept", "application/json"}])
-        |> Map.put(:resp_headers, [{"set-cookie", "session=abc"}, {"content-type", "application/json"}])
+        |> Map.put(:req_headers, [
+          {"authorization", "Bearer secret"},
+          {"accept", "application/json"}
+        ])
+        |> Map.put(:resp_headers, [
+          {"set-cookie", "session=abc"},
+          {"content-type", "application/json"}
+        ])
 
       metadata = %{conn: conn}
       measurements = %{duration: 1_000_000}

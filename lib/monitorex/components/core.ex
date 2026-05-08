@@ -31,11 +31,11 @@ defmodule Monitorex.Components.Core do
 
     * `"sort"` — sent when a sortable column header is clicked, with the column key as the value
   """
-  attr :columns, :list, required: true
-  attr :rows, :list, default: []
-  attr :empty_message, :string, default: "No data"
-  attr :sort_by, :string, default: nil
-  attr :sort_dir, :string, default: nil
+  attr(:columns, :list, required: true)
+  attr(:rows, :list, default: [])
+  attr(:empty_message, :string, default: "No data")
+  attr(:sort_by, :string, default: nil)
+  attr(:sort_dir, :string, default: nil)
 
   def data_table(assigns) do
     ~H"""
@@ -79,11 +79,11 @@ defmodule Monitorex.Components.Core do
     * `icon` — optional SVG icon HTML string (default: chart icon)
     * `class` — additional CSS classes
   """
-  attr :label, :string, required: true
-  attr :value, :string, required: true
-  attr :trend, :atom, values: [:up, :down, nil], default: nil
-  attr :icon, :string, default: nil
-  attr :class, :string, default: ""
+  attr(:label, :string, required: true)
+  attr(:value, :string, required: true)
+  attr(:trend, :atom, values: [:up, :down, nil], default: nil)
+  attr(:icon, :string, default: nil)
+  attr(:class, :string, default: "")
 
   def summary_card(assigns) do
     ~H"""
@@ -121,9 +121,9 @@ defmodule Monitorex.Components.Core do
     * `value` — metric value string
     * `class` — additional CSS classes
   """
-  attr :label, :string, required: true
-  attr :value, :string, required: true
-  attr :class, :string, default: ""
+  attr(:label, :string, required: true)
+  attr(:value, :string, required: true)
+  attr(:class, :string, default: "")
 
   def metric_tile(assigns) do
     ~H"""
@@ -147,7 +147,7 @@ defmodule Monitorex.Components.Core do
     * 4xx — yellow
     * 5xx — red
   """
-  attr :status, :integer, required: true
+  attr(:status, :integer, required: true)
 
   def status_badge(assigns) do
     ~H"""
@@ -195,9 +195,9 @@ defmodule Monitorex.Components.Core do
     * `selected` — currently selected node (string)
     * `event` — event name to send on change
   """
-  attr :nodes, :list, required: true
-  attr :selected, :string, default: ""
-  attr :event, :string, default: "select_node"
+  attr(:nodes, :list, required: true)
+  attr(:selected, :string, default: "")
+  attr(:event, :string, default: "select_node")
 
   def node_selector(assigns) do
     ~H"""
@@ -219,10 +219,10 @@ defmodule Monitorex.Components.Core do
     * `subtitle` — optional subtitle string
     * `inner_block` — optional content for the actions area (right side)
   """
-  attr :title, :string, required: true
-  attr :subtitle, :string, default: nil
+  attr(:title, :string, required: true)
+  attr(:subtitle, :string, default: nil)
 
-  slot :inner_block, required: false
+  slot(:inner_block, required: false)
 
   def page_header(assigns) do
     ~H"""
@@ -247,9 +247,9 @@ defmodule Monitorex.Components.Core do
     * `total` — total number of pages (integer)
     * `event` — event name to send on page change (default: "go_page")
   """
-  attr :current, :integer, required: true
-  attr :total, :integer, required: true
-  attr :event, :string, default: "go_page"
+  attr(:current, :integer, required: true)
+  attr(:total, :integer, required: true)
+  attr(:event, :string, default: "go_page")
 
   def pagination(assigns) do
     ~H"""
@@ -291,8 +291,8 @@ defmodule Monitorex.Components.Core do
     * `to` — the URL to navigate back to
     * `label` — link text (default: "Back")
   """
-  attr :to, :string, required: true
-  attr :label, :string, default: "Back"
+  attr(:to, :string, required: true)
+  attr(:label, :string, default: "Back")
 
   def back_link(assigns) do
     ~H"""

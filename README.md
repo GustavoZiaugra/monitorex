@@ -12,12 +12,16 @@ Monitorex monitors outbound (Tesla, Finch/Req) and inbound (Phoenix) HTTP traffi
 
 - **Outbound monitoring** — track HTTP requests from Tesla, Finch, or Req
 - **Inbound monitoring** — track Phoenix router dispatch with per-consumer breakdowns
-- **Live dashboard** — 7 pages: Outbound/Inbound overview, recent requests, host/route detail, consumer analytics
+- **Live dashboard** — 8 pages: Overview, Outbound/Inbound, host/route detail, timeline, consumer analytics
+- **Timeline inspector** — split-pane page with event list + request/response detail viewer
 - **Auto-refresh** — LiveView updates every 2 seconds
 - **Sort, filter, paginate** — interactive data tables on every page
 - **Responsive** — works on desktop and mobile (collapsible sidebar, card-layout tables)
 - **Dark theme** — polished design system with SVG icons and custom properties
 - **Cluster support** — aggregate data across multiple BEAM nodes
+- **Health check** — `GET /monitorex/health` with Collector status, queue depths, ETS sizes
+- **Prometheus metrics** — `GET /monitorex/metrics` for requests, errors, latency, ETS sizes
+- **Alert webhooks** — configurable thresholds (error_rate, host_down, high_latency) with debounced dispatch
 - **No database** — all data lives in ETS tables (in-memory)
 
 ## Installation
@@ -27,7 +31,7 @@ Add `monitorex` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:monitorex, "~> 0.2.0"}
+    {:monitorex, "~> 0.3.0"}
   ]
 end
 ```
@@ -196,6 +200,7 @@ config :monitorex, :max_body_bytes, 10_000
 | Inbound Overview | `/inbound` | Route table + summary |
 | Inbound Consumers | `/inbound_consumers` | Per-consumer stats |
 | Inbound Recent | `/inbound_recent` | Live feed with filters |
+| Timeline | `/timeline` | Split-pane event inspector with request/response detail |
 | Route Detail | `/route/:key` | Consumer breakdown + recent requests |
 
 ## Asset Pipeline

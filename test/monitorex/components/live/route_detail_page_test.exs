@@ -50,7 +50,9 @@ defmodule Monitorex.Components.Live.RouteDetailPageTest do
         }
       }
 
-      assert {:noreply, _socket} = RouteDetailPage.handle_event("sort", %{"key" => "requests"}, socket)
+      assert {:noreply, _socket} =
+               RouteDetailPage.handle_event("sort", %{"key" => "requests"}, socket)
+
       assert_received {:navigate, url}
       assert url =~ "sort_by=requests"
       assert url =~ "sort_dir=desc"
@@ -65,7 +67,9 @@ defmodule Monitorex.Components.Live.RouteDetailPageTest do
         }
       }
 
-      assert {:noreply, _socket} = RouteDetailPage.handle_event("sort", %{"key" => "consumer"}, socket)
+      assert {:noreply, _socket} =
+               RouteDetailPage.handle_event("sort", %{"key" => "consumer"}, socket)
+
       assert_received {:navigate, url}
       assert url =~ "sort_by=consumer"
       assert url =~ "sort_dir=asc"

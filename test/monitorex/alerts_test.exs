@@ -6,21 +6,31 @@ defmodule Monitorex.AlertsTest do
   setup do
     Enum.each(
       [
-        :monitorex_outbound_hosts, :monitorex_outbound_endpoints,
-        :monitorex_outbound_recent, :monitorex_outbound_duration_samples,
-        :monitorex_inbound_routes, :monitorex_inbound_consumers,
-        :monitorex_inbound_recent, :monitorex_inbound_duration_samples,
+        :monitorex_outbound_hosts,
+        :monitorex_outbound_endpoints,
+        :monitorex_outbound_recent,
+        :monitorex_outbound_duration_samples,
+        :monitorex_inbound_routes,
+        :monitorex_inbound_consumers,
+        :monitorex_inbound_recent,
+        :monitorex_inbound_duration_samples,
         :monitorex_alert_debounce
       ],
       fn table ->
-        try do; :ets.delete(table); rescue; _ -> :ok; end
+        try do
+          :ets.delete(table)
+        rescue
+          _ -> :ok
+        end
       end
     )
+
     :ok
   end
 
   defp seed_hosts(hosts_data) do
     :ets.new(:monitorex_outbound_hosts, [:public, :named_table, :set])
+
     Enum.each(hosts_data, fn {host, agg} ->
       :ets.insert(:monitorex_outbound_hosts, {host, agg})
     end)
@@ -33,7 +43,8 @@ defmodule Monitorex.AlertsTest do
 
     test "triggers alert when error_rate exceeds threshold" do
       seed_hosts([
-        {"api.bad.com", %{requests: 100, errors: 30, total_duration: 5000.0, last_seen: System.monotonic_time()}}
+        {"api.bad.com",
+         %{requests: 100, errors: 30, total_duration: 5000.0, last_seen: System.monotonic_time()}}
       ])
 
       Application.put_env(:monitorex, :alerts, [
@@ -58,7 +69,8 @@ defmodule Monitorex.AlertsTest do
 
     test "triggers alert when avg_latency exceeds threshold" do
       seed_hosts([
-        {"api.slow.com", %{requests: 10, errors: 0, total_duration: 50_000.0, last_seen: System.monotonic_time()}}
+        {"api.slow.com",
+         %{requests: 10, errors: 0, total_duration: 50_000.0, last_seen: System.monotonic_time()}}
       ])
 
       Application.put_env(:monitorex, :alerts, [
@@ -82,7 +94,8 @@ defmodule Monitorex.AlertsTest do
 
     test "does not trigger when metric is below threshold" do
       seed_hosts([
-        {"api.healthy.com", %{requests: 100, errors: 1, total_duration: 3000.0, last_seen: System.monotonic_time()}}
+        {"api.healthy.com",
+         %{requests: 100, errors: 1, total_duration: 3000.0, last_seen: System.monotonic_time()}}
       ])
 
       Application.put_env(:monitorex, :alerts, [
@@ -104,7 +117,13 @@ defmodule Monitorex.AlertsTest do
 
     test "host_down triggers when last_seen exceeds window" do
       seed_hosts([
-        {"api.dead.com", %{requests: 5, errors: 0, total_duration: 500.0, last_seen: System.monotonic_time() - System.convert_time_unit(600, :second, :native)}}
+        {"api.dead.com",
+         %{
+           requests: 5,
+           errors: 0,
+           total_duration: 500.0,
+           last_seen: System.monotonic_time() - System.convert_time_unit(600, :second, :native)
+         }}
       ])
 
       Application.put_env(:monitorex, :alerts, [
@@ -127,7 +146,8 @@ defmodule Monitorex.AlertsTest do
 
     test "debounce prevents duplicate alerts within min_interval" do
       seed_hosts([
-        {"api.noisy.com", %{requests: 100, errors: 50, total_duration: 5000.0, last_seen: System.monotonic_time()}}
+        {"api.noisy.com",
+         %{requests: 100, errors: 50, total_duration: 5000.0, last_seen: System.monotonic_time()}}
       ])
 
       Application.put_env(:monitorex, :alerts, [
@@ -152,6 +172,7 @@ defmodule Monitorex.AlertsTest do
 
     test "evaluates multiple hosts independently" do
       now = System.monotonic_time()
+
       seed_hosts([
         {"api.bad.com", %{requests: 100, errors: 30, total_duration: 5000.0, last_seen: now}},
         {"api.good.com", %{requests: 100, errors: 1, total_duration: 3000.0, last_seen: now}}

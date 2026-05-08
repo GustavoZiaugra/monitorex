@@ -39,11 +39,16 @@ defmodule Monitorex.CollectorTest do
       assert :ets.info(:monitorex_outbound_hosts)[:name] == :monitorex_outbound_hosts
       assert :ets.info(:monitorex_outbound_endpoints)[:name] == :monitorex_outbound_endpoints
       assert :ets.info(:monitorex_outbound_recent)[:name] == :monitorex_outbound_recent
-      assert :ets.info(:monitorex_outbound_duration_samples)[:name] == :monitorex_outbound_duration_samples
+
+      assert :ets.info(:monitorex_outbound_duration_samples)[:name] ==
+               :monitorex_outbound_duration_samples
+
       assert :ets.info(:monitorex_inbound_routes)[:name] == :monitorex_inbound_routes
       assert :ets.info(:monitorex_inbound_consumers)[:name] == :monitorex_inbound_consumers
       assert :ets.info(:monitorex_inbound_recent)[:name] == :monitorex_inbound_recent
-      assert :ets.info(:monitorex_inbound_duration_samples)[:name] == :monitorex_inbound_duration_samples
+
+      assert :ets.info(:monitorex_inbound_duration_samples)[:name] ==
+               :monitorex_inbound_duration_samples
 
       GenServer.stop(pid)
     end
@@ -241,7 +246,9 @@ defmodule Monitorex.CollectorTest do
       Collector.handle_event(event, pid)
       Process.sleep(50)
 
-      [{_, stored}] = :ets.lookup(:monitorex_outbound_recent, :ets.first(:monitorex_outbound_recent))
+      [{_, stored}] =
+        :ets.lookup(:monitorex_outbound_recent, :ets.first(:monitorex_outbound_recent))
+
       assert stored.request_body == "12345"
       assert stored.response_body == "abcde"
 
@@ -266,7 +273,9 @@ defmodule Monitorex.CollectorTest do
       Collector.handle_event(event, pid)
       Process.sleep(50)
 
-      [{_, stored}] = :ets.lookup(:monitorex_outbound_recent, :ets.first(:monitorex_outbound_recent))
+      [{_, stored}] =
+        :ets.lookup(:monitorex_outbound_recent, :ets.first(:monitorex_outbound_recent))
+
       assert stored.request_body == "tiny"
       assert stored.response_body == nil
 

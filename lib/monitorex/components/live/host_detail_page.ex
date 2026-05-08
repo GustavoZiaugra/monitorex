@@ -4,7 +4,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
 
   Receives a `:host` param identifying the host and an optional `:page` param.
   Displays summary cards (Total Requests, Endpoints, Avg Latency, Error Rate),
-  a per-endpoint breakdown table, and a recent requests feed (limited to 20).
+  a per-endpoint breakdown table, and a paginated recent requests feed.
   """
   use Phoenix.LiveComponent
   import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1]
@@ -13,13 +13,21 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   alias Monitorex.Components.Core
 
   @sortable_fields ~w(path requests avg_latency error_rate)
+  @page_size 20
 
   @impl true
   def update(assigns, socket) do
     host = assigns[:host]
 
     endpoints = ClusterPage.list_endpoints_for_host(host)
-    recent = ClusterPage.list_recent_outbound(host: host, limit: 20)
+
+    page = max(1, assigns[:recent_page] || 1)
+    page_size = assigns[:page_size] || @page_size
+    offset = (page - 1) * page_size
+
+    recent = ClusterPage.list_recent_outbound(host: host, limit: page_size, offset: offset)
+    total_count = ClusterPage.count_recent_outbound(host: host)
+    total_pages = max(1, ceil(total_count / page_size))
 
     sort_by = assigns[:sort_by] || "requests"
     sort_dir = assigns[:sort_dir] || "desc"
@@ -49,6 +57,9 @@ defmodule Monitorex.Components.Live.HostDetailPage do
       |> assign(:recent, recent)
       |> assign(:sort_by, sort_by)
       |> assign(:sort_dir, sort_dir)
+      |> assign(:recent_page, page)
+      |> assign(:recent_total_pages, total_pages)
+      |> assign(:recent_total_count, total_count)
 
     {:ok, socket}
   end
@@ -62,6 +73,33 @@ defmodule Monitorex.Components.Live.HostDetailPage do
     base = "?page=host&host=#{URI.encode(socket.assigns.host)}"
     send(self(), {:navigate, base <> "&sort_by=#{key}&sort_dir=#{new_dir}"})
 
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("go_recent_page", %{"page" => page_str}, socket) do
+    page = String.to_integer(page_str)
+    base = "?page=host&host=#{URI.encode(socket.assigns.host)}"
+    params = %{}
+
+    params =
+      if socket.assigns.sort_by != "requests",
+        do: Map.put(params, "sort_by", socket.assigns.sort_by),
+        else: params
+
+    params =
+      if socket.assigns.sort_dir != "desc",
+        do: Map.put(params, "sort_dir", socket.assigns.sort_dir),
+        else: params
+
+    params = Map.put(params, "recent_page", page)
+
+    query =
+      params
+      |> Enum.map(fn {k, v} -> "#{k}=#{URI.encode(to_string(v))}" end)
+      |> Enum.join("&")
+
+    send(self(), {:navigate, base <> "&" <> query})
     {:noreply, socket}
   end
 
@@ -94,7 +132,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
         sort_dir={@sort_dir} />
       </div>
 
-      <h3>Recent Requests</h3>
+      <h3>Recent Requests <span class="count-badge"><%= @recent_total_count %></span></h3>
       <div class="recent-table">
         <table class="data-table">
           <thead>
@@ -120,6 +158,8 @@ defmodule Monitorex.Components.Live.HostDetailPage do
           </tbody>
         </table>
       </div>
+
+      <Core.pagination current={@recent_page} total={@recent_total_pages} event="go_recent_page" />
     </div>
     """
   end
@@ -150,16 +190,24 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   defp sort_endpoints(endpoints, sort_by, sort_dir) do
     sorted =
       case sort_by do
-        "path" -> Enum.sort_by(endpoints, & &1.path)
-        "requests" -> Enum.sort_by(endpoints, & &1.requests)
-        "avg_latency" -> Enum.sort_by(endpoints, &(&1.avg_latency || 0))
+        "path" ->
+          Enum.sort_by(endpoints, & &1.path)
+
+        "requests" ->
+          Enum.sort_by(endpoints, & &1.requests)
+
+        "avg_latency" ->
+          Enum.sort_by(endpoints, &(&1.avg_latency || 0))
+
         "error_rate" ->
           Enum.sort_by(endpoints, fn ep ->
             req = ep.requests || 0
             err = ep.errors || 0
             if req > 0, do: err / req, else: 0.0
           end)
-        _ -> Enum.sort_by(endpoints, & &1.requests)
+
+        _ ->
+          Enum.sort_by(endpoints, & &1.requests)
       end
 
     if sort_dir == "desc", do: Enum.reverse(sorted), else: sorted
@@ -171,6 +219,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   defp format_percentage(n) when is_number(n) do
     Float.round(n, 1) |> then(&"#{&1}%")
   end
+
   defp format_percentage(_), do: "0%"
 
   defp format_duration(nil), do: "-"

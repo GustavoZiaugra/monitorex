@@ -57,7 +57,9 @@ defmodule Monitorex.URLRedactorTest do
     end
 
     test "redacts only sensitive params, preserves others" do
-      assert URLRedactor.redact("https://api.example.com/v1?key=secret&page=1&token=abc&sort=desc") ==
+      assert URLRedactor.redact(
+               "https://api.example.com/v1?key=secret&page=1&token=abc&sort=desc"
+             ) ==
                "https://api.example.com/v1?key=%5BREDACTED%5D&page=1&token=%5BREDACTED%5D&sort=desc"
     end
   end

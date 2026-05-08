@@ -37,7 +37,13 @@ defmodule Monitorex.Components.Live.OutboundRecentPageTest do
         }
       }
 
-      assert {:noreply, _socket} = OutboundRecentPage.handle_event("filter_status_class", %{"status_class" => "5xx"}, socket)
+      assert {:noreply, _socket} =
+               OutboundRecentPage.handle_event(
+                 "filter_status_class",
+                 %{"status_class" => "5xx"},
+                 socket
+               )
+
       assert_received {:navigate, url}
       assert url =~ "status_class=5xx"
     end
@@ -50,7 +56,13 @@ defmodule Monitorex.Components.Live.OutboundRecentPageTest do
         }
       }
 
-      assert {:noreply, _socket} = OutboundRecentPage.handle_event("filter_host", %{"host" => "api.example.com"}, socket)
+      assert {:noreply, _socket} =
+               OutboundRecentPage.handle_event(
+                 "filter_host",
+                 %{"host" => "api.example.com"},
+                 socket
+               )
+
       assert_received {:navigate, url}
       assert url =~ "host=api.example.com"
     end
@@ -63,7 +75,9 @@ defmodule Monitorex.Components.Live.OutboundRecentPageTest do
         }
       }
 
-      assert {:noreply, _socket} = OutboundRecentPage.handle_event("filter_host", %{"host" => ""}, socket)
+      assert {:noreply, _socket} =
+               OutboundRecentPage.handle_event("filter_host", %{"host" => ""}, socket)
+
       assert_received {:navigate, url}
       # Current assigns still has previous host until re-render
       assert url =~ "host=previous.com"
@@ -77,7 +91,9 @@ defmodule Monitorex.Components.Live.OutboundRecentPageTest do
         }
       }
 
-      assert {:noreply, _socket} = OutboundRecentPage.handle_event("go_page", %{"page" => "2"}, socket)
+      assert {:noreply, _socket} =
+               OutboundRecentPage.handle_event("go_page", %{"page" => "2"}, socket)
+
       assert_received {:navigate, url}
       assert url =~ "page=2"
     end

@@ -30,12 +30,13 @@ defmodule Monitorex.Components.Live.InboundRecentPageTest do
     end
 
     test "renders with filters" do
-      html = render_component(InboundRecentPage, %{
-        id: "test",
-        status_class: "2xx",
-        consumer: "myapp",
-        route: "GET:/api/users"
-      })
+      html =
+        render_component(InboundRecentPage, %{
+          id: "test",
+          status_class: "2xx",
+          consumer: "myapp",
+          route: "GET:/api/users"
+        })
 
       assert html =~ "Recent Inbound Requests"
     end
@@ -51,7 +52,13 @@ defmodule Monitorex.Components.Live.InboundRecentPageTest do
         }
       }
 
-      assert {:noreply, _socket} = InboundRecentPage.handle_event("filter_status_class", %{"status_class" => "4xx"}, socket)
+      assert {:noreply, _socket} =
+               InboundRecentPage.handle_event(
+                 "filter_status_class",
+                 %{"status_class" => "4xx"},
+                 socket
+               )
+
       assert_received {:navigate, url}
       assert url =~ "status_class=4xx"
     end
@@ -65,7 +72,9 @@ defmodule Monitorex.Components.Live.InboundRecentPageTest do
         }
       }
 
-      assert {:noreply, _socket} = InboundRecentPage.handle_event("filter_consumer", %{"consumer" => "myapp"}, socket)
+      assert {:noreply, _socket} =
+               InboundRecentPage.handle_event("filter_consumer", %{"consumer" => "myapp"}, socket)
+
       assert_received {:navigate, url}
       assert url =~ "consumer=myapp"
     end
@@ -79,7 +88,9 @@ defmodule Monitorex.Components.Live.InboundRecentPageTest do
         }
       }
 
-      assert {:noreply, _socket} = InboundRecentPage.handle_event("filter_route", %{"route" => "GET:/api"}, socket)
+      assert {:noreply, _socket} =
+               InboundRecentPage.handle_event("filter_route", %{"route" => "GET:/api"}, socket)
+
       assert_received {:navigate, url}
       assert url =~ "route=GET:/api"
     end
@@ -93,7 +104,9 @@ defmodule Monitorex.Components.Live.InboundRecentPageTest do
         }
       }
 
-      assert {:noreply, _socket} = InboundRecentPage.handle_event("go_page", %{"page" => "3"}, socket)
+      assert {:noreply, _socket} =
+               InboundRecentPage.handle_event("go_page", %{"page" => "3"}, socket)
+
       assert_received {:navigate, url}
       assert url =~ "page=3"
     end

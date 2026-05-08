@@ -52,17 +52,57 @@ defmodule Monitorex.ClusterTest do
 
   describe "merge_hosts/1" do
     test "merges host aggregates from multiple nodes" do
-      node1 = :"node1@host"
-      node2 = :"node2@host"
+      node1 = :node1@host
+      node2 = :node2@host
 
       hosts1 = [
-        %{host: "api.example.com", requests: 100, errors: 5, total_duration: 5_000.0, avg_latency: 50.0, p50: 45.0, p95: 95.0, p99: 99.0, error_rate: 0.05},
-        %{host: "db.example.com", requests: 50, errors: 1, total_duration: 2_500.0, avg_latency: 50.0, p50: 48.0, p95: 90.0, p99: 98.0, error_rate: 0.02}
+        %{
+          host: "api.example.com",
+          requests: 100,
+          errors: 5,
+          total_duration: 5_000.0,
+          avg_latency: 50.0,
+          p50: 45.0,
+          p95: 95.0,
+          p99: 99.0,
+          error_rate: 0.05
+        },
+        %{
+          host: "db.example.com",
+          requests: 50,
+          errors: 1,
+          total_duration: 2_500.0,
+          avg_latency: 50.0,
+          p50: 48.0,
+          p95: 90.0,
+          p99: 98.0,
+          error_rate: 0.02
+        }
       ]
 
       hosts2 = [
-        %{host: "api.example.com", requests: 200, errors: 10, total_duration: 12_000.0, avg_latency: 60.0, p50: 55.0, p95: 110.0, p99: 150.0, error_rate: 0.05},
-        %{host: "other.com", requests: 30, errors: 0, total_duration: 900.0, avg_latency: 30.0, p50: 28.0, p95: 40.0, p99: 45.0, error_rate: 0.0}
+        %{
+          host: "api.example.com",
+          requests: 200,
+          errors: 10,
+          total_duration: 12_000.0,
+          avg_latency: 60.0,
+          p50: 55.0,
+          p95: 110.0,
+          p99: 150.0,
+          error_rate: 0.05
+        },
+        %{
+          host: "other.com",
+          requests: 30,
+          errors: 0,
+          total_duration: 900.0,
+          avg_latency: 30.0,
+          p50: 28.0,
+          p95: 40.0,
+          p99: 45.0,
+          error_rate: 0.0
+        }
       ]
 
       result = Cluster.merge_hosts([{node1, hosts1}, {node2, hosts2}])
@@ -101,16 +141,47 @@ defmodule Monitorex.ClusterTest do
     end
 
     test "handles nodes with empty lists" do
-      node = :"node@host"
+      node = :node@host
       assert Cluster.merge_hosts([{node, []}]) == []
     end
 
     test "sorts results by requests descending" do
-      node = :"node@host"
+      node = :node@host
+
       hosts = [
-        %{host: "low", requests: 10, errors: 0, total_duration: 100.0, avg_latency: 10.0, p50: nil, p95: nil, p99: nil, error_rate: 0.0},
-        %{host: "high", requests: 100, errors: 0, total_duration: 1_000.0, avg_latency: 10.0, p50: nil, p95: nil, p99: nil, error_rate: 0.0},
-        %{host: "medium", requests: 50, errors: 0, total_duration: 500.0, avg_latency: 10.0, p50: nil, p95: nil, p99: nil, error_rate: 0.0}
+        %{
+          host: "low",
+          requests: 10,
+          errors: 0,
+          total_duration: 100.0,
+          avg_latency: 10.0,
+          p50: nil,
+          p95: nil,
+          p99: nil,
+          error_rate: 0.0
+        },
+        %{
+          host: "high",
+          requests: 100,
+          errors: 0,
+          total_duration: 1_000.0,
+          avg_latency: 10.0,
+          p50: nil,
+          p95: nil,
+          p99: nil,
+          error_rate: 0.0
+        },
+        %{
+          host: "medium",
+          requests: 50,
+          errors: 0,
+          total_duration: 500.0,
+          avg_latency: 10.0,
+          p50: nil,
+          p95: nil,
+          p99: nil,
+          error_rate: 0.0
+        }
       ]
 
       result = Cluster.merge_hosts([{node, hosts}])
@@ -120,16 +191,37 @@ defmodule Monitorex.ClusterTest do
 
   describe "merge_endpoints/1" do
     test "merges endpoint aggregates from multiple nodes" do
-      node1 = :"node1@host"
-      node2 = :"node2@host"
+      node1 = :node1@host
+      node2 = :node2@host
 
       eps1 = [
-        %{path: "/users", requests: 100, errors: 5, total_duration: 5_000.0, avg_latency: 50.0, last_seen: 1000},
-        %{path: "/posts", requests: 50, errors: 1, total_duration: 2_000.0, avg_latency: 40.0, last_seen: 900}
+        %{
+          path: "/users",
+          requests: 100,
+          errors: 5,
+          total_duration: 5_000.0,
+          avg_latency: 50.0,
+          last_seen: 1000
+        },
+        %{
+          path: "/posts",
+          requests: 50,
+          errors: 1,
+          total_duration: 2_000.0,
+          avg_latency: 40.0,
+          last_seen: 900
+        }
       ]
 
       eps2 = [
-        %{path: "/users", requests: 200, errors: 10, total_duration: 12_000.0, avg_latency: 60.0, last_seen: 1100}
+        %{
+          path: "/users",
+          requests: 200,
+          errors: 10,
+          total_duration: 12_000.0,
+          avg_latency: 60.0,
+          last_seen: 1100
+        }
       ]
 
       result = Cluster.merge_endpoints([{node1, eps1}, {node2, eps2}])
@@ -148,15 +240,37 @@ defmodule Monitorex.ClusterTest do
 
   describe "merge_routes/1" do
     test "merges route aggregates from multiple nodes" do
-      node1 = :"node1@host"
-      node2 = :"node2@host"
+      node1 = :node1@host
+      node2 = :node2@host
 
       routes1 = [
-        %{method: "GET", path: "/users", requests: 100, errors: 5, total_duration: 5_000.0, avg_latency: 50.0, p50: 45.0, p95: 95.0, p99: 99.0, error_rate: 0.05}
+        %{
+          method: "GET",
+          path: "/users",
+          requests: 100,
+          errors: 5,
+          total_duration: 5_000.0,
+          avg_latency: 50.0,
+          p50: 45.0,
+          p95: 95.0,
+          p99: 99.0,
+          error_rate: 0.05
+        }
       ]
 
       routes2 = [
-        %{method: "GET", path: "/users", requests: 200, errors: 10, total_duration: 12_000.0, avg_latency: 60.0, p50: 55.0, p95: 110.0, p99: 150.0, error_rate: 0.05}
+        %{
+          method: "GET",
+          path: "/users",
+          requests: 200,
+          errors: 10,
+          total_duration: 12_000.0,
+          avg_latency: 60.0,
+          p50: 55.0,
+          p95: 110.0,
+          p99: 150.0,
+          error_rate: 0.05
+        }
       ]
 
       result = Cluster.merge_routes([{node1, routes1}, {node2, routes2}])
@@ -173,15 +287,29 @@ defmodule Monitorex.ClusterTest do
 
   describe "merge_consumers/1" do
     test "merges consumer aggregates from multiple nodes" do
-      node1 = :"node1@host"
-      node2 = :"node2@host"
+      node1 = :node1@host
+      node2 = :node2@host
 
       consumers1 = [
-        %{consumer: "alice", requests: 100, errors: 5, total_duration: 5_000.0, avg_latency: 50.0, last_seen: 1000}
+        %{
+          consumer: "alice",
+          requests: 100,
+          errors: 5,
+          total_duration: 5_000.0,
+          avg_latency: 50.0,
+          last_seen: 1000
+        }
       ]
 
       consumers2 = [
-        %{consumer: "alice", requests: 50, errors: 1, total_duration: 2_000.0, avg_latency: 40.0, last_seen: 950}
+        %{
+          consumer: "alice",
+          requests: 50,
+          errors: 1,
+          total_duration: 2_000.0,
+          avg_latency: 40.0,
+          last_seen: 950
+        }
       ]
 
       result = Cluster.merge_consumers([{node1, consumers1}, {node2, consumers2}])
@@ -197,12 +325,35 @@ defmodule Monitorex.ClusterTest do
 
   describe "merge_recent/2" do
     test "merges recent events from multiple nodes" do
-      node1 = :"node1@host"
-      node2 = :"node2@host"
+      node1 = :node1@host
+      node2 = :node2@host
 
-      event1 = %Event{timestamp: 100, method: "GET", host: "a.com", path: "/a", status: 200, duration_ms: 10.0}
-      event2 = %Event{timestamp: 200, method: "POST", host: "b.com", path: "/b", status: 201, duration_ms: 20.0}
-      event3 = %Event{timestamp: 150, method: "PUT", host: "c.com", path: "/c", status: 200, duration_ms: 15.0}
+      event1 = %Event{
+        timestamp: 100,
+        method: "GET",
+        host: "a.com",
+        path: "/a",
+        status: 200,
+        duration_ms: 10.0
+      }
+
+      event2 = %Event{
+        timestamp: 200,
+        method: "POST",
+        host: "b.com",
+        path: "/b",
+        status: 201,
+        duration_ms: 20.0
+      }
+
+      event3 = %Event{
+        timestamp: 150,
+        method: "PUT",
+        host: "c.com",
+        path: "/c",
+        status: 200,
+        duration_ms: 15.0
+      }
 
       result = Cluster.merge_recent([{node1, [event1, event2]}, {node2, [event3]}])
 
@@ -221,16 +372,36 @@ defmodule Monitorex.ClusterTest do
     end
 
     test "respects top_n limit" do
-      node = :"node@host"
-      events = for i <- 1..100, do: %Event{timestamp: i, method: "GET", host: "h.com", path: "/p", status: 200, duration_ms: 1.0}
+      node = :node@host
+
+      events =
+        for i <- 1..100,
+            do: %Event{
+              timestamp: i,
+              method: "GET",
+              host: "h.com",
+              path: "/p",
+              status: 200,
+              duration_ms: 1.0
+            }
 
       result = Cluster.merge_recent([{node, events}], 10)
       assert length(result) == 10
     end
 
     test "defaults to top 50" do
-      node = :"node@host"
-      events = for i <- 1..100, do: %Event{timestamp: i, method: "GET", host: "h.com", path: "/p", status: 200, duration_ms: 1.0}
+      node = :node@host
+
+      events =
+        for i <- 1..100,
+            do: %Event{
+              timestamp: i,
+              method: "GET",
+              host: "h.com",
+              path: "/p",
+              status: 200,
+              duration_ms: 1.0
+            }
 
       result = Cluster.merge_recent([{node, events}])
       assert length(result) == 50

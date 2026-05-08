@@ -25,6 +25,7 @@ defmodule Monitorex.ConsumerIdentifier do
         extract_api_key(conn)
       end
     end
+
     # 4. nil is the implicit fallback from all three returning nil
   end
 
@@ -40,7 +41,8 @@ defmodule Monitorex.ConsumerIdentifier do
   # ── Basic-Auth extraction ──
 
   defp extract_basic_auth_username(conn) do
-    with auth_value when is_binary(auth_value) <- Plug.Conn.get_req_header(conn, "authorization") |> List.first(),
+    with auth_value when is_binary(auth_value) <-
+           Plug.Conn.get_req_header(conn, "authorization") |> List.first(),
          "Basic " <> encoded <- auth_value,
          decoded when is_binary(decoded) <- base64_decode(encoded),
          [username | _] <- String.split(decoded, ":", parts: 2),

@@ -12,9 +12,11 @@ defmodule Monitorex.ApplicationTest do
       assert sup != nil
 
       children = Supervisor.which_children(sup)
+
       assert Enum.any?(children, fn {mod, _pid, _type, _modules} ->
-        mod == Monitorex.Collector
-      end), "Collector not found in supervisor children"
+               mod == Monitorex.Collector
+             end),
+             "Collector not found in supervisor children"
     end
   end
 end

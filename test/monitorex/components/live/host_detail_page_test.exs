@@ -44,7 +44,9 @@ defmodule Monitorex.Components.Live.HostDetailPageTest do
         }
       }
 
-      assert {:noreply, _socket} = HostDetailPage.handle_event("sort", %{"key" => "requests"}, socket)
+      assert {:noreply, _socket} =
+               HostDetailPage.handle_event("sort", %{"key" => "requests"}, socket)
+
       assert_received {:navigate, url}
       assert url =~ "sort_by=requests"
       assert url =~ "sort_dir=desc"

@@ -86,9 +86,16 @@ defmodule Monitorex.Collector do
     :telemetry.detach({Monitorex.Collector, :finch})
     :telemetry.detach({Monitorex.Collector, :phoenix})
 
-    tables = [:monitorex_outbound_hosts, :monitorex_outbound_endpoints, :monitorex_outbound_recent,
-     :monitorex_outbound_duration_samples, :monitorex_inbound_routes,
-     :monitorex_inbound_consumers, :monitorex_inbound_recent, :monitorex_inbound_duration_samples]
+    tables = [
+      :monitorex_outbound_hosts,
+      :monitorex_outbound_endpoints,
+      :monitorex_outbound_recent,
+      :monitorex_outbound_duration_samples,
+      :monitorex_inbound_routes,
+      :monitorex_inbound_consumers,
+      :monitorex_inbound_recent,
+      :monitorex_inbound_duration_samples
+    ]
 
     # Add dedup table if it was created
     dedup_tables = if state.dedup, do: [state.dedup], else: []
@@ -118,6 +125,7 @@ defmodule Monitorex.Collector do
     :ets.new(@inbound_duration_samples, [:public, :named_table, :bag, read_concurrency: true])
 
     clients = Application.get_env(:monitorex, :clients, [])
+
     dedup_table =
       if :tesla in clients and :finch in clients do
         :ets.new(@dedup, [:public, :named_table, :set, read_concurrency: true])
@@ -144,14 +152,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :tesla},
         [:tesla, :request, :stop],
-        &Monitorex.EventHandler.handle_tesla_event/4,
+        tesla_handler_fun(),
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :tesla_exception},
         [:tesla, :request, :exception],
-        &Monitorex.EventHandler.handle_tesla_event/4,
+        tesla_handler_fun(),
         nil
       )
     end
@@ -160,14 +168,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :finch},
         [:finch, :request, :stop],
-        &Monitorex.EventHandler.handle_finch_event/4,
+        finch_handler_fun(),
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :finch_exception},
         [:finch, :request, :exception],
-        &Monitorex.EventHandler.handle_finch_event/4,
+        finch_handler_fun(),
         nil
       )
     end
@@ -176,14 +184,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :phoenix},
         [:phoenix, :router_dispatch, :stop],
-        &Monitorex.EventHandler.handle_phoenix_event/4,
+        phoenix_handler_fun(),
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :phoenix_exception},
         [:phoenix, :router_dispatch, :exception],
-        &Monitorex.EventHandler.handle_phoenix_event/4,
+        phoenix_handler_fun(),
         nil
       )
     end
@@ -347,7 +355,9 @@ defmodule Monitorex.Collector do
   end
 
   defp schedule_health_check do
-    interval = Application.get_env(:monitorex, :health_check_interval_ms, @default_health_check_interval)
+    interval =
+      Application.get_env(:monitorex, :health_check_interval_ms, @default_health_check_interval)
+
     Process.send_after(self(), :health_check, interval)
   end
 
@@ -355,7 +365,10 @@ defmodule Monitorex.Collector do
 
   defp perform_cleanup(state) do
     max_recent = Application.get_env(:monitorex, :max_recent, @default_max_recent)
-    max_recent_inbound = Application.get_env(:monitorex, :max_recent_inbound, @default_max_recent_inbound)
+
+    max_recent_inbound =
+      Application.get_env(:monitorex, :max_recent_inbound, @default_max_recent_inbound)
+
     endpoint_ttl = Application.get_env(:monitorex, :endpoint_ttl, @default_endpoint_ttl)
     now = System.monotonic_time()
 
@@ -386,7 +399,10 @@ defmodule Monitorex.Collector do
       # Ordered set: first N entries (oldest) to delete
       first_keys =
         :ets.foldl(
-          fn {key, _}, acc when length(acc) < to_delete -> [key | acc]; _other, acc -> acc end,
+          fn
+            {key, _}, acc when length(acc) < to_delete -> [key | acc]
+            _other, acc -> acc
+          end,
           [],
           table
         )
@@ -433,7 +449,11 @@ defmodule Monitorex.Collector do
 
         case :ets.lookup(state.outbound_hosts, host) do
           [{^host, agg}] ->
-            :ets.insert(state.outbound_hosts, {host, Map.merge(agg, %{p50: p50, p95: p95, p99: p99})})
+            :ets.insert(
+              state.outbound_hosts,
+              {host, Map.merge(agg, %{p50: p50, p95: p95, p99: p99})}
+            )
+
           _ ->
             :ok
         end
@@ -460,7 +480,11 @@ defmodule Monitorex.Collector do
 
         case :ets.lookup(state.inbound_routes, route_key) do
           [{^route_key, agg}] ->
-            :ets.insert(state.inbound_routes, {route_key, Map.merge(agg, %{p50: p50, p95: p95, p99: p99})})
+            :ets.insert(
+              state.inbound_routes,
+              {route_key, Map.merge(agg, %{p50: p50, p95: p95, p99: p99})}
+            )
+
           _ ->
             :ok
         end
@@ -507,20 +531,18 @@ defmodule Monitorex.Collector do
     sources = state.sources
 
     if :tesla in sources do
-      safe_reattach({Monitorex.Collector, :tesla}, [:tesla, :request, :stop],
-        &Monitorex.EventHandler.handle_tesla_event/4
-      )
+      safe_reattach({Monitorex.Collector, :tesla}, [:tesla, :request, :stop], tesla_handler_fun())
     end
 
     if :finch in sources do
-      safe_reattach({Monitorex.Collector, :finch}, [:finch, :request, :stop],
-        &Monitorex.EventHandler.handle_finch_event/4
-      )
+      safe_reattach({Monitorex.Collector, :finch}, [:finch, :request, :stop], finch_handler_fun())
     end
 
     if :phoenix in sources do
-      safe_reattach({Monitorex.Collector, :phoenix}, [:phoenix, :router_dispatch, :stop],
-        &Monitorex.EventHandler.handle_phoenix_event/4
+      safe_reattach(
+        {Monitorex.Collector, :phoenix},
+        [:phoenix, :router_dispatch, :stop],
+        phoenix_handler_fun()
       )
     end
   end
@@ -536,6 +558,36 @@ defmodule Monitorex.Collector do
       :telemetry.attach(handler_id, event_name, handler_fn, nil)
     rescue
       _ -> :ok
+    end
+  end
+
+  # ── Handler wrappers ──
+  # These ensure EventHandler results are forwarded to the Collector
+
+  defp tesla_handler_fun do
+    fn event_name, measurements, metadata, config ->
+      case Monitorex.EventHandler.handle_tesla_event(event_name, measurements, metadata, config) do
+        nil -> :ok
+        event -> Monitorex.Collector.handle_event(event)
+      end
+    end
+  end
+
+  defp finch_handler_fun do
+    fn event_name, measurements, metadata, config ->
+      case Monitorex.EventHandler.handle_finch_event(event_name, measurements, metadata, config) do
+        nil -> :ok
+        event -> Monitorex.Collector.handle_event(event)
+      end
+    end
+  end
+
+  defp phoenix_handler_fun do
+    fn event_name, measurements, metadata, config ->
+      case Monitorex.EventHandler.handle_phoenix_event(event_name, measurements, metadata, config) do
+        nil -> :ok
+        event -> Monitorex.Collector.handle_event(event)
+      end
     end
   end
 end

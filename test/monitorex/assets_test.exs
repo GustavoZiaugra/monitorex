@@ -60,7 +60,11 @@ defmodule Monitorex.AssetsTest do
         |> Assets.call(Assets.init([]))
 
       assert conn.status == 200
-      assert Plug.Conn.get_resp_header(conn, "content-type") == ["application/javascript; charset=utf-8"]
+
+      assert Plug.Conn.get_resp_header(conn, "content-type") == [
+               "application/javascript; charset=utf-8"
+             ]
+
       assert conn.resp_body =~ "nav-toggle"
     end
 

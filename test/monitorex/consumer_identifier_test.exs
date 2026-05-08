@@ -59,10 +59,12 @@ defmodule Monitorex.ConsumerIdentifierTest do
 
   describe "priority order" do
     test "basic-auth takes priority over x-api-key" do
-      c = conn([
-        {"authorization", "Basic " <> Base.encode64("alice:pass")},
-        {"x-api-key", "sk-abcdef123456"}
-      ])
+      c =
+        conn([
+          {"authorization", "Basic " <> Base.encode64("alice:pass")},
+          {"x-api-key", "sk-abcdef123456"}
+        ])
+
       assert ConsumerIdentifier.identify(c) == "alice"
     end
   end
@@ -72,14 +74,17 @@ defmodule Monitorex.ConsumerIdentifierTest do
       Application.put_env(:monitorex, :consumer_fn, fn conn ->
         Plug.Conn.get_req_header(conn, "x-consumer") |> List.first()
       end)
+
       on_exit(fn -> Application.delete_env(:monitorex, :consumer_fn) end)
     end
 
     test "custom function takes highest priority" do
-      c = conn([
-        {"x-consumer", "custom-tenant"},
-        {"authorization", "Basic " <> Base.encode64("alice:pass")}
-      ])
+      c =
+        conn([
+          {"x-consumer", "custom-tenant"},
+          {"authorization", "Basic " <> Base.encode64("alice:pass")}
+        ])
+
       assert ConsumerIdentifier.identify(c) == "custom-tenant"
     end
 

@@ -9,7 +9,7 @@ defmodule Monitorex.RouterTest do
         Macro.expand(
           quote do
             import Monitorex.Router
-            http_dashboard []
+            http_dashboard([])
           end,
           __ENV__
         )
@@ -23,7 +23,7 @@ defmodule Monitorex.RouterTest do
         Macro.expand(
           quote do
             import Monitorex.Router
-            http_dashboard assets_path: "/custom-assets"
+            http_dashboard(assets_path: "/custom-assets")
           end,
           __ENV__
         )
@@ -36,7 +36,7 @@ defmodule Monitorex.RouterTest do
         Macro.expand(
           quote do
             import Monitorex.Router
-            http_dashboard live_view: CustomDashboardLive
+            http_dashboard(live_view: CustomDashboardLive)
           end,
           __ENV__
         )
@@ -49,7 +49,7 @@ defmodule Monitorex.RouterTest do
         Macro.expand(
           quote do
             import Monitorex.Router
-            http_dashboard layout: {CustomLayout, :root}
+            http_dashboard(layout: {CustomLayout, :root})
           end,
           __ENV__
         )
@@ -62,7 +62,7 @@ defmodule Monitorex.RouterTest do
         Macro.expand(
           quote do
             import Monitorex.Router
-            http_dashboard on_mount: [CustomAuth]
+            http_dashboard(on_mount: [CustomAuth])
           end,
           __ENV__
         )

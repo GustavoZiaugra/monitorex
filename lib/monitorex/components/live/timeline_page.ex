@@ -292,6 +292,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
   defp list_events(_dir, _limit), do: []
 
   defp find_selected(_events, nil), do: nil
+
   defp find_selected(events, id) do
     Enum.find(events, fn e -> e.timestamp == id end)
   end
@@ -299,6 +300,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
   # ── Header redaction display ──
 
   defp redact_headers(nil, _redacted), do: []
+
   defp redact_headers(headers, redacted) do
     HeaderRedactor.redact_headers(headers, redacted)
   end
@@ -316,6 +318,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
   defp format_duration(_), do: "-"
 
   defp truncate_text(nil, _max), do: "-"
+
   defp truncate_text(text, max) when is_binary(text) do
     if String.length(text) > max do
       String.slice(text, 0, max - 3) <> "..."
@@ -325,6 +328,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
   end
 
   defp maybe_truncate_body(nil), do: ""
+
   defp maybe_truncate_body(body) when is_binary(body) do
     if String.length(body) > 2000 do
       String.slice(body, 0, 1997) <> "..."
@@ -334,6 +338,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
   end
 
   defp method_class(nil), do: "method-default"
+
   defp method_class(m) when is_binary(m) do
     case String.upcase(m) do
       "GET" -> "method-GET"

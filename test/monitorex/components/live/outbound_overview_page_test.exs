@@ -36,7 +36,8 @@ defmodule Monitorex.Components.Live.OutboundOverviewPageTest do
     end
 
     test "handles sort event" do
-      html = render_component(OutboundOverviewPage, %{id: "test", sort_by: "host", sort_dir: :asc})
+      html =
+        render_component(OutboundOverviewPage, %{id: "test", sort_by: "host", sort_dir: :asc})
 
       assert html =~ "Outbound Overview"
       assert html =~ "Host"

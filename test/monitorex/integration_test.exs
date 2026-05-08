@@ -54,7 +54,13 @@ defmodule Monitorex.IntegrationTest do
         EventHandler.handle_tesla_event(
           [:tesla, :request, :stop],
           %{duration: 1_000_000},
-          %{url: url, method: :get, status: 200, pid: self(), monotonic_time: System.monotonic_time()},
+          %{
+            url: url,
+            method: :get,
+            status: 200,
+            pid: self(),
+            monotonic_time: System.monotonic_time()
+          },
           []
         )
 
@@ -84,7 +90,13 @@ defmodule Monitorex.IntegrationTest do
           EventHandler.handle_tesla_event(
             [:tesla, :request, :stop],
             %{duration: 1_000_000},
-            %{url: url, method: :get, status: 200, pid: self(), monotonic_time: System.monotonic_time()},
+            %{
+              url: url,
+              method: :get,
+              status: 200,
+              pid: self(),
+              monotonic_time: System.monotonic_time()
+            },
             []
           )
 
@@ -104,7 +116,13 @@ defmodule Monitorex.IntegrationTest do
         EventHandler.handle_tesla_event(
           [:tesla, :request, :stop],
           %{duration: 500_000},
-          %{url: url, method: :post, status: 500, pid: self(), monotonic_time: System.monotonic_time()},
+          %{
+            url: url,
+            method: :post,
+            status: 500,
+            pid: self(),
+            monotonic_time: System.monotonic_time()
+          },
           []
         )
 
@@ -127,7 +145,13 @@ defmodule Monitorex.IntegrationTest do
         EventHandler.handle_finch_event(
           [:finch, :request, :stop],
           %{duration: 2_000_000},
-          %{url: url, method: :get, status: 200, pid: self(), monotonic_time: System.monotonic_time()},
+          %{
+            url: url,
+            method: :get,
+            status: 200,
+            pid: self(),
+            monotonic_time: System.monotonic_time()
+          },
           []
         )
 
@@ -147,7 +171,13 @@ defmodule Monitorex.IntegrationTest do
         EventHandler.handle_finch_event(
           [:finch, :request, :stop],
           %{duration: 1_500_000},
-          %{url: "https://string.example.com/data", method: "POST", status: 201, pid: self(), monotonic_time: System.monotonic_time()},
+          %{
+            url: "https://string.example.com/data",
+            method: "POST",
+            status: 201,
+            pid: self(),
+            monotonic_time: System.monotonic_time()
+          },
           []
         )
 
@@ -167,7 +197,9 @@ defmodule Monitorex.IntegrationTest do
         Plug.Test.conn(:get, "/api/v1/users", nil)
         |> Map.put(:status, 200)
         |> Map.put(:host, "example.com")
-        |> Map.put(:req_headers, [{"authorization", "Basic " <> Base.encode64("myapp-web:secret")}])
+        |> Map.put(:req_headers, [
+          {"authorization", "Basic " <> Base.encode64("myapp-web:secret")}
+        ])
 
       event =
         EventHandler.handle_phoenix_event(
@@ -207,10 +239,14 @@ defmodule Monitorex.IntegrationTest do
       # Clean all ETS tables before starting dedup collector
       Enum.each(
         [
-          :monitorex_outbound_hosts, :monitorex_outbound_endpoints,
-          :monitorex_outbound_recent, :monitorex_outbound_duration_samples,
-          :monitorex_inbound_routes, :monitorex_inbound_consumers,
-          :monitorex_inbound_recent, :monitorex_inbound_duration_samples,
+          :monitorex_outbound_hosts,
+          :monitorex_outbound_endpoints,
+          :monitorex_outbound_recent,
+          :monitorex_outbound_duration_samples,
+          :monitorex_inbound_routes,
+          :monitorex_inbound_consumers,
+          :monitorex_inbound_recent,
+          :monitorex_inbound_duration_samples,
           :monitorex_dedup
         ],
         fn table ->
@@ -267,7 +303,13 @@ defmodule Monitorex.IntegrationTest do
         EventHandler.handle_tesla_event(
           [:tesla, :request, :stop],
           %{duration: 100_000},
-          %{url: %URI{host: "a.com", path: "/x"}, method: :get, status: 200, pid: self(), monotonic_time: mono1},
+          %{
+            url: %URI{host: "a.com", path: "/x"},
+            method: :get,
+            status: 200,
+            pid: self(),
+            monotonic_time: mono1
+          },
           []
         )
 
@@ -275,7 +317,13 @@ defmodule Monitorex.IntegrationTest do
         EventHandler.handle_finch_event(
           [:finch, :request, :stop],
           %{duration: 200_000},
-          %{url: %URI{host: "b.com", path: "/y"}, method: :post, status: 201, pid: self(), monotonic_time: mono2},
+          %{
+            url: %URI{host: "b.com", path: "/y"},
+            method: :post,
+            status: 201,
+            pid: self(),
+            monotonic_time: mono2
+          },
           []
         )
 

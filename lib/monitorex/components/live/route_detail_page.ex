@@ -4,7 +4,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
 
   Receives a `:route` param in the format `"Method:/path"` and an optional
   `:page` param. Displays route summary (method, path, total requests,
-  error rate), top consumers table, and a recent requests feed for this route.
+  error rate), top consumers table, and a paginated recent requests feed.
   """
   use Phoenix.LiveComponent
   import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1]
@@ -13,6 +13,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
   alias Monitorex.Components.Core
 
   @sortable_fields ~w(consumer requests error_rate avg_latency)
+  @page_size 20
 
   @impl true
   def update(assigns, socket) do
@@ -28,7 +29,13 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
         _ -> []
       end
 
-    recent = ClusterPage.list_recent_inbound(route: route, limit: 20)
+    page = max(1, assigns[:recent_page] || 1)
+    page_size = assigns[:page_size] || @page_size
+    offset = (page - 1) * page_size
+
+    recent = ClusterPage.list_recent_inbound(route: route, limit: page_size, offset: offset)
+    total_count = ClusterPage.count_recent_inbound(route: route)
+    total_pages = max(1, ceil(total_count / page_size))
     recent_rows = Enum.map(recent, &build_recent_row/1)
 
     sort_by = assigns[:sort_by] || "requests"
@@ -50,6 +57,9 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
       |> assign(:recent, recent)
       |> assign(:sort_by, sort_by)
       |> assign(:sort_dir, sort_dir)
+      |> assign(:recent_page, page)
+      |> assign(:recent_total_pages, total_pages)
+      |> assign(:recent_total_count, total_count)
 
     {:ok, socket}
   end
@@ -63,6 +73,33 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
     base = "?page=route&host=#{URI.encode(socket.assigns.route_key)}"
     send(self(), {:navigate, base <> "&sort_by=#{key}&sort_dir=#{new_dir}"})
 
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("go_recent_page", %{"page" => page_str}, socket) do
+    page = String.to_integer(page_str)
+    base = "?page=route&host=#{URI.encode(socket.assigns.route_key)}"
+    params = %{}
+
+    params =
+      if socket.assigns.sort_by != "requests",
+        do: Map.put(params, "sort_by", socket.assigns.sort_by),
+        else: params
+
+    params =
+      if socket.assigns.sort_dir != "desc",
+        do: Map.put(params, "sort_dir", socket.assigns.sort_dir),
+        else: params
+
+    params = Map.put(params, "recent_page", page)
+
+    query =
+      params
+      |> Enum.map(fn {k, v} -> "#{k}=#{URI.encode(to_string(v))}" end)
+      |> Enum.join("&")
+
+    send(self(), {:navigate, base <> "&" <> query})
     {:noreply, socket}
   end
 
@@ -95,7 +132,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
         sort_dir={@sort_dir} />
       </div>
 
-      <h3>Recent Requests</h3>
+      <h3>Recent Requests <span class="count-badge"><%= @recent_total_count %></span></h3>
       <div class="recent-table">
         <table class="data-table">
           <thead>
@@ -121,6 +158,8 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
           </tbody>
         </table>
       </div>
+
+      <Core.pagination current={@recent_page} total={@recent_total_pages} event="go_recent_page" />
     </div>
     """
   end
@@ -154,16 +193,24 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
   defp sort_consumers(consumers, sort_by, sort_dir) do
     sorted =
       case sort_by do
-        "consumer" -> Enum.sort_by(consumers, &(&1.consumer || ""))
-        "requests" -> Enum.sort_by(consumers, &(&1.requests || 0))
-        "avg_latency" -> Enum.sort_by(consumers, &(&1.avg_latency || 0))
+        "consumer" ->
+          Enum.sort_by(consumers, &(&1.consumer || ""))
+
+        "requests" ->
+          Enum.sort_by(consumers, &(&1.requests || 0))
+
+        "avg_latency" ->
+          Enum.sort_by(consumers, &(&1.avg_latency || 0))
+
         "error_rate" ->
           Enum.sort_by(consumers, fn c ->
             req = c.requests || 0
             err = c.errors || 0
             if req > 0, do: err / req, else: 0.0
           end)
-        _ -> Enum.sort_by(consumers, &(&1.requests || 0))
+
+        _ ->
+          Enum.sort_by(consumers, &(&1.requests || 0))
       end
 
     if sort_dir == "desc", do: Enum.reverse(sorted), else: sorted
@@ -182,6 +229,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
   defp format_percentage(n) when is_number(n) do
     Float.round(n / 1, 1) |> then(&"#{&1}%")
   end
+
   defp format_percentage(_), do: "0%"
 
   defp format_duration(nil), do: "-"

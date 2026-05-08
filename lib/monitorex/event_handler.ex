@@ -39,28 +39,42 @@ defmodule Monitorex.EventHandler do
           measurements :: map(),
           metadata :: map(),
           config :: keyword()
-        ) :: Event.t()
+        ) :: Event.t() | nil
   def handle_tesla_event([:tesla, :request, :stop], measurements, metadata, _config) do
-    url_str = metadata.url |> URI.to_string()
+    # Support both legacy Tesla telemetry (flat keys) and modern Tesla (env struct)
+    {url_str, method, status, req_headers, resp_headers, ts, pid} =
+      case metadata do
+        %{env: %{url: url, method: m, status: s} = env} ->
+          url_str = url_to_string(url)
+
+          {url_str, Event.normalize_method(m), s, redact_headers_from_metadata(env.headers || []),
+           redact_headers_from_metadata(env.headers || []),
+           metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time(),
+           metadata[:pid] || self()}
+
+        %{url: url, method: m, status: s} ->
+          url_str = url_to_string(url)
+
+          {url_str, Event.normalize_method(m), s,
+           redact_headers_from_metadata(metadata[:req_headers]),
+           redact_headers_from_metadata(metadata[:resp_headers]),
+           metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time(),
+           metadata[:pid] || self()}
+      end
+
     normalized_url = UrlNormalizer.normalize(url_str)
     redacted_url = URLRedactor.redact(normalized_url)
     %URI{host: host, path: path} = URI.parse(normalized_url)
 
-    req_headers = redact_headers_from_metadata(metadata[:req_headers])
-    resp_headers = redact_headers_from_metadata(metadata[:resp_headers])
-
-    ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
-    pid = metadata[:pid] || self()
-
     %Event{
       source: :tesla,
       direction: :outbound,
-      method: Event.normalize_method(metadata.method),
+      method: method,
       host: host,
       path: path,
       full_url: redacted_url,
-      status: metadata.status,
-      status_class: Event.classify_status(metadata.status || 0),
+      status: status,
+      status_class: Event.classify_status(status || 0),
       duration_ms: Event.duration_ms(measurements.duration),
       timestamp: ts,
       dedup_key: {pid, ts},
@@ -70,6 +84,49 @@ defmodule Monitorex.EventHandler do
       response_body: maybe_store_body(metadata[:response_body], :response)
     }
   end
+
+  def handle_tesla_event([:tesla, :request, :exception], measurements, metadata, _config) do
+    {url_str, method, req_headers, ts, pid} =
+      case metadata do
+        %{env: %{url: url, method: m} = env} ->
+          {url_to_string(url), Event.normalize_method(m),
+           redact_headers_from_metadata(env.headers || []),
+           metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time(),
+           metadata[:pid] || self()}
+
+        %{url: url, method: m} ->
+          {url_to_string(url), Event.normalize_method(m),
+           redact_headers_from_metadata(metadata[:req_headers]),
+           metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time(),
+           metadata[:pid] || self()}
+
+        _ ->
+          {"unknown", "UNKNOWN", [], System.monotonic_time(), self()}
+      end
+
+    normalized_url = if url_str != "unknown", do: UrlNormalizer.normalize(url_str), else: url_str
+    redacted_url = URLRedactor.redact(normalized_url)
+
+    %Event{
+      source: :tesla,
+      direction: :outbound,
+      method: method,
+      host: URI.parse(normalized_url).host,
+      path: URI.parse(normalized_url).path,
+      full_url: redacted_url,
+      status: nil,
+      status_class: :server_error,
+      duration_ms: Event.duration_ms(measurements.duration),
+      timestamp: ts,
+      dedup_key: {pid, ts},
+      error: inspect(metadata[:reason] || metadata[:kind] || "Tesla exception"),
+      request_headers: req_headers,
+      response_headers: nil
+    }
+  end
+
+  # Catch-all for unexpected Tesla telemetry events
+  def handle_tesla_event(_event_name, _measurements, _metadata, _config), do: nil
 
   @doc """
   Handles a Finch telemetry event (`[:finch, :request, :stop]`).
@@ -95,21 +152,22 @@ defmodule Monitorex.EventHandler do
           measurements :: map(),
           metadata :: map(),
           config :: keyword()
-        ) :: Event.t()
+        ) :: Event.t() | nil
   def handle_finch_event([:finch, :request, :stop], measurements, metadata, _config) do
     {url_str, method, host, path, req_headers, status} =
       case metadata do
         %{request: %{method: m} = req} ->
           # New Finch telemetry format (Finch.Request struct)
           url = build_finch_url(req)
+
           {url, Event.normalize_method(m), req.host, URI.parse(url).path,
-           redact_headers_from_metadata(req.headers || []),
-           extract_finch_status(metadata)}
+           redact_headers_from_metadata(req.headers || []), extract_finch_status(metadata)}
 
         %{url: url, method: m, status: s} ->
           # Legacy Finch telemetry format
           url_str = url_to_string(url)
           uri = URI.parse(url_str)
+
           {url_str, Event.normalize_method(m), Event.extract_host(url), uri.path,
            redact_headers_from_metadata(metadata[:req_headers] || []), s}
       end
@@ -183,6 +241,9 @@ defmodule Monitorex.EventHandler do
     end
   end
 
+  # Catch-all for unexpected Finch telemetry events
+  def handle_finch_event(_event_name, _measurements, _metadata, _config), do: nil
+
   defp build_finch_url(%{scheme: scheme, host: host, port: port, path: path} = req) do
     query = if req.query && req.query != "", do: "?#{req.query}", else: ""
     "#{scheme}://#{host}#{if port != 443 && port != 80, do: ":#{port}"}#{path}#{query}"
@@ -192,7 +253,9 @@ defmodule Monitorex.EventHandler do
 
   defp extract_finch_status(metadata) do
     case metadata[:response] do
-      %{status: status} -> status
+      %{status: status} ->
+        status
+
       _ ->
         case metadata[:result] do
           {:ok, %{status: status}} -> status
@@ -258,6 +321,9 @@ defmodule Monitorex.EventHandler do
     end
   end
 
+  # Catch-all for unexpected Phoenix telemetry events
+  def handle_phoenix_event(_event_name, _measurements, _metadata, _config), do: nil
+
   # ── private helpers ──
 
   defp redact_headers_from_metadata(nil), do: nil
@@ -282,6 +348,7 @@ defmodule Monitorex.EventHandler do
   defp url_to_string(url) when is_binary(url), do: url
 
   defp accepts_path?(_path, nil), do: true
+
   defp accepts_path?(path, prefixes) when is_list(prefixes) do
     Enum.any?(prefixes, &String.starts_with?(path, &1))
   end

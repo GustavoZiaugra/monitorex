@@ -5,7 +5,9 @@ defmodule Monitorex.UrlNormalizerTest do
 
   describe "normalize/1" do
     test "normalizes UUIDs to :uuid" do
-      assert UrlNormalizer.normalize("https://api.example.com/users/550e8400-e29b-41d4-a716-446655440000") ==
+      assert UrlNormalizer.normalize(
+               "https://api.example.com/users/550e8400-e29b-41d4-a716-446655440000"
+             ) ==
                "https://api.example.com/users/:uuid"
     end
 
@@ -25,7 +27,9 @@ defmodule Monitorex.UrlNormalizerTest do
     end
 
     test "handles mixed paths with multiple dynamic segments" do
-      assert UrlNormalizer.normalize("https://api.example.com/users/123/orders/550e8400-e29b-41d4-a716-446655440000") ==
+      assert UrlNormalizer.normalize(
+               "https://api.example.com/users/123/orders/550e8400-e29b-41d4-a716-446655440000"
+             ) ==
                "https://api.example.com/users/:id/orders/:uuid"
     end
 
@@ -51,6 +55,7 @@ defmodule Monitorex.UrlNormalizerTest do
   describe "normalize/2 with cardinality cap" do
     test "returns normalized path when under the limit" do
       tracked = MapSet.new([{"api.example.com", "/users/:id"}])
+
       assert UrlNormalizer.normalize("https://api.example.com/orders/123", tracked) ==
                "https://api.example.com/orders/:id"
     end

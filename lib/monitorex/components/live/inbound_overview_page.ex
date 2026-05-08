@@ -117,6 +117,7 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
   defp format_percentage(n) when is_number(n) do
     Float.round(n, 1) |> then(&"#{&1}%")
   end
+
   defp format_percentage(_), do: "0%"
 
   defp format_ms(nil), do: "-"

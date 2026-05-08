@@ -91,16 +91,26 @@ defmodule Monitorex.Components.Live.InboundConsumersPage do
   defp sort_consumers(consumers, sort_by, sort_dir) do
     sorted =
       case sort_by do
-        "consumer" -> Enum.sort_by(consumers, & &1.consumer)
-        "requests" -> Enum.sort_by(consumers, &(&1.requests || 0))
+        "consumer" ->
+          Enum.sort_by(consumers, & &1.consumer)
+
+        "requests" ->
+          Enum.sort_by(consumers, &(&1.requests || 0))
+
         "error_rate" ->
           Enum.sort_by(consumers, fn c ->
             req = c.requests || 0
             if req > 0, do: (c.errors || 0) / req, else: 0.0
           end)
-        "avg_latency" -> Enum.sort_by(consumers, &(&1.avg_latency || 0))
-        "last_seen" -> Enum.sort_by(consumers, &(&1.last_seen || 0))
-        _ -> Enum.sort_by(consumers, &(&1.requests || 0))
+
+        "avg_latency" ->
+          Enum.sort_by(consumers, &(&1.avg_latency || 0))
+
+        "last_seen" ->
+          Enum.sort_by(consumers, &(&1.last_seen || 0))
+
+        _ ->
+          Enum.sort_by(consumers, &(&1.requests || 0))
       end
 
     if sort_dir == "desc", do: Enum.reverse(sorted), else: sorted

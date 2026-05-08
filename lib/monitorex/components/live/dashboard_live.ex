@@ -76,11 +76,17 @@ defmodule Monitorex.DashboardLive do
   @doc false
   def resolve_page(params) do
     case params do
-      %{"page" => "host", "host" => _host} -> "host"
-      %{"page" => "route", "host" => _route_key} -> "route"
+      %{"page" => "host", "host" => _host} ->
+        "host"
+
+      %{"page" => "route", "host" => _route_key} ->
+        "route"
+
       %{"page" => page} when is_binary(page) ->
         if Map.has_key?(@pages, page), do: page, else: @default_page
-      %{} -> @default_page
+
+      %{} ->
+        @default_page
     end
   end
 
@@ -118,6 +124,6 @@ defmodule Monitorex.DashboardLive do
   end
 
   defp atomize_keys(map) do
-    Map.new(map, fn {k, v} -> {String.to_existing_atom(k), v} end)
+    Map.new(map, fn {k, v} -> {String.to_atom(k), v} end)
   end
 end

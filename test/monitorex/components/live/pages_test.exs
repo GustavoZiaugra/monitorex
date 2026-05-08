@@ -115,12 +115,13 @@ defmodule Monitorex.Components.Live.PagesTest do
     end
 
     test "renders with filters" do
-      html = render_component(InboundRecentPage, %{
-        id: "test",
-        status_class: "error",
-        consumer: "myapp",
-        route: "GET:/api/users"
-      })
+      html =
+        render_component(InboundRecentPage, %{
+          id: "test",
+          status_class: "error",
+          consumer: "myapp",
+          route: "GET:/api/users"
+        })
 
       assert html =~ "Recent Inbound Requests"
     end

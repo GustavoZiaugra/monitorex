@@ -50,7 +50,12 @@ defmodule Monitorex.LoadTest do
 
   # ── Helpers ──
 
-  defp make_outbound(host \\ "loadtest.example.com", path \\ "/api/data", status \\ 200, duration \\ 50.0) do
+  defp make_outbound(
+         host \\ "loadtest.example.com",
+         path \\ "/api/data",
+         status \\ 200,
+         duration \\ 50.0
+       ) do
     %Event{
       source: :tesla,
       direction: :outbound,
@@ -165,12 +170,13 @@ defmodule Monitorex.LoadTest do
       n = 2_000
       hosts = for i <- 1..20, do: "host-#{i}.example.com"
 
-      events = for i <- 1..n do
-        host = Enum.at(hosts, rem(i, length(hosts)))
-        path = "/api/#{rem(i, 10)}"
-        status = Enum.random([200, 200, 200, 201, 204, 301, 400, 404, 500, 502])
-        make_outbound(host, path, status, :rand.uniform(500) * 1.0)
-      end
+      events =
+        for i <- 1..n do
+          host = Enum.at(hosts, rem(i, length(hosts)))
+          path = "/api/#{rem(i, 10)}"
+          status = Enum.random([200, 200, 200, 201, 204, 301, 400, 404, 500, 502])
+          make_outbound(host, path, status, :rand.uniform(500) * 1.0)
+        end
 
       {send_time, _count} =
         :timer.tc(fn ->
@@ -183,7 +189,9 @@ defmodule Monitorex.LoadTest do
       send_ms = send_time / 1000
       rate = n / (send_ms / 1000)
 
-      IO.puts("\n    Throughput: #{Float.round(rate, 0)} events/sec (#{n} events in #{Float.round(send_ms, 1)} ms)")
+      IO.puts(
+        "\n    Throughput: #{Float.round(rate, 0)} events/sec (#{n} events in #{Float.round(send_ms, 1)} ms)"
+      )
 
       assert send_ms < 10_000,
              "Sending #{n} events should take < 10s, took #{Float.round(send_ms, 1)}ms"
@@ -209,10 +217,11 @@ defmodule Monitorex.LoadTest do
       pid = start_collector(:load_test_cardinality)
       n = 1_000
 
-      events = for i <- 1..n do
-        host = "unique-#{String.pad_leading(Integer.to_string(i), 5, "0")}.example.com"
-        make_outbound(host, "/api/data", 200, :rand.uniform(100) * 1.0)
-      end
+      events =
+        for i <- 1..n do
+          host = "unique-#{String.pad_leading(Integer.to_string(i), 5, "0")}.example.com"
+          make_outbound(host, "/api/data", 200, :rand.uniform(100) * 1.0)
+        end
 
       Enum.each(events, &Collector.handle_event(&1, pid))
 
@@ -234,7 +243,10 @@ defmodule Monitorex.LoadTest do
       host_mem_bytes = host_mem_words * 8
       per_host = host_mem_bytes / n
 
-      IO.puts("\n    #{n} unique hosts → #{host_mem_words} words ETS (#{Float.round(host_mem_bytes / 1024, 1)} KB)")
+      IO.puts(
+        "\n    #{n} unique hosts → #{host_mem_words} words ETS (#{Float.round(host_mem_bytes / 1024, 1)} KB)"
+      )
+
       IO.puts("    Per-host overhead: ~#{Float.round(per_host, 1)} bytes")
 
       Application.delete_env(:monitorex, :cleanup_interval_ms)
@@ -259,11 +271,12 @@ defmodule Monitorex.LoadTest do
       pid = start_collector(:load_test_cleanup)
 
       # Send events to 50 unique hosts with 20 endpoints each
-      events = for i <- 1..1000 do
-        host = "cleanup-host-#{rem(i, 50)}.example.com"
-        path = "/api/#{rem(i, 20)}"
-        make_outbound(host, path, Enum.random([200, 404, 500]), :rand.uniform(200) * 1.0)
-      end
+      events =
+        for i <- 1..1000 do
+          host = "cleanup-host-#{rem(i, 50)}.example.com"
+          path = "/api/#{rem(i, 20)}"
+          make_outbound(host, path, Enum.random([200, 404, 500]), :rand.uniform(200) * 1.0)
+        end
 
       Enum.each(events, &Collector.handle_event(&1, pid))
 
@@ -300,28 +313,36 @@ defmodule Monitorex.LoadTest do
       pid = start_collector(:load_test_mixed_dir)
       n = 2_000
 
-      events = for i <- 1..n do
-        if rem(i, 2) == 0 do
-          make_outbound("mix-host-#{rem(i, 30)}.com", "/api/#{rem(i, 10)}", Enum.random([200, 404, 500]))
-        else
-          make_inbound(
-            Enum.random(["GET", "POST"]),
-            "/api/v#{rem(i, 3)}/resource",
-            Enum.random([200, 201, 400, 500]),
-            30 + :rand.uniform(100),
-            Enum.random([nil, "svc-a", "svc-b", "svc-c"])
-          )
+      events =
+        for i <- 1..n do
+          if rem(i, 2) == 0 do
+            make_outbound(
+              "mix-host-#{rem(i, 30)}.com",
+              "/api/#{rem(i, 10)}",
+              Enum.random([200, 404, 500])
+            )
+          else
+            make_inbound(
+              Enum.random(["GET", "POST"]),
+              "/api/v#{rem(i, 3)}/resource",
+              Enum.random([200, 201, 400, 500]),
+              30 + :rand.uniform(100),
+              Enum.random([nil, "svc-a", "svc-b", "svc-c"])
+            )
+          end
         end
-      end
 
-      {time_us, _} = :timer.tc(fn ->
-        Enum.each(events, &Collector.handle_event(&1, pid))
-      end)
+      {time_us, _} =
+        :timer.tc(fn ->
+          Enum.each(events, &Collector.handle_event(&1, pid))
+        end)
 
       time_ms = time_us / 1000
       rate = n / (time_ms / 1000)
 
-      IO.puts("\n    Mixed throughput: #{Float.round(rate, 0)} events/sec (#{n} events in #{Float.round(time_ms, 1)}ms)")
+      IO.puts(
+        "\n    Mixed throughput: #{Float.round(rate, 0)} events/sec (#{n} events in #{Float.round(time_ms, 1)}ms)"
+      )
 
       # Wait for cleanup cycles to trim ring buffers
       await_cleanup(pid, 1000)

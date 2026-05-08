@@ -53,29 +53,47 @@ defmodule Monitorex.Alerts do
 
   defp evaluate_alert(%{metric: :host_down} = cfg, now) do
     with_table(:monitorex_outbound_hosts, fn ->
-      :ets.foldl(fn {host, agg}, acc ->
-        last_seen_sec = div(agg.last_seen, System.convert_time_unit(1, :second, :native))
-        elapsed = now - last_seen_sec
+      :ets.foldl(
+        fn {host, agg}, acc ->
+          last_seen_sec = div(agg.last_seen, System.convert_time_unit(1, :second, :native))
+          elapsed = now - last_seen_sec
 
-        if elapsed > cfg.window_seconds do
-          [build_alert(cfg, host, elapsed, "no events for #{elapsed}s") | acc]
-        else
-          acc
-        end
-      end, [], :monitorex_outbound_hosts)
+          if elapsed > cfg.window_seconds do
+            [build_alert(cfg, host, elapsed, "no events for #{elapsed}s") | acc]
+          else
+            acc
+          end
+        end,
+        [],
+        :monitorex_outbound_hosts
+      )
     end) || []
   end
 
-  defp evaluate_alert(%{metric: metric} = cfg, _now) when metric in [:error_rate, :avg_latency_ms, :p99_latency_ms, :requests_per_min] do
+  defp evaluate_alert(%{metric: metric} = cfg, _now)
+       when metric in [:error_rate, :avg_latency_ms, :p99_latency_ms, :requests_per_min] do
     with_table(:monitorex_outbound_hosts, fn ->
-      :ets.foldl(fn {host, agg}, acc ->
-        value = extract_metric(agg, metric)
-        if value != nil and compare(value, cfg.op, cfg.threshold) do
-          [build_alert(cfg, host, value, "#{metric}=#{value} exceeds #{cfg.op} #{cfg.threshold}") | acc]
-        else
-          acc
-        end
-      end, [], :monitorex_outbound_hosts)
+      :ets.foldl(
+        fn {host, agg}, acc ->
+          value = extract_metric(agg, metric)
+
+          if value != nil and compare(value, cfg.op, cfg.threshold) do
+            [
+              build_alert(
+                cfg,
+                host,
+                value,
+                "#{metric}=#{value} exceeds #{cfg.op} #{cfg.threshold}"
+              )
+              | acc
+            ]
+          else
+            acc
+          end
+        end,
+        [],
+        :monitorex_outbound_hosts
+      )
     end) || []
   end
 
@@ -132,10 +150,14 @@ defmodule Monitorex.Alerts do
 
             # Cleanup old entries
             to_delete =
-              :ets.foldl(fn
-                {k, ts}, acc when now - ts > min_interval * 2 -> [k | acc]
-                _, acc -> acc
-              end, [], debounce_table)
+              :ets.foldl(
+                fn
+                  {k, ts}, acc when now - ts > min_interval * 2 -> [k | acc]
+                  _, acc -> acc
+                end,
+                [],
+                debounce_table
+              )
 
             Enum.each(to_delete, &:ets.delete(debounce_table, &1))
             true
@@ -156,15 +178,16 @@ defmodule Monitorex.Alerts do
   end
 
   defp fire_webhook(url, alert) do
-    task = Task.async(fn ->
-      try do
-        _url = URI.parse(url)
-        _alert = alert
-        :ok
-      rescue
-        _ -> :error
-      end
-    end)
+    task =
+      Task.async(fn ->
+        try do
+          _url = URI.parse(url)
+          _alert = alert
+          :ok
+        rescue
+          _ -> :error
+        end
+      end)
 
     case Task.yield(task, 5_000) || Task.shutdown(task, :brutal_kill) do
       {:ok, _} -> :ok

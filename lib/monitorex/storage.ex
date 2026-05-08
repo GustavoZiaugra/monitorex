@@ -276,8 +276,12 @@ defmodule Monitorex.Storage do
           |> Enum.sort()
 
         case samples do
-          [] -> {nil, nil, nil}
-          _ -> {compute_percentile(samples, 50), compute_percentile(samples, 95), compute_percentile(samples, 99)}
+          [] ->
+            {nil, nil, nil}
+
+          _ ->
+            {compute_percentile(samples, 50), compute_percentile(samples, 95),
+             compute_percentile(samples, 99)}
         end
     end
   end
@@ -338,8 +342,12 @@ defmodule Monitorex.Storage do
           |> Enum.sort()
 
         case samples do
-          [] -> {nil, nil, nil}
-          _ -> {compute_percentile(samples, 50), compute_percentile(samples, 95), compute_percentile(samples, 99)}
+          [] ->
+            {nil, nil, nil}
+
+          _ ->
+            {compute_percentile(samples, 50), compute_percentile(samples, 95),
+             compute_percentile(samples, 99)}
         end
     end
   end

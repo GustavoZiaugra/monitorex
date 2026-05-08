@@ -28,19 +28,21 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
     page_size = assigns[:page_size] || @page_size
     offset = (page - 1) * page_size
 
-    events = ClusterPage.list_recent_inbound(
-      status_class: status_class,
-      consumer: consumer,
-      route: route,
-      limit: page_size,
-      offset: offset
-    )
+    events =
+      ClusterPage.list_recent_inbound(
+        status_class: status_class,
+        consumer: consumer,
+        route: route,
+        limit: page_size,
+        offset: offset
+      )
 
-    total_count = ClusterPage.count_recent_inbound(
-      status_class: status_class,
-      consumer: consumer,
-      route: route
-    )
+    total_count =
+      ClusterPage.count_recent_inbound(
+        status_class: status_class,
+        consumer: consumer,
+        route: route
+      )
 
     rows = Enum.map(events, &build_row/1)
     total_pages = max(1, ceil(total_count / page_size))
@@ -171,16 +173,21 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
   end
 
   defp base_filter_url(socket, status_class_override) do
-    sc = if status_class_override != nil, do: status_class_override, else: socket.assigns.filter_status_class
+    sc =
+      if status_class_override != nil,
+        do: status_class_override,
+        else: socket.assigns.filter_status_class
+
     consumer = socket.assigns.filter_consumer
     route = socket.assigns.filter_route
 
-    params = %{"page" => "inbound_recent"}
-    |> then(fn p -> if sc != "", do: Map.put(p, "status_class", sc), else: p end)
-    |> then(fn p -> if consumer != "", do: Map.put(p, "consumer", consumer), else: p end)
-    |> then(fn p -> if route != "", do: Map.put(p, "route", route), else: p end)
-    |> Enum.map(fn {k, v} -> "#{k}=#{URI.encode(v)}" end)
-    |> Enum.join("&")
+    params =
+      %{"page" => "inbound_recent"}
+      |> then(fn p -> if sc != "", do: Map.put(p, "status_class", sc), else: p end)
+      |> then(fn p -> if consumer != "", do: Map.put(p, "consumer", consumer), else: p end)
+      |> then(fn p -> if route != "", do: Map.put(p, "route", route), else: p end)
+      |> Enum.map(fn {k, v} -> "#{k}=#{URI.encode(v)}" end)
+      |> Enum.join("&")
 
     "?" <> params
   end
@@ -216,12 +223,12 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
     end
   end
 
-
   defp format_duration(nil), do: "-"
   defp format_duration(n) when is_number(n), do: "#{Float.round(n, 2)}ms"
   defp format_duration(_), do: "-"
 
   defp parse_status_class(nil), do: nil
+
   defp parse_status_class(str) when is_binary(str) do
     case str do
       "2xx" -> :success
@@ -231,5 +238,6 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
       _ -> nil
     end
   end
+
   defp parse_status_class(atom) when is_atom(atom), do: atom
 end
