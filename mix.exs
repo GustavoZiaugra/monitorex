@@ -85,7 +85,7 @@ defmodule Monitorex.MixProject do
       {:tailwind, "~> 0.4.1", runtime: Mix.env() == :dev},
       {:plug_cowboy, "~> 2.7", only: :dev},
       {:floki, "~> 0.38.1", only: :test},
-      {:ex_doc, "~> 0.40.1", only: :dev, runtime: false},
+      {:ex_doc, "~> 0.40.1", runtime: false},
       {:credo, "~> 1.7", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: :dev, runtime: false}
     ]
