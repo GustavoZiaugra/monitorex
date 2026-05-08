@@ -43,10 +43,14 @@ defmodule Monitorex.Router do
     live_view = Keyword.get(opts, :live_view, Monitorex.DashboardLive)
     layout = Keyword.get(opts, :layout, {Monitorex.Layouts, :root})
     assets_path = Keyword.get(opts, :assets_path, "/dashboard-assets")
+    health_path = Keyword.get(opts, :health_path, "/monitorex/health")
     on_mount = Keyword.get(opts, :on_mount, [Monitorex.Authentication])
 
     quote do
       import Phoenix.LiveView.Router
+
+      # Health check endpoint (no auth)
+      get unquote(health_path), Monitorex.HealthPlug, :call
 
       # Register asset routes
       get unquote(assets_path <> "/*path"), Monitorex.Assets, :call

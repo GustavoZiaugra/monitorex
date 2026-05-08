@@ -213,6 +213,106 @@ defmodule Monitorex.EventHandlerTest do
       assert String.contains?(event.full_url, "key=%5BREDACTED%5D") or
                String.contains?(event.full_url, "key=[REDACTED]")
     end
+
+    test "redacts request and response headers" do
+      url = %URI{scheme: "https", host: "api.example.com", path: "/data"}
+
+      metadata = %{
+        url: url,
+        method: :get,
+        status: 200,
+        pid: self(),
+        monotonic_time: System.monotonic_time(),
+        req_headers: [{"authorization", "Bearer secret"}, {"accept", "application/json"}],
+        resp_headers: [{"set-cookie", "session=abc"}, {"content-type", "application/json"}]
+      }
+
+      measurements = %{duration: 100_000}
+
+      event =
+        EventHandler.handle_tesla_event(
+          [:tesla, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.request_headers == [
+               {"authorization", "••••redacted••••"},
+               {"accept", "application/json"}
+             ]
+
+      assert event.response_headers == [
+               {"set-cookie", "••••redacted••••"},
+               {"content-type", "application/json"}
+             ]
+    end
+
+    test "stores request and response bodies when enabled" do
+      Application.put_env(:monitorex, :store_request_body, true)
+      Application.put_env(:monitorex, :store_response_body, true)
+
+      url = %URI{scheme: "https", host: "api.example.com", path: "/data"}
+
+      metadata = %{
+        url: url,
+        method: :get,
+        status: 200,
+        pid: self(),
+        monotonic_time: System.monotonic_time(),
+        request_body: "req",
+        response_body: "resp"
+      }
+
+      measurements = %{duration: 100_000}
+
+      event =
+        EventHandler.handle_tesla_event(
+          [:tesla, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.request_body == "req"
+      assert event.response_body == "resp"
+
+      Application.delete_env(:monitorex, :store_request_body)
+      Application.delete_env(:monitorex, :store_response_body)
+    end
+
+    test "does not store bodies when disabled" do
+      Application.put_env(:monitorex, :store_request_body, false)
+      Application.put_env(:monitorex, :store_response_body, false)
+
+      url = %URI{scheme: "https", host: "api.example.com", path: "/data"}
+
+      metadata = %{
+        url: url,
+        method: :get,
+        status: 200,
+        pid: self(),
+        monotonic_time: System.monotonic_time(),
+        request_body: "req",
+        response_body: "resp"
+      }
+
+      measurements = %{duration: 100_000}
+
+      event =
+        EventHandler.handle_tesla_event(
+          [:tesla, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.request_body == nil
+      assert event.response_body == nil
+
+      Application.delete_env(:monitorex, :store_request_body)
+      Application.delete_env(:monitorex, :store_response_body)
+    end
   end
 
   # ── Finch handler ──
@@ -320,6 +420,35 @@ defmodule Monitorex.EventHandlerTest do
 
       assert String.contains?(event.full_url, "token=%5BREDACTED%5D") or
                String.contains?(event.full_url, "token=[REDACTED]")
+    end
+
+    test "redacts request and response headers" do
+      metadata = %{
+        url: %URI{scheme: "https", host: "finch.example.com", path: "/test"},
+        method: :get,
+        status: 200,
+        pid: self(),
+        monotonic_time: System.monotonic_time(),
+        req_headers: [{"x-api-key", "secret"}, {"accept", "application/json"}],
+        resp_headers: [{"authorization", "Bearer token"}]
+      }
+
+      measurements = %{duration: 100_000}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.request_headers == [
+               {"x-api-key", "••••redacted••••"},
+               {"accept", "application/json"}
+             ]
+
+      assert event.response_headers == [{"authorization", "••••redacted••••"}]
     end
   end
 
@@ -453,6 +582,63 @@ defmodule Monitorex.EventHandlerTest do
 
       assert event != nil
       assert event.consumer == "alice"
+    end
+
+    test "redacts request and response headers from conn" do
+      conn =
+        Plug.Test.conn(:get, "/api/v1/orders", nil)
+        |> Map.put(:status, 200)
+        |> Map.put(:host, "example.com")
+        |> Map.put(:req_headers, [{"authorization", "Bearer secret"}, {"accept", "application/json"}])
+        |> Map.put(:resp_headers, [{"set-cookie", "session=abc"}, {"content-type", "application/json"}])
+
+      metadata = %{conn: conn}
+      measurements = %{duration: 1_000_000}
+
+      event =
+        EventHandler.handle_phoenix_event(
+          [:phoenix, :router_dispatch, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.request_headers == [
+               {"authorization", "••••redacted••••"},
+               {"accept", "application/json"}
+             ]
+
+      assert event.response_headers == [
+               {"set-cookie", "••••redacted••••"},
+               {"content-type", "application/json"}
+             ]
+    end
+
+    test "stores request and response bodies from metadata when enabled" do
+      Application.put_env(:monitorex, :store_request_body, true)
+      Application.put_env(:monitorex, :store_response_body, true)
+
+      conn =
+        Plug.Test.conn(:post, "/api/v1/orders", nil)
+        |> Map.put(:status, 201)
+        |> Map.put(:host, "example.com")
+
+      metadata = %{conn: conn, request_body: "{\"id\":1}", response_body: "{\"ok\":true}"}
+      measurements = %{duration: 1_000_000}
+
+      event =
+        EventHandler.handle_phoenix_event(
+          [:phoenix, :router_dispatch, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.request_body == "{\"id\":1}"
+      assert event.response_body == "{\"ok\":true}"
+
+      Application.delete_env(:monitorex, :store_request_body)
+      Application.delete_env(:monitorex, :store_response_body)
     end
 
     test "handles error status codes in Phoenix events" do

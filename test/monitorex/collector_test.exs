@@ -222,5 +222,55 @@ defmodule Monitorex.CollectorTest do
 
       assert :ets.info(:monitorex_inbound_consumers, :size) == 0
     end
+
+    test "truncates request and response bodies exceeding max_body_bytes", %{pid: pid} do
+      Application.put_env(:monitorex, :max_body_bytes, 5)
+
+      event = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "POST",
+        host: "api.example.com",
+        path: "/upload",
+        status: 200,
+        duration_ms: 10.0,
+        request_body: "1234567890",
+        response_body: "abcdefghij"
+      }
+
+      Collector.handle_event(event, pid)
+      Process.sleep(50)
+
+      [{_, stored}] = :ets.lookup(:monitorex_outbound_recent, :ets.first(:monitorex_outbound_recent))
+      assert stored.request_body == "12345"
+      assert stored.response_body == "abcde"
+
+      Application.delete_env(:monitorex, :max_body_bytes)
+    end
+
+    test "does not truncate bodies under max_body_bytes", %{pid: pid} do
+      Application.put_env(:monitorex, :max_body_bytes, 100)
+
+      event = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "api.example.com",
+        path: "/small",
+        status: 200,
+        duration_ms: 10.0,
+        request_body: "tiny",
+        response_body: nil
+      }
+
+      Collector.handle_event(event, pid)
+      Process.sleep(50)
+
+      [{_, stored}] = :ets.lookup(:monitorex_outbound_recent, :ets.first(:monitorex_outbound_recent))
+      assert stored.request_body == "tiny"
+      assert stored.response_body == nil
+
+      Application.delete_env(:monitorex, :max_body_bytes)
+    end
   end
 end

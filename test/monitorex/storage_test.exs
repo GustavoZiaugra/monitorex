@@ -590,4 +590,34 @@ defmodule Monitorex.StorageTest do
       assert Storage.list_consumers_for_route("GET:/x") == []
     end
   end
+
+  describe "get_event/1" do
+    test "returns nil when tables are missing" do
+      assert Storage.get_event(1) == nil
+    end
+
+    test "fetches outbound event by timestamp" do
+      create_tables()
+
+      event = %Event{source: :tesla, direction: :outbound, method: "GET", host: "host-a", path: "/users", status: 200, status_class: :success, timestamp: 123}
+      :ets.insert(:monitorex_outbound_recent, {123, event})
+
+      assert Storage.get_event(123) == event
+    end
+
+    test "fetches inbound event by timestamp" do
+      create_tables()
+
+      event = %Event{source: :phoenix, direction: :inbound, method: "POST", path: "/api/orders", status: 201, status_class: :success, timestamp: 456}
+      :ets.insert(:monitorex_inbound_recent, {456, event})
+
+      assert Storage.get_event(456) == event
+    end
+
+    test "returns nil when timestamp is not found" do
+      create_tables()
+
+      assert Storage.get_event(999) == nil
+    end
+  end
 end

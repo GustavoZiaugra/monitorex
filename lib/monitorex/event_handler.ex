@@ -11,6 +11,7 @@ defmodule Monitorex.EventHandler do
   alias Monitorex.UrlNormalizer
   alias Monitorex.URLRedactor
   alias Monitorex.ConsumerIdentifier
+  alias Monitorex.HeaderRedactor
 
   @doc """
   Handles a Tesla telemetry event (`[:tesla, :request, :stop]`).
@@ -45,6 +46,9 @@ defmodule Monitorex.EventHandler do
     redacted_url = URLRedactor.redact(normalized_url)
     %URI{host: host, path: path} = URI.parse(normalized_url)
 
+    req_headers = redact_headers_from_metadata(metadata[:req_headers])
+    resp_headers = redact_headers_from_metadata(metadata[:resp_headers])
+
     %Event{
       source: :tesla,
       direction: :outbound,
@@ -56,7 +60,11 @@ defmodule Monitorex.EventHandler do
       status_class: Event.classify_status(metadata.status),
       duration_ms: Event.duration_ms(measurements.duration),
       timestamp: metadata.monotonic_time,
-      dedup_key: {metadata.pid, metadata.monotonic_time}
+      dedup_key: {metadata.pid, metadata.monotonic_time},
+      request_headers: req_headers,
+      response_headers: resp_headers,
+      request_body: maybe_store_body(metadata[:request_body], :request),
+      response_body: maybe_store_body(metadata[:response_body], :response)
     }
   end
 
@@ -90,6 +98,9 @@ defmodule Monitorex.EventHandler do
     host = Event.extract_host(metadata.url)
     uri = URI.parse(url_str)
 
+    req_headers = redact_headers_from_metadata(metadata[:req_headers])
+    resp_headers = redact_headers_from_metadata(metadata[:resp_headers])
+
     %Event{
       source: :finch,
       direction: :outbound,
@@ -101,7 +112,11 @@ defmodule Monitorex.EventHandler do
       status_class: Event.classify_status(metadata.status),
       duration_ms: Event.duration_ms(measurements.duration),
       timestamp: metadata.monotonic_time,
-      dedup_key: {metadata.pid, metadata.monotonic_time}
+      dedup_key: {metadata.pid, metadata.monotonic_time},
+      request_headers: req_headers,
+      response_headers: resp_headers,
+      request_body: maybe_store_body(metadata[:request_body], :request),
+      response_body: maybe_store_body(metadata[:response_body], :response)
     }
   end
 
@@ -138,6 +153,9 @@ defmodule Monitorex.EventHandler do
     inbound_path_prefixes = Application.get_env(:monitorex, :inbound_path_prefixes, nil)
 
     if accepts_path?(path, inbound_path_prefixes) do
+      req_headers = redact_headers_from_metadata(conn.req_headers)
+      resp_headers = redact_headers_from_metadata(conn.resp_headers)
+
       %Event{
         source: :phoenix,
         direction: :inbound,
@@ -150,12 +168,33 @@ defmodule Monitorex.EventHandler do
         duration_ms: Event.duration_ms(measurements.duration),
         consumer: ConsumerIdentifier.identify(conn),
         timestamp: System.monotonic_time(),
-        dedup_key: {self(), System.monotonic_time()}
+        dedup_key: {self(), System.monotonic_time()},
+        request_headers: req_headers,
+        response_headers: resp_headers,
+        request_body: maybe_store_body(metadata[:request_body], :request),
+        response_body: maybe_store_body(metadata[:response_body], :response)
       }
     end
   end
 
   # ── private helpers ──
+
+  defp redact_headers_from_metadata(nil), do: nil
+  defp redact_headers_from_metadata([]), do: []
+
+  defp redact_headers_from_metadata(headers) when is_list(headers) do
+    HeaderRedactor.redact_headers(headers)
+  end
+
+  defp maybe_store_body(body, _direction) when is_nil(body) or not is_binary(body), do: nil
+
+  defp maybe_store_body(body, :request) do
+    if Application.get_env(:monitorex, :store_request_body, false), do: body, else: nil
+  end
+
+  defp maybe_store_body(body, :response) do
+    if Application.get_env(:monitorex, :store_response_body, false), do: body, else: nil
+  end
 
   defp url_to_string(%URI{} = uri), do: URI.to_string(uri)
   defp url_to_string(url) when is_binary(url), do: url
