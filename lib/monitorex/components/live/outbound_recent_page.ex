@@ -5,14 +5,14 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
   Displays filter controls (status_class chips, host filter) and a table
   with color-coded status badges, with pagination. Auto-refreshes via
   parent DashboardLive's refresh timer (sends `:refresh` every 2s), which
-  triggers update/2 on the component, re-querying Storage.
+  triggers update/2 on the component, re-querying ClusterPage.
 
   Sort/filter/page state persisted in URL query params.
   """
   use Phoenix.LiveComponent
   import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1]
 
-  alias Monitorex.Storage
+  alias Monitorex.ClusterPage
   alias Monitorex.Components.Core
 
   @page_size 50
@@ -25,14 +25,14 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
     page_size = assigns[:page_size] || @page_size
     offset = (page - 1) * page_size
 
-    events = Storage.list_recent_outbound(
+    events = ClusterPage.list_recent_outbound(
       host: host,
       status_class: status_class,
       limit: page_size,
       offset: offset
     )
 
-    total_count = Storage.count_recent_outbound(
+    total_count = ClusterPage.count_recent_outbound(
       host: host,
       status_class: status_class
     )
@@ -40,10 +40,13 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
     rows = Enum.map(events, &build_row/1)
     total_pages = max(1, ceil(total_count / page_size))
 
+    show_node_column? = ClusterPage.cluster_enabled?()
+
     socket =
       socket
       |> assign(:events, events)
       |> assign(:rows, rows)
+      |> assign(:show_node_column, show_node_column?)
       |> assign(:filter_host, host || "")
       |> assign(:filter_status_class, assigns[:status_class] || "")
       |> assign(:page, page)
@@ -109,6 +112,7 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
                 <th class="data-table-th">URL</th>
                 <th class="data-table-th">Status</th>
                 <th class="data-table-th hide-mobile">Duration</th>
+                <th :if={@show_node_column} class="data-table-th hide-mobile">Node</th>
               </tr>
             </thead>
             <tbody>
@@ -118,9 +122,10 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
                 <td class="data-table-td" data-label="URL"><%= row.url %></td>
                 <td class="data-table-td" data-label="Status"><Core.status_badge status={row.status} /></td>
                 <td class="data-table-td hide-mobile" data-label="Duration"><%= row.duration %></td>
+                <td :if={@show_node_column} class="data-table-td hide-mobile" data-label="Node"><%= row[:node] || "-" %></td>
               </tr>
               <tr :if={@rows == []}>
-                <td colspan="5" class="data-table-empty">No recent outbound requests</td>
+                <td colspan={if @show_node_column, do: 6, else: 5} class="data-table-empty">No recent outbound requests</td>
               </tr>
             </tbody>
           </table>

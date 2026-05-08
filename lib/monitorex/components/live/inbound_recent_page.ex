@@ -14,7 +14,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
   use Phoenix.LiveComponent
   import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1]
 
-  alias Monitorex.Storage
+  alias Monitorex.ClusterPage
   alias Monitorex.Components.Core
 
   @page_size 50
@@ -28,7 +28,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
     page_size = assigns[:page_size] || @page_size
     offset = (page - 1) * page_size
 
-    events = Storage.list_recent_inbound(
+    events = ClusterPage.list_recent_inbound(
       status_class: status_class,
       consumer: consumer,
       route: route,
@@ -36,7 +36,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
       offset: offset
     )
 
-    total_count = Storage.count_recent_inbound(
+    total_count = ClusterPage.count_recent_inbound(
       status_class: status_class,
       consumer: consumer,
       route: route
@@ -49,10 +49,13 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
     consumers = list_consumers()
     routes = list_routes()
 
+    show_node_column? = ClusterPage.cluster_enabled?()
+
     socket =
       socket
       |> assign(:events, events)
       |> assign(:rows, rows)
+      |> assign(:show_node_column, show_node_column?)
       |> assign(:filter_status_class, assigns[:status_class] || "")
       |> assign(:filter_consumer, consumer || "")
       |> assign(:filter_route, route || "")
@@ -141,6 +144,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
                 <th class="data-table-th">Route</th>
                 <th class="data-table-th">Status</th>
                 <th class="data-table-th hide-mobile">Duration</th>
+                <th :if={@show_node_column} class="data-table-th hide-mobile">Node</th>
               </tr>
             </thead>
             <tbody>
@@ -151,9 +155,10 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
                 <td class="data-table-td" data-label="Route"><%= row.route %></td>
                 <td class="data-table-td" data-label="Status"><Core.status_badge status={row.status} /></td>
                 <td class="data-table-td hide-mobile" data-label="Duration"><%= row.duration %></td>
+                <td :if={@show_node_column} class="data-table-td hide-mobile" data-label="Node"><%= row[:node] || "-" %></td>
               </tr>
               <tr :if={@rows == []}>
-                <td colspan="6" class="data-table-empty">No recent inbound requests</td>
+                <td colspan={if @show_node_column, do: 7, else: 6} class="data-table-empty">No recent inbound requests</td>
               </tr>
             </tbody>
           </table>
@@ -234,7 +239,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
 
   defp list_consumers do
     try do
-      Storage.list_consumers()
+      ClusterPage.list_consumers()
       |> Enum.map(& &1.consumer)
       |> Enum.sort()
     rescue
@@ -244,7 +249,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
 
   defp list_routes do
     try do
-      Storage.list_routes()
+      ClusterPage.list_routes()
       |> Enum.map(&"#{&1.method}:#{&1.path}")
       |> Enum.sort()
     rescue

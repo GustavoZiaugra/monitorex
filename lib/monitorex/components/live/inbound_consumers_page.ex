@@ -9,12 +9,12 @@ defmodule Monitorex.Components.Live.InboundConsumersPage do
   use Phoenix.LiveComponent
   import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1]
 
-  alias Monitorex.Storage
+  alias Monitorex.ClusterPage
   alias Monitorex.Components.Core
 
   @impl true
   def update(assigns, socket) do
-    consumers = Storage.list_consumers()
+    consumers = ClusterPage.list_consumers()
 
     sort_by = assigns[:sort_by] || "requests"
     sort_dir = assigns[:sort_dir] || "desc"

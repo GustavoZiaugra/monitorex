@@ -9,7 +9,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   use Phoenix.LiveComponent
   import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1]
 
-  alias Monitorex.Storage
+  alias Monitorex.ClusterPage
   alias Monitorex.Components.Core
 
   @sortable_fields ~w(path requests avg_latency error_rate)
@@ -18,8 +18,8 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   def update(assigns, socket) do
     host = assigns[:host]
 
-    endpoints = Storage.list_endpoints_for_host(host)
-    recent = Storage.list_recent_outbound(host: host, limit: 20)
+    endpoints = ClusterPage.list_endpoints_for_host(host)
+    recent = ClusterPage.list_recent_outbound(host: host, limit: 20)
 
     sort_by = assigns[:sort_by] || "requests"
     sort_dir = assigns[:sort_dir] || "desc"

@@ -10,12 +10,12 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
   """
   use Phoenix.LiveComponent
 
-  alias Monitorex.Storage
+  alias Monitorex.ClusterPage
   alias Monitorex.Components.Core
 
   @impl true
   def update(assigns, socket) do
-    routes = Storage.list_routes()
+    routes = ClusterPage.list_routes()
 
     total_requests = Enum.reduce(routes, 0, &(&1.requests + &2))
     total_errors = Enum.reduce(routes, 0, &(&1.errors + &2))
