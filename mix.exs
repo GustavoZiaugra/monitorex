@@ -4,13 +4,18 @@ defmodule Monitorex.MixProject do
   def project do
     [
       app: :monitorex,
-      version: "0.2.0",
+      version: "0.3.0",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      docs: docs()
+      docs: docs(),
+      package: package()
     ]
+  end
+
+  def cli do
+    [preferred_envs: ["hex.publish": :prod]]
   end
 
   def application do
@@ -83,6 +88,18 @@ defmodule Monitorex.MixProject do
       {:ex_doc, "~> 0.40.1", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: :dev, runtime: false}
+    ]
+  end
+
+  defp package do
+    [
+      name: "monitorex",
+      description: "HTTP telemetry dashboard for Elixir/Phoenix — monitor outbound & inbound requests with LiveView",
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => "https://github.com/GustavoZiaugra/monitorex"
+      },
+      files: ~w(lib priv/assets priv/static .formatter.exs mix.exs README.md LICENSE.md CHANGELOG.md)
     ]
   end
 end
