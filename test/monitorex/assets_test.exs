@@ -29,12 +29,12 @@ defmodule Monitorex.AssetsTest do
   end
 
   describe "init/1" do
-    test "defaults at to /dashboard-assets" do
+    test "returns default path without opts" do
       assert Assets.init([]) == %{at: "/dashboard-assets"}
     end
 
-    test "accepts custom :at option" do
-      assert Assets.init(at: "/custom-assets") == %{at: "/custom-assets"}
+    test "returns default path even with custom opts" do
+      assert Assets.init(at: "/custom-assets") == %{at: "/dashboard-assets"}
     end
   end
 
