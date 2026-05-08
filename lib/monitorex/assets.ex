@@ -47,9 +47,8 @@ defmodule Monitorex.Assets do
 
     * `:at` — the path prefix where assets are mounted (default: `"/dashboard-assets"`)
   """
-  def init(opts) do
-    at = Keyword.get(opts, :at, "/dashboard-assets")
-    %{at: at}
+  def init(_opts) do
+    %{at: "/dashboard-assets"}
   end
 
   @doc """
