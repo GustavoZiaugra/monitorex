@@ -15,7 +15,7 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
 
       assert html =~ "Request Timeline"
       assert html =~ "Real-time request/response inspector"
-      assert html =~ "No recent outbound events"
+      assert html =~ "No matching outbound events"
       assert html =~ "Outbound"
       assert html =~ "Inbound"
     end
@@ -27,7 +27,7 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
           direction: "inbound"
         })
 
-      assert html =~ "No recent inbound events"
+      assert html =~ "No matching inbound events"
     end
   end
 
