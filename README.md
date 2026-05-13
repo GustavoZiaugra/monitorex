@@ -101,7 +101,7 @@ Visit `/monitoring` to see your dashboard.
 config :monitorex, :sources, [:tesla, :finch, :phoenix]
 ```
 
-Available sources: `:tesla`, `:finch`, `:phoenix`. Only attach the sources you use.
+Available sources: `:tesla`, `:finch`, `:req`, `:phoenix`. Only attach the sources you use.
 
 ### Inbound path filtering
 

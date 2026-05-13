@@ -27,7 +27,7 @@ defmodule Monitorex.Collector do
   @default_endpoint_ttl :timer.hours(1)
   @default_cleanup_interval 5_000
   @default_health_check_interval 30_000
-  @default_sources [:tesla, :finch, :phoenix]
+  @default_sources [:tesla, :finch, :req, :phoenix]
 
   # ── Public API ──
 
@@ -84,6 +84,7 @@ defmodule Monitorex.Collector do
   def terminate(_reason, state) do
     :telemetry.detach({Monitorex.Collector, :tesla})
     :telemetry.detach({Monitorex.Collector, :finch})
+    :telemetry.detach({Monitorex.Collector, :req})
     :telemetry.detach({Monitorex.Collector, :phoenix})
 
     tables = [
@@ -176,6 +177,22 @@ defmodule Monitorex.Collector do
         {Monitorex.Collector, :finch_exception},
         [:finch, :request, :exception],
         finch_handler_fun(),
+        nil
+      )
+    end
+
+    if :req in sources do
+      :telemetry.attach(
+        {Monitorex.Collector, :req},
+        [:req, :stop],
+        req_handler_fun(),
+        nil
+      )
+
+      :telemetry.attach(
+        {Monitorex.Collector, :req_exception},
+        [:req, :exception],
+        req_handler_fun(),
         nil
       )
     end
@@ -538,6 +555,10 @@ defmodule Monitorex.Collector do
       safe_reattach({Monitorex.Collector, :finch}, [:finch, :request, :stop], finch_handler_fun())
     end
 
+    if :req in sources do
+      safe_reattach({Monitorex.Collector, :req}, [:req, :stop], req_handler_fun())
+    end
+
     if :phoenix in sources do
       safe_reattach(
         {Monitorex.Collector, :phoenix},
@@ -576,6 +597,15 @@ defmodule Monitorex.Collector do
   defp finch_handler_fun do
     fn event_name, measurements, metadata, config ->
       case Monitorex.EventHandler.handle_finch_event(event_name, measurements, metadata, config) do
+        nil -> :ok
+        event -> Monitorex.Collector.handle_event(event)
+      end
+    end
+  end
+
+  defp req_handler_fun do
+    fn event_name, measurements, metadata, config ->
+      case Monitorex.EventHandler.handle_req_event(event_name, measurements, metadata, config) do
         nil -> :ok
         event -> Monitorex.Collector.handle_event(event)
       end

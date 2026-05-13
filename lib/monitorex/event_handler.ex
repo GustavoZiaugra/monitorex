@@ -1,6 +1,6 @@
 defmodule Monitorex.EventHandler do
   @moduledoc """
-  Handles telemetry events from Tesla, Finch, and Phoenix, transforming them
+  Handles telemetry events from Tesla, Finch, Req, and Phoenix, transforming them
   into `Monitorex.Event` structs.
 
   Each handler function follows the `Telemetry` handler callback signature:
@@ -263,6 +263,92 @@ defmodule Monitorex.EventHandler do
         end
     end
   end
+
+  @doc """
+  Handles a Req telemetry event (`[:req, :stop]`).
+
+  Parses the metadata and measurements into a `Monitorex.Event` struct with
+  source `:req` and direction `:outbound`.
+
+  ## Telemetry metadata shape
+
+      %{
+        request:  %Req.Request{},
+        response: %Req.Response{}
+      }
+
+  The `Req.Request` struct contains `:url` (a URI.t()), `:method`, and `:headers`.
+  The `Req.Response` struct contains `:status`, `:headers`, and `:body`.
+  Duration is in `measurements.duration` (native time units).
+  """
+  @spec handle_req_event(
+          event_name :: [atom()],
+          measurements :: map(),
+          metadata :: map(),
+          config :: keyword()
+        ) :: Event.t() | nil
+  def handle_req_event([:req, :stop], measurements, metadata, _config) do
+    request = metadata.request
+    response = metadata.response
+
+    url_str = url_to_string(request.url)
+    method = Event.normalize_method(request.method)
+    uri = URI.parse(url_str)
+    host = uri.host
+    path = uri.path
+
+    req_headers = redact_headers_from_metadata(request.headers || [])
+    resp_headers = redact_headers_from_metadata(response.headers || [])
+
+    ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
+
+    normalized_url = UrlNormalizer.normalize(url_str)
+    redacted_url = URLRedactor.redact(normalized_url)
+
+    %Event{
+      source: :req,
+      direction: :outbound,
+      method: method,
+      host: host,
+      path: path,
+      full_url: redacted_url,
+      status: response.status,
+      status_class: Event.classify_status(response.status || 0),
+      duration_ms: Event.duration_ms(measurements.duration),
+      timestamp: ts,
+      request_headers: req_headers,
+      response_headers: resp_headers
+    }
+  end
+
+  def handle_req_event([:req, :exception], measurements, metadata, _config) do
+    request = metadata.request
+
+    url_str = url_to_string(request.url)
+    method = Event.normalize_method(request.method)
+    uri = URI.parse(url_str)
+
+    ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
+
+    %Event{
+      source: :req,
+      direction: :outbound,
+      method: method,
+      host: uri.host,
+      path: uri.path,
+      full_url: URLRedactor.redact(url_str),
+      status: nil,
+      status_class: :server_error,
+      duration_ms: Event.duration_ms(measurements.duration),
+      timestamp: ts,
+      request_headers: redact_headers_from_metadata(request.headers || []),
+      response_headers: nil,
+      error: inspect(metadata[:error] || "Req exception")
+    }
+  end
+
+  # Catch-all for unexpected Req telemetry events
+  def handle_req_event(_event_name, _measurements, _metadata, _config), do: nil
 
   @doc """
   Handles a Phoenix telemetry event (`[:phoenix, :router_dispatch, :stop]`).
