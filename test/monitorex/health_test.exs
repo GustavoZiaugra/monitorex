@@ -16,9 +16,9 @@ defmodule Monitorex.HealthTest do
       assert is_integer(result.checked_at)
     end
 
-    test "ets_table_sizes has all 8 tables" do
+    test "ets_table_sizes has all 9 tables" do
       sizes = Health.ets_table_sizes()
-      assert map_size(sizes) == 8
+      assert map_size(sizes) == 9
       assert is_integer(sizes[:monitorex_outbound_hosts])
       assert is_integer(sizes[:monitorex_inbound_recent])
     end

@@ -15,7 +15,8 @@ defmodule Monitorex.Health do
   @tables ~w(monitorex_outbound_hosts monitorex_outbound_endpoints
              monitorex_outbound_recent monitorex_outbound_duration_samples
              monitorex_inbound_routes monitorex_inbound_consumers
-             monitorex_inbound_recent monitorex_inbound_duration_samples)a
+             monitorex_inbound_recent monitorex_inbound_duration_samples
+             monitorex_dedup)a
 
   @doc """
   Returns a map of Collector health statistics.
