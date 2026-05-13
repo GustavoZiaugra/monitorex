@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.0 (2026-05-13)
+
+### Added
+- Configurable max event limits and `Monitorex.memory_usage/0` helper — `:max_endpoints`, `:max_recent`, `:max_recent_inbound`, `:endpoint_ttl` (#57, #60)
+- Req HTTP client telemetry handler — capture Req requests via `source: :req` (#55, #58)
+- ExDoc documentation with full API reference and Getting Started guide (#56, #59)
+- Memory management documentation in README — `:max_endpoints`, ETS pruning, memory_usage/0 (#61)
+
+### Fixed
+- Req telemetry handler: Req 0.5.x removed built-in telemetry — now uses `req_telemetry` package events (`[:req, :request, :pipeline, :stop]`) (#55, #63)
+- CI flakiness: integration test now restores ETS tables instead of stopping Collector globale (#62)
+- hex.pm badges and published docs link in README (#54)
+
+### Changed
+- Removed auto-publish workflow — Hex releases now manual only (#53)
+
 ## 0.4.0 (2026-05-13)
 
 ### Added

@@ -41,7 +41,7 @@ Add `monitorex` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:monitorex, "~> 0.4.0"}
+    {:monitorex, "~> 0.5.0"}
   ]
 end
 ```
@@ -102,6 +102,8 @@ config :monitorex, :sources, [:tesla, :finch, :phoenix]
 ```
 
 Available sources: `:tesla`, `:finch`, `:req`, `:phoenix`. Only attach the sources you use.
+
+> **⚠️ Req source requires `req_telemetry`** — Req 0.5.x removed built-in telemetry. Add `{:req_telemetry, "~> 0.1"}` to your `mix.exs` deps for Req events to fire.
 
 ### Inbound path filtering
 
