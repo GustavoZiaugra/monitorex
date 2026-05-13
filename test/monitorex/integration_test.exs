@@ -34,6 +34,30 @@ defmodule Monitorex.IntegrationTest do
     name = :"collector_int_#{System.unique_integer([:positive])}"
     {:ok, pid} = GenServer.start_link(Collector, [], name: name)
 
+    on_exit(fn ->
+      # The isolated Collector's terminate/2 deletes the global ETS
+      # tables (shared atom names). Recreate them so the application-
+      # level Collector doesn't crash on its next cleanup cycle.
+      table_specs = [
+        {:monitorex_outbound_hosts, :set},
+        {:monitorex_outbound_endpoints, :set},
+        {:monitorex_outbound_recent, :ordered_set},
+        {:monitorex_outbound_duration_samples, :bag},
+        {:monitorex_inbound_routes, :set},
+        {:monitorex_inbound_consumers, :set},
+        {:monitorex_inbound_recent, :ordered_set},
+        {:monitorex_inbound_duration_samples, :bag}
+      ]
+
+      Enum.each(table_specs, fn {table, type} ->
+        try do
+          :ets.new(table, [:public, :named_table, type, read_concurrency: true])
+        rescue
+          _ -> :ok
+        end
+      end)
+    end)
+
     %{collector: pid, collector_name: name}
   end
 
