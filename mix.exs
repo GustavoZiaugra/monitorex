@@ -4,7 +4,7 @@ defmodule Monitorex.MixProject do
   def project do
     [
       app: :monitorex,
-      version: "0.3.0",
+      version: "0.4.0",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -100,8 +100,7 @@ defmodule Monitorex.MixProject do
       links: %{
         "GitHub" => "https://github.com/GustavoZiaugra/monitorex"
       },
-      files:
-        ~w(lib priv/static .formatter.exs mix.exs README.md LICENSE.md CHANGELOG.md)
+      files: ~w(lib priv/static .formatter.exs mix.exs README.md LICENSE.md CHANGELOG.md)
     ]
   end
 end
