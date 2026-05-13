@@ -185,14 +185,14 @@ defmodule Monitorex.Collector do
     if :req in sources do
       :telemetry.attach(
         {Monitorex.Collector, :req},
-        [:req, :stop],
+        [:req, :request, :pipeline, :stop],
         req_handler_fun(),
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :req_exception},
-        [:req, :exception],
+        [:req, :request, :pipeline, :error],
         req_handler_fun(),
         nil
       )
@@ -584,7 +584,7 @@ defmodule Monitorex.Collector do
     end
 
     if :req in sources do
-      safe_reattach({Monitorex.Collector, :req}, [:req, :stop], req_handler_fun())
+      safe_reattach({Monitorex.Collector, :req}, [:req, :request, :pipeline, :stop], req_handler_fun())
     end
 
     if :phoenix in sources do

@@ -600,15 +600,15 @@ defmodule Monitorex.EventHandlerTest do
   # ── Req handler ──
 
   describe "handle_req_event/4" do
-    test "parses Req telemetry [:req, :stop] into Event" do
+    test "parses Req telemetry [:req, :request, :pipeline, :stop] into Event" do
       url = URI.parse("https://api.example.com/api/v1/data")
-      request = %{url: url, method: :get, headers: [{"accept", "application/json"}], body: nil}
-      response = %{status: 200, headers: [{"content-type", "application/json"}], body: "[]"}
       mono = System.monotonic_time()
 
       metadata = %{
-        request: request,
-        response: response,
+        url: url,
+        method: :get,
+        status: 200,
+        resp_headers: %{"content-type" => ["application/json"]},
         monotonic_time: mono
       }
 
@@ -616,7 +616,7 @@ defmodule Monitorex.EventHandlerTest do
 
       event =
         EventHandler.handle_req_event(
-          [:req, :stop],
+          [:req, :request, :pipeline, :stop],
           measurements,
           metadata,
           []
@@ -636,14 +636,12 @@ defmodule Monitorex.EventHandlerTest do
 
     test "handles Req error status codes" do
       url = URI.parse("https://api.example.com/error")
-      request = %{url: url, method: :post, headers: [], body: nil}
-      response = %{status: 500, headers: [], body: "Internal Error"}
-      metadata = %{request: request, response: response}
+      metadata = %{url: url, method: :post, status: 500, resp_headers: %{}}
       measurements = %{duration: 500_000}
 
       event =
         EventHandler.handle_req_event(
-          [:req, :stop],
+          [:req, :request, :pipeline, :stop],
           measurements,
           metadata,
           []
@@ -656,13 +654,12 @@ defmodule Monitorex.EventHandlerTest do
 
     test "parses Req exception event" do
       url = URI.parse("https://api.example.com/timeout")
-      request = %{url: url, method: :get, headers: [], body: nil}
-      metadata = %{request: request, error: %RuntimeError{message: "connection timeout"}}
+      metadata = %{url: url, method: :get, headers: [], error: %RuntimeError{message: "connection timeout"}}
       measurements = %{duration: 10_000_000}
 
       event =
         EventHandler.handle_req_event(
-          [:req, :exception],
+          [:req, :request, :pipeline, :error],
           measurements,
           metadata,
           []
@@ -680,14 +677,12 @@ defmodule Monitorex.EventHandlerTest do
 
     test "redacts sensitive query parameters in Req events" do
       url = URI.parse("https://api.example.com/auth?token=s3cr3t&page=1")
-      request = %{url: url, method: :post, headers: [], body: nil}
-      response = %{status: 200, headers: [], body: "ok"}
-      metadata = %{request: request, response: response}
+      metadata = %{url: url, method: :post, status: 200, resp_headers: %{}}
       measurements = %{duration: 100_000}
 
       event =
         EventHandler.handle_req_event(
-          [:req, :stop],
+          [:req, :request, :pipeline, :stop],
           measurements,
           metadata,
           []
@@ -699,34 +694,27 @@ defmodule Monitorex.EventHandlerTest do
                String.contains?(event.full_url, "token=[REDACTED]")
     end
 
-    test "redacts request and response headers in Req events" do
+    test "redacts response headers in Req events" do
       url = URI.parse("https://api.example.com/data")
 
-      request = %{
+      metadata = %{
         url: url,
         method: :get,
-        headers: [{"x-api-key", "secret"}, {"accept", "application/json"}],
-        body: nil
+        status: 200,
+        resp_headers: %{"authorization" => ["Bearer token"], "content-type" => ["application/json"]}
       }
 
-      response = %{status: 200, headers: [{"authorization", "Bearer token"}], body: "ok"}
-      metadata = %{request: request, response: response}
       measurements = %{duration: 100_000}
 
       event =
         EventHandler.handle_req_event(
-          [:req, :stop],
+          [:req, :request, :pipeline, :stop],
           measurements,
           metadata,
           []
         )
 
-      assert event.request_headers == [
-               {"x-api-key", "••••redacted••••"},
-               {"accept", "application/json"}
-             ]
-
-      assert event.response_headers == [{"authorization", "••••redacted••••"}]
+      assert event.response_headers == [{"authorization", "••••redacted••••"}, {"content-type", "application/json"}]
     end
 
     test "catch-all returns nil for unexpected Req events" do
@@ -734,14 +722,12 @@ defmodule Monitorex.EventHandlerTest do
     end
 
     test "handles string URL in Req request" do
-      request = %{url: "https://str.example.com/path", method: :get, headers: [], body: nil}
-      response = %{status: 200, headers: [], body: "ok"}
-      metadata = %{request: request, response: response}
+      metadata = %{url: "https://str.example.com/path", method: :get, status: 200, resp_headers: %{}}
       measurements = %{duration: 100_000}
 
       event =
         EventHandler.handle_req_event(
-          [:req, :stop],
+          [:req, :request, :pipeline, :stop],
           measurements,
           metadata,
           []

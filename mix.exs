@@ -81,6 +81,7 @@ defmodule Monitorex.MixProject do
       {:phoenix_live_view, "~> 1.1"},
       {:telemetry, "~> 1.4"},
       {:jason, "~> 1.4"},
+      {:req_telemetry, "~> 0.1", optional: true},
       {:esbuild, "~> 0.10.0", runtime: false},
       {:tailwind, "~> 0.4.1", runtime: Mix.env() == :dev},
       {:plug_cowboy, "~> 2.7", only: :dev},
