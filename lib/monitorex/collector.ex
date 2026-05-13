@@ -24,6 +24,7 @@ defmodule Monitorex.Collector do
 
   @default_max_recent 500
   @default_max_recent_inbound 500
+  @default_max_endpoints 2_000
   @default_endpoint_ttl :timer.hours(1)
   @default_cleanup_interval 5_000
   @default_health_check_interval 30_000
@@ -386,6 +387,7 @@ defmodule Monitorex.Collector do
     max_recent_inbound =
       Application.get_env(:monitorex, :max_recent_inbound, @default_max_recent_inbound)
 
+    max_endpoints = Application.get_env(:monitorex, :max_endpoints, @default_max_endpoints)
     endpoint_ttl = Application.get_env(:monitorex, :endpoint_ttl, @default_endpoint_ttl)
     now = System.monotonic_time()
 
@@ -397,6 +399,12 @@ defmodule Monitorex.Collector do
 
     # Prune stale endpoints
     prune_stale_endpoints(state, now, endpoint_ttl)
+
+    # Cap aggregate tables to prevent unbounded growth during traffic spikes
+    trim_aggregate(state.outbound_hosts, max_endpoints)
+    trim_aggregate(state.outbound_endpoints, max_endpoints)
+    trim_aggregate(state.inbound_routes, max_endpoints)
+    trim_aggregate(state.inbound_consumers, max_endpoints)
 
     # Compute percentiles and update aggregates
     compute_percentiles(state, :outbound)
@@ -425,6 +433,26 @@ defmodule Monitorex.Collector do
         )
 
       Enum.each(first_keys, &:ets.delete(table, &1))
+    end
+  end
+
+  defp trim_aggregate(table, max) do
+    count = :ets.info(table, :size)
+
+    if count > max do
+      to_delete = count - max
+      # Aggregate tables are :set; sort by last_seen and drop oldest
+      entries =
+        :ets.foldl(
+          fn {key, agg}, acc -> [{key, Map.get(agg, :last_seen, 0)} | acc] end,
+          [],
+          table
+        )
+
+      entries
+      |> Enum.sort_by(fn {_key, ts} -> ts end, :asc)
+      |> Enum.take(to_delete)
+      |> Enum.each(fn {key, _ts} -> :ets.delete(table, key) end)
     end
   end
 
