@@ -4,7 +4,7 @@
 [![Hex.pm](https://img.shields.io/hexpm/v/monitorex)](https://hex.pm/packages/monitorex)
 [![Hex Docs](https://img.shields.io/badge/docs-hexpm-blue)](https://hexdocs.pm/monitorex)
 [![Downloads](https://img.shields.io/hexpm/dt/monitorex)](https://hex.pm/packages/monitorex)
-[![License](https://img.shields.io/hexpm/l/monitorex)](LICENSE.md)
+[![License](https://img.shields.io/hexpm/l/monitorex)](https://github.com/GustavoZiaugra/monitorex/blob/main/LICENSE.md)
 
 **Real-time HTTP telemetry dashboard for Elixir/Phoenix applications.**
 

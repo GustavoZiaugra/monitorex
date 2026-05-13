@@ -122,6 +122,13 @@ defmodule Monitorex.Layouts do
     """
   end
 
+  @doc """
+  Renders flash messages for the Dashboard.
+
+  Displays Phoenix flash messages (info, error) as notification bars
+  inside the dashboard layout. Each flash kind gets a distinct CSS class
+  for visual styling.
+  """
   def flash_group(assigns) do
     ~H"""
     <div class="flash-group">
