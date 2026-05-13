@@ -59,7 +59,7 @@ mix deps.get
 In `config/config.exs`:
 
 ```elixir
-config :monitorex, :sources, [:tesla, :finch, :phoenix]
+config :monitorex, :sources, [:tesla, :finch, :req, :phoenix]
 ```
 
 ### 2. Mount the dashboard in your router
@@ -199,6 +199,33 @@ config :monitorex, :store_response_body, true
 # Truncate bodies larger than N bytes (default: 10_000)
 config :monitorex, :max_body_bytes, 10_000
 ```
+
+### Memory Management
+
+To prevent unbounded ETS growth in production, Monitorex caps aggregate tables and prunes stale entries:
+
+```elixir
+# Maximum entries per aggregate table (hosts, endpoints, routes, consumers)
+# When exceeded, oldest entries are dropped during cleanup.
+config :monitorex, :max_endpoints, 2_000
+
+# Recent event ring buffers (per direction)
+config :monitorex, :max_recent, 500       # outbound
+config :monitorex, :max_recent_inbound, 500  # inbound
+
+# Stale entry TTL (aggregate tables)
+config :monitorex, :endpoint_ttl, :timer.hours(1)
+```
+
+Monitor runtime memory usage:
+
+```elixir
+Monitorex.memory_usage()
+# => %{tables: %{monitorex_outbound_hosts: %{size: 42, memory_words: 1234}, ...},
+#     total_words: 46089, total_kb: 18.53}
+```
+
+The **health endpoint** (`GET /monitorex/health`) also exposes current ETS table sizes and total memory under `ets_table_sizes` and `total_ets_memory_words`.
 
 ## Pages
 
