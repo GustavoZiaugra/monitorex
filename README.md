@@ -1,6 +1,10 @@
 # Monitorex
 
 [![CI](https://github.com/GustavoZiaugra/monitorex/actions/workflows/ci.yml/badge.svg)](https://github.com/GustavoZiaugra/monitorex/actions/workflows/ci.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/monitorex)](https://hex.pm/packages/monitorex)
+[![Hex Docs](https://img.shields.io/badge/docs-hexpm-blue)](https://hexdocs.pm/monitorex)
+[![Downloads](https://img.shields.io/hexpm/dt/monitorex)](https://hex.pm/packages/monitorex)
+[![License](https://img.shields.io/hexpm/l/monitorex)](LICENSE.md)
 
 **Real-time HTTP telemetry dashboard for Elixir/Phoenix applications.**
 
@@ -37,7 +41,7 @@ Add `monitorex` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:monitorex, "~> 0.3.0"}
+    {:monitorex, "~> 0.4.0"}
   ]
 end
 ```
