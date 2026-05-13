@@ -373,23 +373,28 @@ defmodule Monitorex.Components.Live.TimelinePage do
 
   defp build_filter_url(socket, overrides) do
     assigns = socket.assigns
-    params = %{
-      direction: Map.get(assigns, :direction, "outbound"),
-      search: overrides[:search] || Map.get(assigns, :search_query, "") || "",
-      status: overrides[:status] || Map.get(assigns, :filter_status, "") || "",
-      method: overrides[:method] || Map.get(assigns, :filter_method, "") || "",
-      show_all: overrides[:show_all] || if(Map.get(assigns, :show_all), do: "true", else: nil),
-      selected: overrides[:selected] || Map.get(assigns, :selected)
-    }
-    |> Map.reject(fn {_, v} -> is_nil(v) || v == "" end)
+
+    params =
+      %{
+        direction: Map.get(assigns, :direction, "outbound"),
+        search: overrides[:search] || Map.get(assigns, :search_query, "") || "",
+        status: overrides[:status] || Map.get(assigns, :filter_status, "") || "",
+        method: overrides[:method] || Map.get(assigns, :filter_method, "") || "",
+        show_all: overrides[:show_all] || if(Map.get(assigns, :show_all), do: "true", else: nil),
+        selected: overrides[:selected] || Map.get(assigns, :selected)
+      }
+      |> Map.reject(fn {_, v} -> is_nil(v) || v == "" end)
 
     "?page=timeline" <>
-      (if params[:direction] != "outbound", do: "&direction=#{params[:direction]}", else: "") <>
-      (if params[:search] && params[:search] != "", do: "&search=#{URI.encode(params[:search])}", else: "") <>
-      (if params[:status] && params[:status] != "", do: "&status=#{params[:status]}", else: "") <>
-      (if params[:method] && params[:method] != "", do: "&method=#{params[:method]}", else: "") <>
-      (if params[:show_all], do: "&show_all=true", else: "") <>
-      (if params[:selected], do: "&selected=#{params[:selected]}", else: "")
+      if(params[:direction] != "outbound", do: "&direction=#{params[:direction]}", else: "") <>
+      if(params[:search] && params[:search] != "",
+        do: "&search=#{URI.encode(params[:search])}",
+        else: ""
+      ) <>
+      if(params[:status] && params[:status] != "", do: "&status=#{params[:status]}", else: "") <>
+      if(params[:method] && params[:method] != "", do: "&method=#{params[:method]}", else: "") <>
+      if(params[:show_all], do: "&show_all=true", else: "") <>
+      if params[:selected], do: "&selected=#{params[:selected]}", else: ""
   end
 
   # ── Data fetching ──
@@ -420,16 +425,19 @@ defmodule Monitorex.Components.Live.TimelinePage do
   end
 
   defp maybe_filter_by_search(events, ""), do: events
+
   defp maybe_filter_by_search(events, query) do
     q = String.downcase(query)
+
     Enum.filter(events, fn e ->
       (e.host && String.contains?(String.downcase(e.host), q)) or
-      (e.path && String.contains?(String.downcase(e.path), q)) or
-      (e.full_url && String.contains?(String.downcase(e.full_url), q))
+        (e.path && String.contains?(String.downcase(e.path), q)) or
+        (e.full_url && String.contains?(String.downcase(e.full_url), q))
     end)
   end
 
   defp maybe_filter_by_status(events, ""), do: events
+
   defp maybe_filter_by_status(events, status_class) do
     sc = String.to_existing_atom(status_class)
     Enum.filter(events, fn e -> e.status_class == sc end)
@@ -438,6 +446,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
   end
 
   defp maybe_filter_by_method(events, ""), do: events
+
   defp maybe_filter_by_method(events, method) do
     m = String.upcase(method)
     Enum.filter(events, fn e -> e.method && String.upcase(e.method) == m end)
@@ -450,12 +459,15 @@ defmodule Monitorex.Components.Live.TimelinePage do
 
     events
     |> Enum.group_by(fn e -> bucket_label(now, e.timestamp) end)
-    |> Enum.sort(fn {a_label, _}, {b_label, _} -> bucket_order(a_label) <= bucket_order(b_label) end)
+    |> Enum.sort(fn {a_label, _}, {b_label, _} ->
+      bucket_order(a_label) <= bucket_order(b_label)
+    end)
     |> Enum.map(fn {label, items} -> %{label: label, events: items} end)
   end
 
   defp bucket_label(now, timestamp) when is_integer(timestamp) do
     secs = max(0, now - timestamp)
+
     cond do
       secs <= 30 -> "Just now"
       secs <= 120 -> "1 min ago"

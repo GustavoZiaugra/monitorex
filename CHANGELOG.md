@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.4.0 (2026-05-13)
+
+### Added
+- Timeline revamp: time-grouped sections (Just now, 1m ago, etc.), search bar, status/method filters (#51)
+
+### Fixed
+- ex_doc availability in all envs for `mix hex.publish` docs task (#50)
+- Removed `priv/assets` from package files (directory doesn't exist)
+
+### Changed
+- Replaced placeholder screenshots with real dashboard screenshots in README
+
 ## 0.3.0 (2026-05-08)
 
 ### Added
