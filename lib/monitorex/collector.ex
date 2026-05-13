@@ -154,14 +154,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :tesla},
         [:tesla, :request, :stop],
-        tesla_handler_fun(),
+        &Monitorex.Collector.Handlers.tesla/4,
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :tesla_exception},
         [:tesla, :request, :exception],
-        tesla_handler_fun(),
+        &Monitorex.Collector.Handlers.tesla/4,
         nil
       )
     end
@@ -170,14 +170,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :finch},
         [:finch, :request, :stop],
-        finch_handler_fun(),
+        &Monitorex.Collector.Handlers.finch/4,
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :finch_exception},
         [:finch, :request, :exception],
-        finch_handler_fun(),
+        &Monitorex.Collector.Handlers.finch/4,
         nil
       )
     end
@@ -186,14 +186,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :req},
         [:req, :request, :pipeline, :stop],
-        req_handler_fun(),
+        &Monitorex.Collector.Handlers.req/4,
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :req_exception},
         [:req, :request, :pipeline, :error],
-        req_handler_fun(),
+        &Monitorex.Collector.Handlers.req/4,
         nil
       )
     end
@@ -202,14 +202,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :phoenix},
         [:phoenix, :router_dispatch, :stop],
-        phoenix_handler_fun(),
+        &Monitorex.Collector.Handlers.phoenix/4,
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :phoenix_exception},
         [:phoenix, :router_dispatch, :exception],
-        phoenix_handler_fun(),
+        &Monitorex.Collector.Handlers.phoenix/4,
         nil
       )
     end
@@ -576,22 +576,22 @@ defmodule Monitorex.Collector do
     sources = state.sources
 
     if :tesla in sources do
-      safe_reattach({Monitorex.Collector, :tesla}, [:tesla, :request, :stop], tesla_handler_fun())
+      safe_reattach({Monitorex.Collector, :tesla}, [:tesla, :request, :stop], &Monitorex.Collector.Handlers.tesla/4)
     end
 
     if :finch in sources do
-      safe_reattach({Monitorex.Collector, :finch}, [:finch, :request, :stop], finch_handler_fun())
+      safe_reattach({Monitorex.Collector, :finch}, [:finch, :request, :stop], &Monitorex.Collector.Handlers.finch/4)
     end
 
     if :req in sources do
-      safe_reattach({Monitorex.Collector, :req}, [:req, :request, :pipeline, :stop], req_handler_fun())
+      safe_reattach({Monitorex.Collector, :req}, [:req, :request, :pipeline, :stop], &Monitorex.Collector.Handlers.req/4)
     end
 
     if :phoenix in sources do
       safe_reattach(
         {Monitorex.Collector, :phoenix},
         [:phoenix, :router_dispatch, :stop],
-        phoenix_handler_fun()
+        &Monitorex.Collector.Handlers.phoenix/4
       )
     end
   end
@@ -610,42 +610,6 @@ defmodule Monitorex.Collector do
     end
   end
 
-  # ── Handler wrappers ──
-  # These ensure EventHandler results are forwarded to the Collector
-
-  defp tesla_handler_fun do
-    fn event_name, measurements, metadata, config ->
-      case Monitorex.EventHandler.handle_tesla_event(event_name, measurements, metadata, config) do
-        nil -> :ok
-        event -> Monitorex.Collector.handle_event(event)
-      end
-    end
-  end
-
-  defp finch_handler_fun do
-    fn event_name, measurements, metadata, config ->
-      case Monitorex.EventHandler.handle_finch_event(event_name, measurements, metadata, config) do
-        nil -> :ok
-        event -> Monitorex.Collector.handle_event(event)
-      end
-    end
-  end
-
-  defp req_handler_fun do
-    fn event_name, measurements, metadata, config ->
-      case Monitorex.EventHandler.handle_req_event(event_name, measurements, metadata, config) do
-        nil -> :ok
-        event -> Monitorex.Collector.handle_event(event)
-      end
-    end
-  end
-
-  defp phoenix_handler_fun do
-    fn event_name, measurements, metadata, config ->
-      case Monitorex.EventHandler.handle_phoenix_event(event_name, measurements, metadata, config) do
-        nil -> :ok
-        event -> Monitorex.Collector.handle_event(event)
-      end
-    end
-  end
+  # These ensure EventHandler results are forwarded to the Collector via
+  # Monitorex.Collector.Handlers (separate module avoids telemetry "local function" warning).
 end
