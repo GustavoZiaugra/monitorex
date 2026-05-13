@@ -265,20 +265,23 @@ defmodule Monitorex.EventHandler do
   end
 
   @doc """
-  Handles a Req telemetry event (`[:req, :stop]`).
+  Handles a Req telemetry event from `req_telemetry` (`[:req, :request, :pipeline, :stop]`).
 
   Parses the metadata and measurements into a `Monitorex.Event` struct with
   source `:req` and direction `:outbound`.
 
-  ## Telemetry metadata shape
+  ## Telemetry metadata shape (req_telemetry pipeline events)
 
       %{
-        request:  %Req.Request{},
-        response: %Req.Response{}
+        url: %URI{},
+        method: :get,
+        status: 200,
+        resp_headers: [{name, value}],
+        error: %RuntimeError{},
+        ref: term(),
+        metadata: %{}
       }
 
-  The `Req.Request` struct contains `:url` (a URI.t()), `:method`, and `:headers`.
-  The `Req.Response` struct contains `:status`, `:headers`, and `:body`.
   Duration is in `measurements.duration` (native time units).
   """
   @spec handle_req_event(
@@ -287,18 +290,14 @@ defmodule Monitorex.EventHandler do
           metadata :: map(),
           config :: keyword()
         ) :: Event.t() | nil
-  def handle_req_event([:req, :stop], measurements, metadata, _config) do
-    request = metadata.request
-    response = metadata.response
-
-    url_str = url_to_string(request.url)
-    method = Event.normalize_method(request.method)
+  def handle_req_event([:req, :request, :pipeline, :stop], measurements, metadata, _config) do
+    url_str = url_to_string(metadata.url)
+    method = Event.normalize_method(metadata.method)
     uri = URI.parse(url_str)
     host = uri.host
     path = uri.path
 
-    req_headers = redact_headers_from_metadata(request.headers || [])
-    resp_headers = redact_headers_from_metadata(response.headers || [])
+    resp_headers = redact_headers_from_metadata(metadata[:resp_headers] || [])
 
     ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
 
@@ -312,20 +311,17 @@ defmodule Monitorex.EventHandler do
       host: host,
       path: path,
       full_url: redacted_url,
-      status: response.status,
-      status_class: Event.classify_status(response.status || 0),
+      status: metadata.status,
+      status_class: Event.classify_status(metadata.status || 0),
       duration_ms: Event.duration_ms(measurements.duration),
       timestamp: ts,
-      request_headers: req_headers,
       response_headers: resp_headers
     }
   end
 
-  def handle_req_event([:req, :exception], measurements, metadata, _config) do
-    request = metadata.request
-
-    url_str = url_to_string(request.url)
-    method = Event.normalize_method(request.method)
+  def handle_req_event([:req, :request, :pipeline, :error], measurements, metadata, _config) do
+    url_str = url_to_string(metadata.url)
+    method = Event.normalize_method(metadata.method)
     uri = URI.parse(url_str)
 
     ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
@@ -341,7 +337,7 @@ defmodule Monitorex.EventHandler do
       status_class: :server_error,
       duration_ms: Event.duration_ms(measurements.duration),
       timestamp: ts,
-      request_headers: redact_headers_from_metadata(request.headers || []),
+      request_headers: redact_headers_from_metadata(metadata[:headers] || []),
       response_headers: nil,
       error: inspect(metadata[:error] || "Req exception")
     }
@@ -417,6 +413,14 @@ defmodule Monitorex.EventHandler do
 
   defp redact_headers_from_metadata(headers) when is_list(headers) do
     HeaderRedactor.redact_headers(headers)
+  end
+
+  defp redact_headers_from_metadata(headers) when is_map(headers) do
+    headers
+    |> Enum.flat_map(fn {name, values} when is_list(values) ->
+      Enum.map(values, &{name, &1})
+    end)
+    |> HeaderRedactor.redact_headers()
   end
 
   defp maybe_store_body(body, _direction) when is_nil(body) or not is_binary(body), do: nil
