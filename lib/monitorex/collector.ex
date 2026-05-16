@@ -251,7 +251,7 @@ defmodule Monitorex.Collector do
     update_endpoint(endpoint_key, event, state)
 
     # Recent ring buffer
-    ts = System.monotonic_time()
+    ts = System.system_time(:microsecond)
     :ets.insert(state.outbound_recent, {ts, event})
 
     # Duration sample
@@ -294,7 +294,7 @@ defmodule Monitorex.Collector do
     end
 
     # Recent ring buffer
-    ts = System.monotonic_time()
+    ts = System.system_time(:microsecond)
     :ets.insert(state.inbound_recent, {ts, event})
 
     # Duration sample
@@ -330,7 +330,7 @@ defmodule Monitorex.Collector do
       requests: 1,
       errors: if(error_status?(event.status), do: 1, else: 0),
       total_duration: event.duration_ms || 0.0,
-      last_seen: System.monotonic_time()
+      last_seen: System.system_time(:microsecond)
     }
   end
 
@@ -340,8 +340,8 @@ defmodule Monitorex.Collector do
       | requests: agg.requests + 1,
         errors: agg.errors + if(error_status?(event.status), do: 1, else: 0),
         total_duration: agg.total_duration + (event.duration_ms || 0.0),
-        last_seen: System.monotonic_time()
-    }
+        last_seen: System.system_time(:microsecond)
+      }
   end
 
   defp error_status?(status) when is_integer(status) and status >= 400, do: true
@@ -389,7 +389,8 @@ defmodule Monitorex.Collector do
 
     max_endpoints = Application.get_env(:monitorex, :max_endpoints, @default_max_endpoints)
     endpoint_ttl = Application.get_env(:monitorex, :endpoint_ttl, @default_endpoint_ttl)
-    now = System.monotonic_time()
+    wall_now = System.system_time(:microsecond)
+    mono_now = System.monotonic_time()
 
     # Trim outbound recent
     trim_recent(state.outbound_recent, max_recent)
@@ -398,7 +399,7 @@ defmodule Monitorex.Collector do
     trim_recent(state.inbound_recent, max_recent_inbound)
 
     # Prune stale endpoints
-    prune_stale_endpoints(state, now, endpoint_ttl)
+    prune_stale_endpoints(state, wall_now, endpoint_ttl)
 
     # Cap aggregate tables to prevent unbounded growth during traffic spikes
     trim_aggregate(state.outbound_hosts, max_endpoints)
@@ -412,7 +413,7 @@ defmodule Monitorex.Collector do
 
     # Prune dedup table
     if state.dedup do
-      prune_dedup(state.dedup, now)
+      prune_dedup(state.dedup, mono_now)
     end
   end
 
@@ -456,18 +457,18 @@ defmodule Monitorex.Collector do
     end
   end
 
-  defp prune_stale_endpoints(state, now, ttl) do
-    prune_set(state.outbound_hosts, now, ttl)
-    prune_set(state.outbound_endpoints, now, ttl)
-    prune_set(state.inbound_routes, now, ttl)
-    prune_set(state.inbound_consumers, now, ttl)
+  defp prune_stale_endpoints(state, wall_now, ttl) do
+    prune_set(state.outbound_hosts, wall_now, ttl)
+    prune_set(state.outbound_endpoints, wall_now, ttl)
+    prune_set(state.inbound_routes, wall_now, ttl)
+    prune_set(state.inbound_consumers, wall_now, ttl)
   end
 
-  defp prune_set(table, now, ttl_ms) do
+  defp prune_set(table, wall_now, ttl_ms) do
     to_delete =
       :ets.foldl(
         fn {key, agg}, acc ->
-          elapsed_ms = System.convert_time_unit(now - agg.last_seen, :native, :millisecond)
+          elapsed_ms = div(wall_now - agg.last_seen, 1000)
           if elapsed_ms > ttl_ms, do: [key | acc], else: acc
         end,
         [],

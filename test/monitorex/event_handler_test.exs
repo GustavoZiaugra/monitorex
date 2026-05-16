@@ -121,6 +121,7 @@ defmodule Monitorex.EventHandlerTest do
       url = %URI{scheme: "https", host: "api.example.com", path: "/users/123", query: nil}
       pid = self()
       mono = System.monotonic_time()
+      wall = System.system_time(:microsecond)
 
       metadata = %{
         url: url,
@@ -153,7 +154,8 @@ defmodule Monitorex.EventHandlerTest do
       assert is_float(event.duration_ms)
       assert_in_delta event.duration_ms, 1.0, 0.01
       assert event.dedup_key == {pid, mono}
-      assert event.timestamp == mono
+      # timestamp is now wall-clock microseconds, should be within 5s of our reference
+      assert_in_delta event.timestamp, wall, 5_000_000
     end
 
     test "handles error status codes" do

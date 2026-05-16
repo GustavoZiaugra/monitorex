@@ -57,6 +57,7 @@ defmodule Monitorex.DemoSeeder do
     create_tables()
     seed_outbound()
     seed_inbound()
+    seed_inbound_recent()
     Logger.info("Seeded demo data")
   end
 
@@ -105,12 +106,14 @@ defmodule Monitorex.DemoSeeder do
   end
 
   defp seed_outbound do
+    now_ms = System.system_time(:millisecond)
+
     hosts = [
-      {"api.example.com", 342, 12, 15_200.0, 8_500_000, "Finch"},
-      {"cdn.example.com", 1_891, 3, 48_500.0, 9_200_000, "Tesla"},
-      {"auth.example.com", 156, 8, 6_800.0, 7_800_000, "Finch"},
-      {"payments.example.com", 89, 15, 12_400.0, 7_500_000, "Tesla"},
-      {"logs.example.com", 45, 0, 1_200.0, 9_500_000, "Finch"},
+      {"api.example.com", 342, 12, 15_200.0, now_ms - 60_000, "Finch"},
+      {"cdn.example.com", 1_891, 3, 48_500.0, now_ms - 120_000, "Tesla"},
+      {"auth.example.com", 156, 8, 6_800.0, now_ms - 300_000, "Finch"},
+      {"payments.example.com", 89, 15, 12_400.0, now_ms - 600_000, "Tesla"},
+      {"logs.example.com", 45, 0, 1_200.0, now_ms - 900_000, "Finch"},
     ]
 
     endpoints = %{
@@ -221,14 +224,16 @@ defmodule Monitorex.DemoSeeder do
   end
 
   defp seed_inbound do
+    now_ms = System.system_time(:millisecond)
+
     routes = [
-      {"GET:/api/users", 345, 8, 12_400.0, 8_000_000},
-      {"POST:/api/users", 120, 5, 18_500.0, 7_800_000},
-      {"GET:/api/posts", 280, 4, 9_800.0, 8_200_000},
-      {"POST:/api/posts", 95, 2, 15_200.0, 7_500_000},
-      {"GET:/api/search", 180, 12, 25_000.0, 7_900_000},
-      {"DELETE:/api/comments", 45, 1, 2_800.0, 7_000_000},
-      {"PUT:/api/users/:id", 78, 3, 6_500.0, 7_400_000},
+      {"GET:/api/users", 345, 8, 12_400.0, now_ms - 30_000},
+      {"POST:/api/users", 120, 5, 18_500.0, now_ms - 60_000},
+      {"GET:/api/posts", 280, 4, 9_800.0, now_ms - 90_000},
+      {"POST:/api/posts", 95, 2, 15_200.0, now_ms - 120_000},
+      {"GET:/api/search", 180, 12, 25_000.0, now_ms - 150_000},
+      {"DELETE:/api/comments", 45, 1, 2_800.0, now_ms - 180_000},
+      {"PUT:/api/users/:id", 78, 3, 6_500.0, now_ms - 210_000},
     ]
 
     Enum.each(routes, fn {key, requests, errors, total_duration, last_seen} ->
@@ -241,10 +246,10 @@ defmodule Monitorex.DemoSeeder do
     end)
 
     consumers = [
-      {"myapp-web", 450, 10, 18_000.0, 8_100_000},
-      {"myapp-worker", 320, 8, 42_000.0, 7_900_000},
-      {"myapp-cron", 85, 2, 3_400.0, 7_000_000},
-      {"partner-integration", 120, 15, 28_000.0, 7_800_000},
+      {"myapp-web", 450, 10, 18_000.0, now_ms - 30_000},
+      {"myapp-worker", 320, 8, 42_000.0, now_ms - 120_000},
+      {"myapp-cron", 85, 2, 3_400.0, now_ms - 300_000},
+      {"partner-integration", 120, 15, 28_000.0, now_ms - 60_000},
     ]
 
     Enum.each(consumers, fn {name, requests, errors, total_duration, last_seen} ->
@@ -254,6 +259,49 @@ defmodule Monitorex.DemoSeeder do
         total_duration: total_duration,
         last_seen: last_seen
       }})
+    end)
+  end
+
+  defp seed_inbound_recent do
+    now_ms = System.system_time(:millisecond)
+
+    inbound_events = [
+      {"GET", "/api/users", "myapp-web", 200, 4.2, 5_000},
+      {"GET", "/api/users", "myapp-web", 200, 3.8, 10_000},
+      {"POST", "/api/users", "myapp-web", 201, 45.1, 15_000},
+      {"GET", "/api/users", "myapp-worker", 200, 2.1, 20_000},
+      {"GET", "/api/posts", "myapp-web", 200, 8.5, 25_000},
+      {"GET", "/api/posts", "myapp-worker", 200, 6.3, 30_000},
+      {"POST", "/api/posts", "myapp-cron", 201, 22.0, 35_000},
+      {"GET", "/api/search", "myapp-web", 500, 250.0, 40_000},
+      {"GET", "/api/search", "myapp-web", 200, 15.2, 45_000},
+      {"GET", "/api/search", "partner-integration", 200, 18.7, 50_000},
+      {"PUT", "/api/users/:id", "myapp-web", 200, 3.5, 55_000},
+      {"PUT", "/api/users/:id", "myapp-worker", 200, 4.1, 60_000},
+      {"DELETE", "/api/comments", "myapp-cron", 204, 1.2, 65_000},
+      {"GET", "/api/users", "partner-integration", 401, 0.8, 70_000},
+      {"POST", "/api/posts", "myapp-worker", 422, 35.6, 75_000},
+    ]
+
+    Enum.each(inbound_events, fn {method, path, consumer, status, duration_ms, ts_ago} ->
+      ts = now_ms - ts_ago
+      event = %Event{
+        source: :demo,
+        direction: :inbound,
+        method: method,
+        host: "localhost",
+        path: path,
+        full_url: "http://localhost#{path}",
+        status: status,
+        status_class: Event.classify_status(status),
+        duration_ms: duration_ms,
+        consumer: consumer,
+        timestamp: ts,
+        dedup_key: {:inbound, method, path, ts}
+      }
+      :ets.insert(:monitorex_inbound_recent, {ts, event})
+      route_key = "#{method}:#{path}"
+      :ets.insert(:monitorex_inbound_duration_samples, {route_key, duration_ms})
     end)
   end
 end
