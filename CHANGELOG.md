@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.1 (2026-05-16)
+
+### Fixed
+- Timestamp normalization: event handlers and collector now store `System.system_time(:microsecond)` instead of `System.monotonic_time()` — fixes timestamps showing dates from 1970 and broken timeline time-ago buckets (#66)
+- Inbound Consumers page crash (`KeyError :avg_latency`) — compute average latency from `total_duration / requests` (#66)
+- Demo seed data: seed 15 inbound recent events so inbound pages aren't empty; use real epoch timestamps for all `last_seen` values (#66)
+- Cleanup `format_duration/1` unreachable clause flagged by Dialyzer (#66)
+
 ## 0.5.0 (2026-05-13)
 
 ### Added
