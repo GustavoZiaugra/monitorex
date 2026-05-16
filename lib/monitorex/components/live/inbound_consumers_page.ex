@@ -78,12 +78,13 @@ defmodule Monitorex.Components.Live.InboundConsumersPage do
     requests = consumer.requests || 0
     errors = consumer.errors || 0
     error_rate = if requests > 0, do: errors / requests * 100, else: 0.0
+    avg_latency = if requests > 0, do: (consumer.total_duration || 0.0) / requests, else: 0.0
 
     %{
       consumer: consumer.consumer,
       requests: format_number(requests),
       error_rate: format_percentage(error_rate),
-      avg_latency: format_duration(consumer.avg_latency),
+      avg_latency: format_duration(avg_latency),
       last_seen: format_timestamp(consumer.last_seen)
     }
   end
@@ -123,7 +124,5 @@ defmodule Monitorex.Components.Live.InboundConsumersPage do
     Float.round(n, 1) |> then(&"#{&1}%")
   end
 
-  defp format_duration(nil), do: "-"
   defp format_duration(n) when is_number(n), do: "#{Float.round(n, 2)}ms"
-  defp format_duration(_), do: "-"
 end

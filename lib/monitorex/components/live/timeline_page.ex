@@ -455,7 +455,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
   # ── Time bucketing ──
 
   defp group_by_time(events) do
-    now = System.os_time(:second)
+    now = System.system_time(:microsecond)
 
     events
     |> Enum.group_by(fn e -> bucket_label(now, e.timestamp) end)
@@ -466,7 +466,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
   end
 
   defp bucket_label(now, timestamp) when is_integer(timestamp) do
-    secs = max(0, now - timestamp)
+    secs = div(max(0, now - timestamp), 1_000_000)
 
     cond do
       secs <= 30 -> "Just now"

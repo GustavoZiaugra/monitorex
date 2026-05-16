@@ -76,7 +76,7 @@ defmodule Monitorex.EventHandler do
       status: status,
       status_class: Event.classify_status(status || 0),
       duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: ts,
+      timestamp: System.system_time(:microsecond),
       dedup_key: {pid, ts},
       request_headers: req_headers,
       response_headers: resp_headers,
@@ -117,7 +117,7 @@ defmodule Monitorex.EventHandler do
       status: nil,
       status_class: :server_error,
       duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: ts,
+      timestamp: System.system_time(:microsecond),
       dedup_key: {pid, ts},
       error: inspect(metadata[:reason] || metadata[:kind] || "Tesla exception"),
       request_headers: req_headers,
@@ -187,7 +187,7 @@ defmodule Monitorex.EventHandler do
       status: status,
       status_class: Event.classify_status(status || 0),
       duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: ts,
+      timestamp: System.system_time(:microsecond),
       dedup_key: {pid, ts},
       request_headers: req_headers,
       response_headers: resp_headers,
@@ -214,7 +214,7 @@ defmodule Monitorex.EventHandler do
           status: nil,
           status_class: :server_error,
           duration_ms: Event.duration_ms(measurements.duration),
-          timestamp: ts,
+          timestamp: System.system_time(:microsecond),
           dedup_key: {pid, ts},
           error: inspect(metadata[:reason] || metadata[:result] || "Finch exception"),
           request_headers: redact_headers_from_metadata(request.headers || []),
@@ -232,7 +232,7 @@ defmodule Monitorex.EventHandler do
           status: nil,
           status_class: :server_error,
           duration_ms: Event.duration_ms(measurements.duration),
-          timestamp: ts,
+          timestamp: System.system_time(:microsecond),
           dedup_key: {pid, ts},
           error: "Finch exception",
           request_headers: [],
@@ -299,8 +299,6 @@ defmodule Monitorex.EventHandler do
 
     resp_headers = redact_headers_from_metadata(metadata[:resp_headers] || [])
 
-    ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
-
     normalized_url = UrlNormalizer.normalize(url_str)
     redacted_url = URLRedactor.redact(normalized_url)
 
@@ -314,7 +312,7 @@ defmodule Monitorex.EventHandler do
       status: metadata.status,
       status_class: Event.classify_status(metadata.status || 0),
       duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: ts,
+      timestamp: System.system_time(:microsecond),
       response_headers: resp_headers
     }
   end
@@ -323,8 +321,6 @@ defmodule Monitorex.EventHandler do
     url_str = url_to_string(metadata.url)
     method = Event.normalize_method(metadata.method)
     uri = URI.parse(url_str)
-
-    ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
 
     %Event{
       source: :req,
@@ -336,7 +332,7 @@ defmodule Monitorex.EventHandler do
       status: nil,
       status_class: :server_error,
       duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: ts,
+      timestamp: System.system_time(:microsecond),
       request_headers: redact_headers_from_metadata(metadata[:headers] || []),
       response_headers: nil,
       error: inspect(metadata[:error] || "Req exception")
@@ -393,7 +389,7 @@ defmodule Monitorex.EventHandler do
         status_class: Event.classify_status(conn.status),
         duration_ms: Event.duration_ms(measurements.duration),
         consumer: ConsumerIdentifier.identify(conn),
-        timestamp: System.monotonic_time(),
+        timestamp: System.system_time(:microsecond),
         dedup_key: {self(), System.monotonic_time()},
         request_headers: req_headers,
         response_headers: resp_headers,
