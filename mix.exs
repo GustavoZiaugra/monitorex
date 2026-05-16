@@ -35,7 +35,7 @@ defmodule Monitorex.MixProject do
   defp docs do
     [
       main: "readme",
-      extras: ["README.md"],
+      extras: ["README.md", "guides/getting_started.md"],
       groups_for_extras: [guides: ~r/guides\/.?/],
       groups_for_modules: [
         Core: [
