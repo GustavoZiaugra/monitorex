@@ -52,6 +52,9 @@ defmodule Monitorex.Router do
       # Health check endpoint (no auth)
       get(unquote(health_path), Monitorex.HealthPlug, :call)
 
+      # Export endpoint (no auth — generates downloadable CSV/JSON)
+      get("/export/:page/:format", Monitorex.ExportPlug, :call)
+
       # Register asset routes
       get(unquote(assets_path <> "/*path"), Monitorex.Assets, :call)
 

@@ -341,7 +341,7 @@ defmodule Monitorex.Collector do
         errors: agg.errors + if(error_status?(event.status), do: 1, else: 0),
         total_duration: agg.total_duration + (event.duration_ms || 0.0),
         last_seen: System.system_time(:microsecond)
-      }
+    }
   end
 
   defp error_status?(status) when is_integer(status) and status >= 400, do: true
@@ -577,15 +577,27 @@ defmodule Monitorex.Collector do
     sources = state.sources
 
     if :tesla in sources do
-      safe_reattach({Monitorex.Collector, :tesla}, [:tesla, :request, :stop], &Monitorex.Collector.Handlers.tesla/4)
+      safe_reattach(
+        {Monitorex.Collector, :tesla},
+        [:tesla, :request, :stop],
+        &Monitorex.Collector.Handlers.tesla/4
+      )
     end
 
     if :finch in sources do
-      safe_reattach({Monitorex.Collector, :finch}, [:finch, :request, :stop], &Monitorex.Collector.Handlers.finch/4)
+      safe_reattach(
+        {Monitorex.Collector, :finch},
+        [:finch, :request, :stop],
+        &Monitorex.Collector.Handlers.finch/4
+      )
     end
 
     if :req in sources do
-      safe_reattach({Monitorex.Collector, :req}, [:req, :request, :pipeline, :stop], &Monitorex.Collector.Handlers.req/4)
+      safe_reattach(
+        {Monitorex.Collector, :req},
+        [:req, :request, :pipeline, :stop],
+        &Monitorex.Collector.Handlers.req/4
+      )
     end
 
     if :phoenix in sources do

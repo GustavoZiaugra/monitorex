@@ -109,7 +109,9 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
     <div class="route-detail">
       <Core.back_link to="/inbound" label="Back to Inbound" />
 
-      <Core.page_header title={@route_key} subtitle="Route detail and consumer metrics" />
+      <Core.page_header title={@route_key} subtitle="Route detail and consumer metrics">
+        <Core.export_button page_name="route_detail" />
+        </Core.page_header>
 
       <div class="summary-cards">
         <Core.summary_card label="Total Requests" value={format_number(@route_summary[:requests] || 0)} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>]} />
