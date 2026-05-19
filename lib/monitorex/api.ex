@@ -86,7 +86,7 @@ defmodule Monitorex.Api do
   Builds pagination headers for a result set.
   Returns a list of header tuples.
   """
-  @spec pagination_headers(integer(), keyword(), keyword()) :: [{String.t(), String.t()}]
+  @spec pagination_headers(integer(), keyword(), integer()) :: [{binary(), binary()}, ...]
   def pagination_headers(total_count, filters, returned_count) do
     limit = Keyword.get(filters, :limit, 50)
     offset = Keyword.get(filters, :offset, 0)
