@@ -65,7 +65,9 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
   def render(assigns) do
     ~H"""
     <div class="inbound-overview">
-      <Core.page_header title="Inbound Overview" subtitle="Monitor incoming HTTP requests and routes" />
+    <Core.page_header title="Inbound Overview" subtitle="Monitor inbound HTTP requests">
+        <Core.export_button page_name="inbound_overview" />
+        </Core.page_header>
 
       <div class="summary-cards">
         <Core.summary_card label="Total Requests" value={format_number(@total_requests)} icon={~S[<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>]} />

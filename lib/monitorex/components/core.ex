@@ -284,6 +284,40 @@ defmodule Monitorex.Components.Core do
   end
 
   @doc """
+  Renders an export button with dropdown for CSV/JSON format selection.
+
+  ## Assigns
+
+    * `page_name` — identifier used for the filename (e.g., "outbound_overview")
+    * `class` — additional CSS classes
+  """
+  attr(:page_name, :string, required: true)
+  attr(:class, :string, default: "")
+
+  def export_button(assigns) do
+    ~H"""
+    <div class={["export-dropdown", @class]}>
+      <a href={"/export/#{@page_name}/csv"} class="export-btn" download>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        CSV
+      </a>
+      <a href={"/export/#{@page_name}/json"} class="export-btn" download>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        JSON
+      </a>
+    </div>
+    """
+  end
+
+  @doc """
   Renders a back link for detail pages.
 
   ## Assigns

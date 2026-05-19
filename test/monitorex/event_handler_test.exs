@@ -656,7 +656,14 @@ defmodule Monitorex.EventHandlerTest do
 
     test "parses Req exception event" do
       url = URI.parse("https://api.example.com/timeout")
-      metadata = %{url: url, method: :get, headers: [], error: %RuntimeError{message: "connection timeout"}}
+
+      metadata = %{
+        url: url,
+        method: :get,
+        headers: [],
+        error: %RuntimeError{message: "connection timeout"}
+      }
+
       measurements = %{duration: 10_000_000}
 
       event =
@@ -703,7 +710,10 @@ defmodule Monitorex.EventHandlerTest do
         url: url,
         method: :get,
         status: 200,
-        resp_headers: %{"authorization" => ["Bearer token"], "content-type" => ["application/json"]}
+        resp_headers: %{
+          "authorization" => ["Bearer token"],
+          "content-type" => ["application/json"]
+        }
       }
 
       measurements = %{duration: 100_000}
@@ -716,7 +726,10 @@ defmodule Monitorex.EventHandlerTest do
           []
         )
 
-      assert event.response_headers == [{"authorization", "••••redacted••••"}, {"content-type", "application/json"}]
+      assert event.response_headers == [
+               {"authorization", "••••redacted••••"},
+               {"content-type", "application/json"}
+             ]
     end
 
     test "catch-all returns nil for unexpected Req events" do
@@ -724,7 +737,13 @@ defmodule Monitorex.EventHandlerTest do
     end
 
     test "handles string URL in Req request" do
-      metadata = %{url: "https://str.example.com/path", method: :get, status: 200, resp_headers: %{}}
+      metadata = %{
+        url: "https://str.example.com/path",
+        method: :get,
+        status: 200,
+        resp_headers: %{}
+      }
+
       measurements = %{duration: 100_000}
 
       event =

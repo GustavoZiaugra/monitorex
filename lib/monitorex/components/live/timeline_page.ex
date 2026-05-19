@@ -119,6 +119,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
           </p>
         </div>
         <div class="page-header-actions">
+          <Core.export_button page_name="timeline" />
           <div class="timeline-tabs">
             <button
               phx-click="select_direction" phx-value-direction="outbound"

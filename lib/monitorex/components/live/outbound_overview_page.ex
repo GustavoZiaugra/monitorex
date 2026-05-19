@@ -72,6 +72,7 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
     <div class="outbound-overview">
       <Core.page_header title="Outbound Overview" subtitle="Monitor outbound HTTP requests by host">
         <Core.node_selector nodes={@nodes} selected={@selected_node} event="select_node" />
+        <Core.export_button page_name="outbound_overview" />
       </Core.page_header>
 
       <div class="summary-cards">

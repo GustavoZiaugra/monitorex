@@ -86,7 +86,9 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
   def render(assigns) do
     ~H"""
     <div class="outbound-recent">
-      <Core.page_header title="Recent Outbound Requests" subtitle="Live feed of outgoing HTTP requests" />
+    <Core.page_header title="Recent Outbound Requests" subtitle="Live feed of outgoing HTTP requests">
+        <Core.export_button page_name="outbound_recent" />
+        </Core.page_header>
 
       <div class="filters">
         <label class="filter-label">
