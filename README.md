@@ -26,6 +26,8 @@ Monitorex monitors outbound (Tesla, Finch/Req) and inbound (Phoenix) HTTP traffi
 - **Health check** — `GET /monitorex/health` with Collector status, queue depths, ETS sizes
 - **Prometheus metrics** — `GET /monitorex/metrics` for requests, errors, latency, ETS sizes
 - **Alert webhooks** — configurable thresholds (error_rate, host_down, high_latency) with debounced dispatch
+- **CSV/JSON export** — download any dashboard view as `.csv` or `.json`
+- **REST API** — programmatic access to hosts, routes, events, and metrics via JSON endpoints
 - **No database** — all data lives in ETS tables (in-memory)
 
 ## Screenshots
@@ -241,6 +243,108 @@ The **health endpoint** (`GET /monitorex/health`) also exposes current ETS table
 | Inbound Recent | `/inbound_recent` | Live feed with filters |
 | Timeline | `/timeline` | Split-pane event inspector with request/response detail |
 | Route Detail | `/route/:key` | Consumer breakdown + recent requests |
+
+## REST API
+
+Monitorex ships a built-in JSON REST API for programmatic access to telemetry data. The API is auto-mounted at `/api` (configurable via the `:api_path` option in `http_dashboard/1`).
+
+### Endpoints
+
+| Endpoint | Description |
+|---|---|
+| `GET /api/health` | Health status (same as `/monitorex/health`) |
+| `GET /api/hosts` | List all hosts with aggregate stats |
+| `GET /api/hosts/:host` | Per-host detail with endpoint breakdown |
+| `GET /api/routes` | Inbound route aggregates |
+| `GET /api/consumers` | Consumer stats |
+| `GET /api/events` | Recent events with filters (see below) |
+| `GET /api/events/:timestamp` | Single event detail |
+| `GET /api/metrics` | Computed metrics (RPS, error rate, latency quantiles) |
+
+All endpoints return a consistent JSON envelope:
+
+```json
+{"ok": true, "data": ...}
+```
+
+Errors return:
+
+```json
+{"ok": false, "error": "message"}
+```
+
+### Query parameters
+
+**Events** (`GET /api/events`):
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `direction` | string | `"outbound"` | `"outbound"` or `"inbound"` |
+| `limit` | integer | 50 | Max results (max: 500) |
+| `offset` | integer | 0 | Pagination offset |
+| `host` | string | — | Filter by host (outbound only) |
+| `method` | string | — | Filter by HTTP method (`GET`, `POST`, etc.) |
+| `status` | integer | — | Filter by HTTP status code |
+| `consumer` | string | — | Filter by consumer (inbound only) |
+| `route` | string | — | Filter by route key (inbound only) |
+| `since` | ISO 8601 | — | Events after this timestamp |
+
+**Metrics** (`GET /api/metrics`):
+
+| Param | Type | Default | Description |
+|---|---|---|---|
+| `host` | string | all | Filter to a specific host |
+| `window` | integer | 300 | Time window in seconds for RPS/error rate |
+
+### Pagination
+
+Paginated endpoints (`/api/events`) return these response headers:
+
+- `X-Total-Count` — total matching events
+- `X-Page-Size` — the limit parameter used
+- `X-Page-Offset` — the offset parameter used
+- `X-Returned-Count` — actual returned count
+
+### CORS
+
+All endpoints include `Access-Control-Allow-Origin: *` and respond to `OPTIONS` preflight requests.
+
+### Examples
+
+```bash
+# List all hosts
+curl http://localhost:4000/api/hosts
+
+# Outbound events filtered by host and status
+curl "http://localhost:4000/api/events?direction=outbound&host=api.example.com&status=500"
+
+# Metrics with 5-minute window
+curl "http://localhost:4000/api/metrics?window=300"
+
+# Single event by timestamp
+curl "http://localhost:4000/api/events/1779232233155167"
+```
+
+### Disabling the API
+
+Set `:api_path` to `nil` or `false`:
+
+```elixir
+http_dashboard api_path: false
+```
+
+> **Note:** The API is mounted inside the scope pipeline. For production use, consider mounting it in a separate scope without `:browser` pipeline to avoid CSRF protection on non-GET methods:
+
+> ```elixir
+> scope "/monitoring" do
+>   pipe_through :browser
+>   http_dashboard api_path: false
+> end
+>
+> scope "/monitoring/api" do
+>   forward "/", Monitorex.ApiPlug
+> end
+> ```
 
 ## Asset Pipeline
 
