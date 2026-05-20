@@ -132,19 +132,25 @@ defmodule Monitorex.Api do
 
   defp parse_int(nil, default), do: default
   defp parse_int("", default), do: default
+
   defp parse_int(str, _default) when is_binary(str) do
     case Integer.parse(str) do
       {n, _} -> n
       :error -> 0
     end
   end
+
   defp parse_int(n, _default) when is_integer(n), do: n
   defp parse_int(_, default), do: default
 
   defp maybe_add(opts, params, key, opt_key, transform \\ nil) do
     case Map.get(params, key) do
-      nil -> opts
-      "" -> opts
+      nil ->
+        opts
+
+      "" ->
+        opts
+
       value ->
         transformed = if transform, do: transform.(value), else: value
         Keyword.put(opts, opt_key, transformed)
@@ -153,8 +159,12 @@ defmodule Monitorex.Api do
 
   defp maybe_add_status(opts, params) do
     case Map.get(params, "status") do
-      nil -> opts
-      "" -> opts
+      nil ->
+        opts
+
+      "" ->
+        opts
+
       str ->
         case Integer.parse(str) do
           {code, _} -> Keyword.put(opts, :status, code)
@@ -165,8 +175,12 @@ defmodule Monitorex.Api do
 
   defp maybe_add_since(opts, params) do
     case Map.get(params, "since") do
-      nil -> opts
-      "" -> opts
+      nil ->
+        opts
+
+      "" ->
+        opts
+
       iso_str ->
         case DateTime.from_iso8601(iso_str) do
           {:ok, dt, _} ->

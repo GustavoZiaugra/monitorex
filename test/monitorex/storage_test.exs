@@ -27,7 +27,9 @@ defmodule Monitorex.StorageTest do
         @inbound_routes,
         @inbound_consumers,
         @inbound_recent,
-        @inbound_duration_samples
+        @inbound_duration_samples,
+        :monitorex_slow_outbound,
+        :monitorex_slow_inbound
       ],
       fn table ->
         try do
@@ -52,6 +54,21 @@ defmodule Monitorex.StorageTest do
     :ets.new(@inbound_consumers, [:public, :named_table, :set, read_concurrency: true])
     :ets.new(@inbound_recent, [:public, :named_table, :ordered_set, read_concurrency: true])
     :ets.new(@inbound_duration_samples, [:public, :named_table, :bag, read_concurrency: true])
+
+    :ets.new(:monitorex_slow_outbound, [
+      :public,
+      :named_table,
+      :ordered_set,
+      read_concurrency: true
+    ])
+
+    :ets.new(:monitorex_slow_inbound, [
+      :public,
+      :named_table,
+      :ordered_set,
+      read_concurrency: true
+    ])
+
     :ok
   end
 

@@ -23,7 +23,8 @@ defmodule Monitorex.Event do
     :request_headers,
     :response_headers,
     :request_body,
-    :response_body
+    :response_body,
+    :slow
   ]
 
   @type t :: %__MODULE__{
@@ -43,7 +44,8 @@ defmodule Monitorex.Event do
           request_headers: [{atom() | String.t(), String.t()}] | nil,
           response_headers: [{atom() | String.t(), String.t()}] | nil,
           request_body: binary() | nil,
-          response_body: binary() | nil
+          response_body: binary() | nil,
+          slow: boolean() | nil
         }
 
   @doc """

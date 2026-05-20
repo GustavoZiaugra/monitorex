@@ -39,7 +39,8 @@ defmodule Monitorex.Exports do
       if fields == [] do
         data |> Enum.map(&struct_to_map/1)
       else
-        data |> Enum.map(fn row ->
+        data
+        |> Enum.map(fn row ->
           fields
           |> Enum.map(fn field -> {field, Map.get(row, field)} end)
           |> Enum.into(%{})

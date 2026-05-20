@@ -83,6 +83,7 @@ defmodule Monitorex.EventHandler do
       request_body: maybe_store_body(metadata[:request_body], :request),
       response_body: maybe_store_body(metadata[:response_body], :response)
     }
+    |> tag_slow_request(metadata)
   end
 
   def handle_tesla_event([:tesla, :request, :exception], measurements, metadata, _config) do
@@ -123,6 +124,7 @@ defmodule Monitorex.EventHandler do
       request_headers: req_headers,
       response_headers: nil
     }
+    |> tag_slow_request(metadata)
   end
 
   # Catch-all for unexpected Tesla telemetry events
@@ -194,6 +196,7 @@ defmodule Monitorex.EventHandler do
       request_body: maybe_store_body(metadata[:request_body], :request),
       response_body: maybe_store_body(metadata[:response_body], :response)
     }
+    |> tag_slow_request(metadata)
   end
 
   def handle_finch_event([:finch, :request, :exception], measurements, metadata, _config) do
@@ -220,6 +223,7 @@ defmodule Monitorex.EventHandler do
           request_headers: redact_headers_from_metadata(request.headers || []),
           response_headers: nil
         }
+        |> tag_slow_request(metadata)
 
       _ ->
         %Event{
@@ -236,7 +240,8 @@ defmodule Monitorex.EventHandler do
           dedup_key: {pid, ts},
           error: "Finch exception",
           request_headers: [],
-          response_headers: nil
+          response_headers: nil,
+          slow: false
         }
     end
   end
@@ -315,6 +320,7 @@ defmodule Monitorex.EventHandler do
       timestamp: System.system_time(:microsecond),
       response_headers: resp_headers
     }
+    |> tag_slow_request(metadata)
   end
 
   def handle_req_event([:req, :request, :pipeline, :error], measurements, metadata, _config) do
@@ -337,6 +343,7 @@ defmodule Monitorex.EventHandler do
       response_headers: nil,
       error: inspect(metadata[:error] || "Req exception")
     }
+    |> tag_slow_request(metadata)
   end
 
   # Catch-all for unexpected Req telemetry events
@@ -396,6 +403,7 @@ defmodule Monitorex.EventHandler do
         request_body: maybe_store_body(metadata[:request_body], :request),
         response_body: maybe_store_body(metadata[:response_body], :response)
       }
+      |> tag_slow_request(metadata)
     end
   end
 
@@ -438,4 +446,60 @@ defmodule Monitorex.EventHandler do
   defp accepts_path?(path, prefixes) when is_list(prefixes) do
     Enum.any?(prefixes, &String.starts_with?(path, &1))
   end
+
+  @doc """
+  Post-processes an Event to tag it as slow if its duration exceeds the threshold.
+
+  When a request is slow, full request/response bodies are captured even if
+  body storage is globally disabled. This provides debugging data for slow
+  requests without the memory overhead of storing all bodies.
+
+  The threshold is configured via:
+
+      config :monitorex, :slow_request_threshold_ms, 2_000
+
+  Set to `nil` or `0` to disable slow request tracing.
+
+  ## Returns
+
+  Modified `%Event{}` with `:slow` set and bodies populated (if applicable).
+  """
+  @spec tag_slow_request(Monitorex.Event.t() | nil, any()) :: Monitorex.Event.t() | nil
+  def tag_slow_request(event, metadata \\ %{})
+
+  def tag_slow_request(nil, _metadata), do: nil
+
+  def tag_slow_request(%Monitorex.Event{} = event, metadata) when not is_map(metadata) do
+    tag_slow_request(event, %{})
+  end
+
+  def tag_slow_request(%Monitorex.Event{} = event, metadata) do
+    threshold = Application.get_env(:monitorex, :slow_request_threshold_ms, 2_000)
+
+    if threshold && threshold > 0 && event.duration_ms && event.duration_ms >= threshold do
+      req_body = metadata[:request_body] || metadata[:req_body]
+      resp_body = metadata[:response_body] || metadata[:resp_body]
+
+      max_bytes = Application.get_env(:monitorex, :max_body_bytes, 10_000)
+
+      %{
+        event
+        | slow: true,
+          request_body: truncate_body(req_body, max_bytes),
+          response_body: truncate_body(resp_body, max_bytes)
+      }
+    else
+      %{event | slow: false}
+    end
+  end
+
+  defp truncate_body(nil, _max), do: nil
+  defp truncate_body(body, max) when is_binary(body) and byte_size(body) <= max, do: body
+
+  defp truncate_body(body, max) when is_binary(body) do
+    <<trimmed::binary-size(max), _rest::binary>> = body
+    trimmed <> "\n[truncated]"
+  end
+
+  defp truncate_body(_, _), do: nil
 end

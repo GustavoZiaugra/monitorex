@@ -14,6 +14,8 @@ defmodule Monitorex.PrometheusExporterTest do
         :monitorex_inbound_consumers,
         :monitorex_inbound_recent,
         :monitorex_inbound_duration_samples,
+        :monitorex_slow_outbound,
+        :monitorex_slow_inbound,
         :monitorex_dedup
       ],
       fn table ->

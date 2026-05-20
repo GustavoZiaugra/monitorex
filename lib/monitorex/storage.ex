@@ -418,6 +418,48 @@ defmodule Monitorex.Storage do
     "#{event.method}:#{event.path}" == route_key
   end
 
+  # ── Slow Request Queries ──
+
+  @doc """
+  Returns slow outbound events from `:monitorex_slow_outbound`, newest first.
+
+  ## Options
+
+    * `:limit` — max events (default: 50)
+  """
+  @spec list_slow_outbound(keyword()) :: [Event.t()]
+  def list_slow_outbound(opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
+
+    with_table(:monitorex_slow_outbound, fn ->
+      :monitorex_slow_outbound
+      |> :ets.tab2list()
+      |> Enum.reverse()
+      |> Enum.take(limit)
+      |> Enum.map(fn {_ts, event} -> event end)
+    end)
+  end
+
+  @doc """
+  Returns slow inbound events from `:monitorex_slow_inbound`, newest first.
+
+  ## Options
+
+    * `:limit` — max events (default: 50)
+  """
+  @spec list_slow_inbound(keyword()) :: [Event.t()]
+  def list_slow_inbound(opts \\ []) do
+    limit = Keyword.get(opts, :limit, 50)
+
+    with_table(:monitorex_slow_inbound, fn ->
+      :monitorex_slow_inbound
+      |> :ets.tab2list()
+      |> Enum.reverse()
+      |> Enum.take(limit)
+      |> Enum.map(fn {_ts, event} -> event end)
+    end)
+  end
+
   defp parse_route_key(route_key) do
     [method, path] = String.split(route_key, ":", parts: 2)
     %{method: method, path: path}

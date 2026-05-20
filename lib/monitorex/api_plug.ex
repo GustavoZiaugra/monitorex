@@ -154,6 +154,7 @@ defmodule Monitorex.ApiPlug do
 
     # Get host-level metrics
     hosts = Storage.list_hosts()
+
     host_data =
       if host do
         Enum.find(hosts, %{}, &(&1.host == host))
@@ -191,6 +192,7 @@ defmodule Monitorex.ApiPlug do
 
     # Error rate in window
     window_errors = Enum.count(windowed, fn e -> is_integer(e.status) and e.status >= 400 end)
+
     window_error_rate =
       if windowed != [] do
         Float.round(window_errors / length(windowed) * 100, 2)
@@ -232,9 +234,11 @@ defmodule Monitorex.ApiPlug do
   # ── Filter helpers ──
 
   defp filter_method(_event, nil), do: true
+
   defp filter_method(%{method: m}, filter) when is_binary(m) do
     String.upcase(m) == String.upcase(filter)
   end
+
   defp filter_method(_, _), do: false
 
   defp filter_status(_event, nil), do: true
@@ -249,12 +253,14 @@ defmodule Monitorex.ApiPlug do
 
   defp parse_int(nil, default), do: default
   defp parse_int("", default), do: default
+
   defp parse_int(str, _default) when is_binary(str) do
     case Integer.parse(str) do
       {n, _} -> n
       :error -> 0
     end
   end
+
   defp parse_int(n, _default) when is_integer(n), do: n
   defp parse_int(_, default), do: default
 
@@ -262,9 +268,11 @@ defmodule Monitorex.ApiPlug do
     total_weight = Enum.sum(items |> Enum.map(weight_fn))
 
     if total_weight > 0 do
-      sum = Enum.reduce(items, 0.0, fn item, acc ->
-        acc + (Map.get(item, key) || 0.0) * weight_fn.(item)
-      end)
+      sum =
+        Enum.reduce(items, 0.0, fn item, acc ->
+          acc + (Map.get(item, key) || 0.0) * weight_fn.(item)
+        end)
+
       sum / total_weight
     else
       0.0

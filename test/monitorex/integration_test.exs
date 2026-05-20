@@ -19,6 +19,8 @@ defmodule Monitorex.IntegrationTest do
         :monitorex_inbound_consumers,
         :monitorex_inbound_recent,
         :monitorex_inbound_duration_samples,
+        :monitorex_slow_outbound,
+        :monitorex_slow_inbound,
         :monitorex_dedup
       ],
       fn table ->
@@ -46,7 +48,9 @@ defmodule Monitorex.IntegrationTest do
         {:monitorex_inbound_routes, :set},
         {:monitorex_inbound_consumers, :set},
         {:monitorex_inbound_recent, :ordered_set},
-        {:monitorex_inbound_duration_samples, :bag}
+        {:monitorex_inbound_duration_samples, :bag},
+        {:monitorex_slow_outbound, :ordered_set},
+        {:monitorex_slow_inbound, :ordered_set}
       ]
 
       Enum.each(table_specs, fn {table, type} ->
@@ -271,6 +275,8 @@ defmodule Monitorex.IntegrationTest do
           :monitorex_inbound_consumers,
           :monitorex_inbound_recent,
           :monitorex_inbound_duration_samples,
+          :monitorex_slow_outbound,
+          :monitorex_slow_inbound,
           :monitorex_dedup
         ],
         fn table ->

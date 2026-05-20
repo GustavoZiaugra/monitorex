@@ -28,6 +28,7 @@ Monitorex monitors outbound (Tesla, Finch/Req) and inbound (Phoenix) HTTP traffi
 - **Alert webhooks** — configurable thresholds (error_rate, host_down, high_latency) with debounced dispatch
 - **CSV/JSON export** — download any dashboard view as `.csv` or `.json`
 - **REST API** — programmatic access to hosts, routes, events, and metrics via JSON endpoints
+- **Slow request tracing** — automatic capture of request/response bodies for requests exceeding a latency threshold
 - **No database** — all data lives in ETS tables (in-memory)
 
 ## Screenshots
@@ -220,6 +221,22 @@ config :monitorex, :max_recent_inbound, 500  # inbound
 # Stale entry TTL (aggregate tables)
 config :monitorex, :endpoint_ttl, :timer.hours(1)
 ```
+
+### Slow Request Tracing
+
+Monitorex can automatically flag and retain detailed traces for slow requests. When a request exceeds the configured threshold, full request/response bodies are captured even if body storage is globally disabled — providing debugging data without the memory overhead of storing all bodies.
+
+```elixir
+# Latency threshold in milliseconds (default: 2_000)
+config :monitorex, :slow_request_threshold_ms, 2_000
+
+# Maximum slow requests retained per direction (default: 200)
+config :monitorex, :max_slow, 200
+```
+
+Set `:slow_request_threshold_ms` to `nil` or `0` to disable slow request tracing entirely.
+
+Slow events are stored in separate ETS tables (`:monitorex_slow_outbound` and `:monitorex_slow_inbound`) and exposed via `Monitorex.Storage.list_slow_outbound/1` and `list_slow_inbound/1` for custom dashboards or alerting integrations.
 
 Monitor runtime memory usage:
 

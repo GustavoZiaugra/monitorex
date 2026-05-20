@@ -16,6 +16,7 @@ defmodule Monitorex.Health do
              monitorex_outbound_recent monitorex_outbound_duration_samples
              monitorex_inbound_routes monitorex_inbound_consumers
              monitorex_inbound_recent monitorex_inbound_duration_samples
+             monitorex_slow_outbound monitorex_slow_inbound
              monitorex_dedup)a
 
   @doc """
