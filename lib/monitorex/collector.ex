@@ -18,12 +18,14 @@ defmodule Monitorex.Collector do
   @inbound_recent :monitorex_inbound_recent
   @inbound_duration_samples :monitorex_inbound_duration_samples
 
-  @dedup :monitorex_dedup
+  @outbound_slow :monitorex_slow_outbound
+  @inbound_slow :monitorex_slow_inbound
 
-  # ── Defaults ──
+  @dedup :monitorex_dedup
 
   @default_max_recent 500
   @default_max_recent_inbound 500
+  @default_max_slow 200
   @default_max_endpoints 2_000
   @default_endpoint_ttl :timer.hours(1)
   @default_cleanup_interval 5_000
@@ -96,7 +98,9 @@ defmodule Monitorex.Collector do
       :monitorex_inbound_routes,
       :monitorex_inbound_consumers,
       :monitorex_inbound_recent,
-      :monitorex_inbound_duration_samples
+      :monitorex_inbound_duration_samples,
+      :monitorex_slow_outbound,
+      :monitorex_slow_inbound
     ]
 
     # Add dedup table if it was created
@@ -126,6 +130,10 @@ defmodule Monitorex.Collector do
     :ets.new(@inbound_recent, [:public, :named_table, :ordered_set, read_concurrency: true])
     :ets.new(@inbound_duration_samples, [:public, :named_table, :bag, read_concurrency: true])
 
+    # Slow request tables (separate from recent — longer retention)
+    :ets.new(@outbound_slow, [:public, :named_table, :ordered_set, read_concurrency: true])
+    :ets.new(@inbound_slow, [:public, :named_table, :ordered_set, read_concurrency: true])
+
     clients = Application.get_env(:monitorex, :clients, [])
 
     dedup_table =
@@ -143,6 +151,8 @@ defmodule Monitorex.Collector do
       inbound_consumers: @inbound_consumers,
       inbound_recent: @inbound_recent,
       inbound_duration_samples: @inbound_duration_samples,
+      outbound_slow: @outbound_slow,
+      inbound_slow: @inbound_slow,
       dedup: dedup_table
     }
   end
@@ -258,6 +268,11 @@ defmodule Monitorex.Collector do
     if event.duration_ms do
       :ets.insert(state.outbound_duration_samples, {host, event.duration_ms})
     end
+
+    # Slow request table
+    if event.slow do
+      :ets.insert(state.outbound_slow, {ts, event})
+    end
   end
 
   defp update_host(host, event, state) do
@@ -300,6 +315,11 @@ defmodule Monitorex.Collector do
     # Duration sample
     if event.duration_ms do
       :ets.insert(state.inbound_duration_samples, {route_key, event.duration_ms})
+    end
+
+    # Slow request table
+    if event.slow do
+      :ets.insert(state.inbound_slow, {ts, event})
     end
   end
 
@@ -407,6 +427,11 @@ defmodule Monitorex.Collector do
     trim_aggregate(state.inbound_routes, max_endpoints)
     trim_aggregate(state.inbound_consumers, max_endpoints)
 
+    # Trim slow request tables
+    max_slow = Application.get_env(:monitorex, :max_slow, @default_max_slow)
+    trim_recent(state.outbound_slow, max_slow)
+    trim_recent(state.inbound_slow, max_slow)
+
     # Compute percentiles and update aggregates
     compute_percentiles(state, :outbound)
     compute_percentiles(state, :inbound)
@@ -420,7 +445,7 @@ defmodule Monitorex.Collector do
   defp trim_recent(table, max) do
     count = :ets.info(table, :size)
 
-    if count > max do
+    if is_integer(count) and count > max do
       to_delete = count - max
       # Ordered set: first N entries (oldest) to delete
       first_keys =
@@ -440,7 +465,7 @@ defmodule Monitorex.Collector do
   defp trim_aggregate(table, max) do
     count = :ets.info(table, :size)
 
-    if count > max do
+    if is_integer(count) and count > max do
       to_delete = count - max
       # Aggregate tables are :set; sort by last_seen and drop oldest
       entries =
