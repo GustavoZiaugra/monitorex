@@ -4,19 +4,15 @@ defmodule Monitorex.AlertHistoryTest do
   alias Monitorex.AlertHistory
 
   setup do
-    # Clean config env FIRST (before starting GenServer)
+    # Clean config env
     Application.delete_env(:monitorex, :alerts)
 
-    # Ensure a clean AlertHistory GenServer for each test
+    # Reset AlertHistory ETS without stopping GenServer
     if Process.whereis(AlertHistory) do
-      try do
-        GenServer.stop(AlertHistory)
-      catch
-        _, _ -> :ok
-      end
+      :ets.delete_all_objects(:monitorex_alerts_history)
+    else
+      {:ok, _pid} = AlertHistory.start_link([])
     end
-
-    {:ok, _pid} = AlertHistory.start_link([])
 
     :ok
   end
