@@ -10,7 +10,10 @@ defmodule Monitorex.MixProject do
       aliases: aliases(),
       deps: deps(),
       docs: docs(),
-      package: package()
+      package: package(),
+      dialyzer: [
+        ignore_warnings: ".dialyzer_ignore.exs"
+      ]
     ]
   end
 
@@ -20,7 +23,7 @@ defmodule Monitorex.MixProject do
 
   def application do
     [
-      extra_applications: [:logger],
+      extra_applications: [:logger, :hackney],
       mod: {Monitorex.Application, []}
     ]
   end
@@ -88,7 +91,9 @@ defmodule Monitorex.MixProject do
       {:floki, "~> 0.38.1", only: :test},
       {:ex_doc, "~> 0.40.1", runtime: false},
       {:credo, "~> 1.7", only: :dev, runtime: false},
-      {:dialyxir, "~> 1.4", only: :dev, runtime: false}
+      {:dialyxir, "~> 1.4", only: :dev, runtime: false},
+      {:hackney, "~> 1.18", optional: true},
+      {:gen_smtp, "~> 1.2", optional: true}
     ]
   end
 

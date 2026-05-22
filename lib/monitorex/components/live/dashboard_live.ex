@@ -27,7 +27,8 @@ defmodule Monitorex.DashboardLive do
     "inbound_consumers" => Live.InboundConsumersPage,
     "inbound_recent" => Live.InboundRecentPage,
     "route" => Live.RouteDetailPage,
-    "timeline" => Live.TimelinePage
+    "timeline" => Live.TimelinePage,
+    "alerts" => Live.AlertsPage
   }
 
   @default_page "outbound"

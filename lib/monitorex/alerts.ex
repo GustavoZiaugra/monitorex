@@ -16,7 +16,12 @@ defmodule Monitorex.Alerts do
           threshold: 0.05,
           window_seconds: 300,
           min_interval_seconds: 300,
-          notifiers: [webhook: "https://hooks.example.com/alerts"]
+          notifiers: [
+            webhook: "https://hooks.example.com/alerts",
+            slack: "https://hooks.slack.com/services/...",
+            discord: "https://discord.com/api/webhooks/...",
+            email: "ops@example.com"
+          ]
         }
       ]
 
@@ -33,7 +38,43 @@ defmodule Monitorex.Alerts do
     * `:gt` — greater than threshold
     * `:lt` — less than threshold
 
+  ## Runtime API
+
+    * `list_rules/0` — list current alert rules
+    * `add_rule/1` — add a rule at runtime
+    * `remove_rule/1` — remove by name
+
   """
+
+  use GenServer
+
+  require Logger
+
+  alias Monitorex.AlertHistory
+
+  # ── Public API ──
+
+  def start_link(_opts) do
+    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  end
+
+  @doc "List all current alert rules (config + runtime)."
+  @spec list_rules() :: [map()]
+  def list_rules do
+    GenServer.call(__MODULE__, :list_rules)
+  end
+
+  @doc "Add an alert rule at runtime."
+  @spec add_rule(map()) :: :ok
+  def add_rule(rule) do
+    GenServer.call(__MODULE__, {:add_rule, rule})
+  end
+
+  @doc "Remove a runtime alert rule by name."
+  @spec remove_rule(String.t()) :: :ok | :not_found
+  def remove_rule(name) do
+    GenServer.call(__MODULE__, {:remove_rule, name})
+  end
 
   @doc """
   Evaluate all configured alerts against current ETS data.
@@ -41,15 +82,47 @@ defmodule Monitorex.Alerts do
   Returns a list of triggered alert maps (or empty list).
   Only fires alerts that haven't fired within their `min_interval_seconds`.
   """
+  @spec evaluate() :: [map()]
   def evaluate do
-    alerts_config = Application.get_env(:monitorex, :alerts, [])
+    rules = Application.get_env(:monitorex, :alerts, [])
+    now = System.system_time(:second)
 
-    alerts_config
+    rules
     |> Enum.flat_map(fn alert_cfg ->
-      evaluate_alert(alert_cfg, System.system_time(:second))
+      evaluate_alert(alert_cfg, now)
     end)
     |> Enum.filter(&debounce?/1)
+    |> tap(&record_and_fire/1)
   end
+
+  # ── GenServer callbacks ──
+
+  @impl true
+  def init(_opts) do
+    config_rules = Application.get_env(:monitorex, :alerts, [])
+    {:ok, %{rules: config_rules, debounce_table: create_debounce_table()}}
+  end
+
+  @impl true
+  def handle_call(:list_rules, _from, state) do
+    {:reply, state.rules, state}
+  end
+
+  @impl true
+  def handle_call({:add_rule, rule}, _from, state) do
+    new_rules = [rule | Enum.reject(state.rules, &(&1.name == rule.name))]
+    {:reply, :ok, %{state | rules: new_rules}}
+  end
+
+  @impl true
+  def handle_call({:remove_rule, name}, _from, state) do
+    case Enum.split_with(state.rules, &(&1.name == name)) do
+      {[], _rest} -> {:reply, :not_found, state}
+      {_removed, rest} -> {:reply, :ok, %{state | rules: rest}}
+    end
+  end
+
+  # ── Evaluation ──
 
   defp evaluate_alert(%{metric: :host_down} = cfg, now) do
     with_table(:monitorex_outbound_hosts, fn ->
@@ -59,7 +132,7 @@ defmodule Monitorex.Alerts do
           elapsed = now - last_seen_sec
 
           if elapsed > cfg.window_seconds do
-            [build_alert(cfg, host, elapsed, "no events for #{elapsed}s") | acc]
+            [build_alert(cfg, host, elapsed, :host_down, "no events for #{elapsed}s") | acc]
           else
             acc
           end
@@ -83,7 +156,8 @@ defmodule Monitorex.Alerts do
                 cfg,
                 host,
                 value,
-                "#{metric}=#{value} exceeds #{cfg.op} #{cfg.threshold}"
+                metric,
+                "#{metric}=#{format_value(value)} exceeds #{cfg.op} #{format_value(cfg.threshold)}"
               )
               | acc
             ]
@@ -114,7 +188,7 @@ defmodule Monitorex.Alerts do
   defp compare(value, :gt, threshold), do: value > threshold
   defp compare(value, :lt, threshold), do: value < threshold
 
-  defp build_alert(cfg, host, value, reason) do
+  defp build_alert(cfg, host, value, metric, reason) do
     %{
       alert_name: cfg.name,
       host: host,
@@ -123,13 +197,19 @@ defmodule Monitorex.Alerts do
       operator: cfg.op,
       reason: reason,
       timestamp: System.system_time(:second),
-      notifiers: cfg[:notifiers] || []
+      notifiers: cfg[:notifiers] || [],
+      metric: metric,
+      status: :firing,
+      acknowledged_at: nil,
+      snoozed_until: nil,
+      id: System.system_time(:microsecond)
     }
   end
 
+  # ── Debounce ──
+
   defp debounce?(alert) do
     debounce_table = :monitorex_alert_debounce
-
     key = {alert.alert_name, alert.host}
     min_interval = Application.get_env(:monitorex, :alert_min_interval_seconds, 300)
     now = System.system_time(:second)
@@ -147,51 +227,86 @@ defmodule Monitorex.Alerts do
 
           _ ->
             :ets.insert(debounce_table, {key, now})
-
-            # Cleanup old entries
-            to_delete =
-              :ets.foldl(
-                fn
-                  {k, ts}, acc when now - ts > min_interval * 2 -> [k | acc]
-                  _, acc -> acc
-                end,
-                [],
-                debounce_table
-              )
-
-            Enum.each(to_delete, &:ets.delete(debounce_table, &1))
+            prune_debounce(debounce_table, now, min_interval)
             true
         end
     end
   end
 
-  @doc """
-  Fire all notifiers for triggered alerts.
-  """
-  def fire_alerts(alerts) do
+  defp prune_debounce(table, now, min_interval) do
+    to_delete =
+      :ets.foldl(
+        fn
+          {k, ts}, acc when now - ts > min_interval * 2 -> [k | acc]
+          _, acc -> acc
+        end,
+        [],
+        table
+      )
+
+    Enum.each(to_delete, &:ets.delete(table, &1))
+  end
+
+  # ── Record & Fire ──
+
+  defp record_and_fire(alerts) do
     Enum.each(alerts, fn alert ->
+      # Record in history (best-effort if GenServer not running)
+      try do
+        AlertHistory.record_alert(alert)
+      catch
+        :exit, {:noproc, _} -> :ok
+      end
+
+      # Fire notifiers
       Enum.each(alert.notifiers, fn
-        {:webhook, url} -> fire_webhook(url, alert)
-        _ -> :ok
+        {:webhook, url} ->
+          fire_webhook(url, alert)
+
+        {:slack, url} ->
+          Task.start(fn -> Monitorex.Notifiers.Slack.notify(alert, url) end)
+
+        {:discord, url} ->
+          Task.start(fn -> Monitorex.Notifiers.Discord.notify(alert, url) end)
+
+        {:email, config} ->
+          Task.start(fn -> Monitorex.Notifiers.Email.notify(alert, config) end)
+
+        _ ->
+          :ok
       end)
     end)
   end
 
-  defp fire_webhook(url, alert) do
-    task =
-      Task.async(fn ->
-        try do
-          _url = URI.parse(url)
-          _alert = alert
-          :ok
-        rescue
-          _ -> :error
-        end
-      end)
+  @dialyzer {:no_return, record_and_fire: 1}
 
-    case Task.yield(task, 5_000) || Task.shutdown(task, :brutal_kill) do
-      {:ok, _} -> :ok
-      nil -> :error
+  defp fire_webhook(url, alert) do
+    Task.start(fn ->
+      try do
+        headers = [{"content-type", "application/json"}]
+        body = Jason.encode!(alert)
+
+        case :hackney.post(url, headers, body, [:with_body, timeout: 10_000]) do
+          {:ok, status, _hdrs, _resp} when status in 200..299 -> :ok
+          {:ok, status, _, _} -> Logger.warning("Webhook #{url} returned #{status}")
+          {:error, reason} -> Logger.warning("Webhook #{url} failed: #{inspect(reason)}")
+        end
+      rescue
+        e -> Logger.warning("Webhook exception: #{inspect(e)}")
+      end
+    end)
+  end
+
+  @dialyzer {:no_return, fire_webhook: 2}
+
+  # ── Helpers ──
+
+  defp create_debounce_table do
+    table = :monitorex_alert_debounce
+
+    case :ets.info(table) do
+      :undefined -> :ets.new(table, [:public, :named_table, :set])
+      _ -> table
     end
   end
 
@@ -201,4 +316,7 @@ defmodule Monitorex.Alerts do
       _ -> fun.()
     end
   end
+
+  defp format_value(v) when is_float(v), do: :erlang.float_to_binary(v, decimals: 4)
+  defp format_value(v), do: to_string(v)
 end
