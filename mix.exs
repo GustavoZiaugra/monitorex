@@ -93,7 +93,8 @@ defmodule Monitorex.MixProject do
       {:credo, "~> 1.7", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: :dev, runtime: false},
       {:hackney, "~> 1.18", optional: true},
-      {:gen_smtp, "~> 1.2", optional: true}
+      {:gen_smtp, "~> 1.2", optional: true},
+      {:exqlite, "~> 0.29", optional: true}
     ]
   end
 
