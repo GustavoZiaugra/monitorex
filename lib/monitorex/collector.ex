@@ -440,6 +440,9 @@ defmodule Monitorex.Collector do
     if state.dedup do
       prune_dedup(state.dedup, mono_now)
     end
+
+    # Evaluate alert thresholds
+    Monitorex.Alerts.evaluate()
   end
 
   defp trim_recent(table, max) do
@@ -490,24 +493,36 @@ defmodule Monitorex.Collector do
   end
 
   defp prune_set(table, wall_now, ttl_ms) do
-    to_delete =
-      :ets.foldl(
-        fn {key, agg}, acc ->
-          elapsed_ms = div(wall_now - agg.last_seen, 1000)
-          if elapsed_ms > ttl_ms, do: [key | acc], else: acc
-        end,
-        [],
-        table
-      )
+    case :ets.info(table) do
+      :undefined ->
+        :ok
 
-    Enum.each(to_delete, &:ets.delete(table, &1))
+      _ ->
+        to_delete =
+          :ets.foldl(
+            fn {key, agg}, acc ->
+              elapsed_ms = div(wall_now - agg.last_seen, 1000)
+              if elapsed_ms > ttl_ms, do: [key | acc], else: acc
+            end,
+            [],
+            table
+          )
+
+        Enum.each(to_delete, &:ets.delete(table, &1))
+    end
   end
 
   defp compute_percentiles(state, :outbound) do
     # Grab all unique hosts
     hosts =
-      :ets.foldl(fn {host, _}, acc -> [host | acc] end, [], state.outbound_hosts)
-      |> Enum.uniq()
+      case :ets.info(state.outbound_hosts) do
+        :undefined ->
+          []
+
+        _ ->
+          :ets.foldl(fn {host, _}, acc -> [host | acc] end, [], state.outbound_hosts)
+          |> Enum.uniq()
+      end
 
     Enum.each(hosts, fn host ->
       samples =
@@ -537,8 +552,13 @@ defmodule Monitorex.Collector do
 
   defp compute_percentiles(state, :inbound) do
     routes =
-      :ets.foldl(fn {key, _}, acc -> [key | acc] end, [], state.inbound_routes)
-      |> Enum.uniq()
+      case :ets.info(state.inbound_routes) do
+        :undefined ->
+          []
+
+        _ ->
+          :ets.foldl(fn {key, _}, acc -> [key | acc] end, [], state.inbound_routes) |> Enum.uniq()
+      end
 
     Enum.each(routes, fn route_key ->
       samples =
@@ -581,19 +601,25 @@ defmodule Monitorex.Collector do
   end
 
   defp prune_dedup(dedup_table, now) do
-    dedup_ttl_ms = Application.get_env(:monitorex, :dedup_ttl, :timer.seconds(60))
+    case :ets.info(dedup_table) do
+      :undefined ->
+        :ok
 
-    to_delete =
-      :ets.foldl(
-        fn {key, ts}, acc ->
-          elapsed_ms = System.convert_time_unit(now - ts, :native, :millisecond)
-          if elapsed_ms > dedup_ttl_ms, do: [key | acc], else: acc
-        end,
-        [],
-        dedup_table
-      )
+      _ ->
+        dedup_ttl_ms = Application.get_env(:monitorex, :dedup_ttl, :timer.seconds(60))
 
-    Enum.each(to_delete, &:ets.delete(dedup_table, &1))
+        to_delete =
+          :ets.foldl(
+            fn {key, ts}, acc ->
+              elapsed_ms = System.convert_time_unit(now - ts, :native, :millisecond)
+              if elapsed_ms > dedup_ttl_ms, do: [key | acc], else: acc
+            end,
+            [],
+            dedup_table
+          )
+
+        Enum.each(to_delete, &:ets.delete(dedup_table, &1))
+    end
   end
 
   # ── Health check ──

@@ -1,0 +1,24 @@
+=== Monitorex Demo Recording ===
+
+[1/6] Cleaning up previous processes...
+[2/6] Starting virtual display (Xvfb :99)...
+[3/6] Starting Monitorex demo server...
+  ✓ Server running at http://localhost:4000
+[4/6] Starting ffmpeg screen capture...
+[5/6] Navigating through dashboard pages...
+  → Outbound Overview
+  → Outbound Recent
+  → Host Detail
+  → Inbound Overview
+  → Inbound Consumers
+  → Inbound Recent
+  → Timeline Inspector
+  → Route Detail
+  → Back to Overview
+  ✓ All pages visited
+[6/6] Stopping recording...
+
+=== Recording Complete ===
+  File: /home/zig/projects/monitorex/demo/monitorex-demo.mp4
+  Size: 844K
+  Duration: 40s

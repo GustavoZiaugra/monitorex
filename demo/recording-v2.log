@@ -1,0 +1,22 @@
+=== Monitorex Demo Recording v2 — Interactive ===
+
+  ✓ Server running
+[Recording] Navigating with interactions...
+→ Outbound Overview
+→ Outbound Recent (sidebar click)
+  → Click 5xx filter
+→ Timeline Inspector (sidebar click)
+  → Click first event in timeline
+→ Host Detail (click api.example.com link)
+→ Inbound Overview
+→ Inbound Consumers
+  → Sort by Error Rate
+→ Inbound Recent
+→ Route Detail
+→ Back to Overview
+✓ All done
+
+=== Complete ===
+  File: /home/zig/projects/monitorex/demo/monitorex-demo-v2.mp4
+  Size: 1.3M
+  Duration: 54s
