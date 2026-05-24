@@ -4,7 +4,7 @@ defmodule Monitorex.MixProject do
   def project do
     [
       app: :monitorex,
-      version: "0.5.1",
+      version: "0.6.0",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
@@ -54,8 +54,19 @@ defmodule Monitorex.MixProject do
           Monitorex.Collector,
           Monitorex.EventHandler,
           Monitorex.Storage,
+          Monitorex.Storage.Backend,
+          Monitorex.Storage.ETS,
+          Monitorex.Storage.SQLite,
           Monitorex.ClusterPage,
           Monitorex.Cluster
+        ],
+        Alerts: [
+          Monitorex.Alerts,
+          Monitorex.AlertHistory,
+          Monitorex.Notifier,
+          Monitorex.Notifiers.Slack,
+          Monitorex.Notifiers.Discord,
+          Monitorex.Notifiers.Email
         ],
         "UI Components": [
           Monitorex.Components.Core,
