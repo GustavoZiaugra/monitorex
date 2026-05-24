@@ -135,7 +135,7 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
             event.response_body,
             event.consumer,
             if(event.slow, do: 1, else: 0),
-            event.dedup_key
+            serialize_dedup_key(event.dedup_key)
           ]
         )
 
@@ -552,5 +552,10 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
     defp safe_atom(nil), do: nil
     defp safe_atom(str) when is_binary(str), do: String.to_existing_atom(str)
     defp safe_atom(other), do: other
+
+    defp serialize_dedup_key(nil), do: nil
+    defp serialize_dedup_key({pid, ref}) when is_pid(pid), do: "#{inspect(pid)}:#{inspect(ref)}"
+    defp serialize_dedup_key(key) when is_binary(key), do: key
+    defp serialize_dedup_key(_), do: nil
   end
 end
