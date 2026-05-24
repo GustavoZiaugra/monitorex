@@ -1,26 +1,5 @@
 # Changelog
 
-## 0.6.0 (2026-05-24)
-
-### Added
-- **Alert Center UI** — `/alerts` page with summary cards, firing alerts list, and history table with status badges, acknowledge, and snooze controls (#69)
-- **Alert History** — GenServer-backed ETS storage for alert records with ack, snooze, expire, and automatic trim (#69)
-- **Native Notifications** — Slack, Discord, and Email notifiers with debounced dispatch via `Monitorex.Notifier` behaviour (#69)
-- **Slow Request Tracing** — automatic capture of request/response bodies for requests exceeding `:slow_request_threshold_ms`, stored in separate ETS tables (#70)
-- **Persistent Storage Backend** — optional SQLite adapter via `Monitorex.Storage.Backend` behaviour; ETS remains default, zero breaking changes (#71)
-- **REST API** — programmatic JSON access to hosts, routes, events, consumers, and metrics with pagination and CORS (#72)
-- **CSV/JSON Export** — download any dashboard view as `.csv` or `.json` from the UI (#73)
-- **Alert Runtime CRUD** — `add_rule/1`, `remove_rule/1`, `list_rules/0` for dynamic alert configuration at runtime (#69)
-
-### Changed
-- ETS table operations now guarded against `:undefined` to prevent crashes when tables are absent during tests or race conditions (#69, #70)
-- `exqlite` added as `optional: true` dependency for SQLite backend (#71)
-- `:hackney` and `:gen_smtp` added as `optional: true` for native notification dispatch (#69)
-
-### Fixed
-- Dialyzer contract for `tag_slow_request/2` corrected to accept `any()` metadata (#70)
-- Integration test dedup flow ETS cleanup extended to include slow tables (#70)
-
 ## 0.5.1 (2026-05-16)
 
 ### Fixed
