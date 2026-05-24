@@ -29,7 +29,11 @@ Monitorex monitors outbound (Tesla, Finch/Req) and inbound (Phoenix) HTTP traffi
 - **CSV/JSON export** — download any dashboard view as `.csv` or `.json`
 - **REST API** — programmatic access to hosts, routes, events, and metrics via JSON endpoints
 - **Slow request tracing** — automatic capture of request/response bodies for requests exceeding a latency threshold
-- **No database** — all data lives in ETS tables (in-memory)
+- **Alert Center** — live alerts page with firing status, history, acknowledge, and snooze controls
+- **Alert History** — GenServer-backed ETS storage for alert records with lifecycle management
+- **Native notifications** — Slack, Discord, and Email notifiers with debounced dispatch
+- **Persistent storage** — optional SQLite backend via swappable `Storage.Backend` behaviour (ETS remains default)
+- **No database required** — all data lives in ETS tables (in-memory) by default
 
 ## Screenshots
 
@@ -44,7 +48,7 @@ Add `monitorex` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:monitorex, "~> 0.5.0"}
+    {:monitorex, "~> 0.6.0"}
   ]
 end
 ```
@@ -248,6 +252,50 @@ Monitorex.memory_usage()
 
 The **health endpoint** (`GET /monitorex/health`) also exposes current ETS table sizes and total memory under `ets_table_sizes` and `total_ets_memory_words`.
 
+### Storage Backend
+
+By default, Monitorex stores all data in ETS tables (in-memory). You can optionally enable SQLite persistence so metrics survive BEAM restarts:
+
+```elixir
+# Use ETS (default)
+config :monitorex, :storage, Monitorex.Storage.ETS
+
+# Use SQLite — requires :exqlite in your deps
+config :monitorex, :storage, Monitorex.Storage.SQLite
+config :monitorex, :sqlite_path, "/var/lib/monitorex/data.db"
+```
+
+SQLite is compiled **conditionally** — if `exqlite` is not present, Monitorex falls back to ETS automatically. Add `{:exqlite, "~> 0.29"}` to your `mix.exs` to use it.
+
+### Alerts & Notifications
+
+Configure alert rules and notification channels:
+
+```elixir
+# Alert thresholds evaluated every cleanup cycle
+config :monitorex, :alerts, [
+  %{name: :high_error_rate, condition: :error_rate, threshold: 0.05},
+  %{name: :host_down, condition: :host_down, threshold: 3},
+  %{name: :high_latency, condition: :high_latency, threshold: 1_000}
+]
+
+# Slack webhook
+config :monitorex, :slack_webhook_url, "https://hooks.slack.com/services/..."
+
+# Discord webhook
+config :monitorex, :discord_webhook_url, "https://discord.com/api/webhooks/..."
+
+# SMTP (requires :gen_smtp)
+config :monitorex, :smtp,
+  relay: "smtp.example.com",
+  username: "alerts@example.com",
+  password: "secret",
+  from: "monitorex@example.com",
+  to: ["oncall@example.com"]
+```
+
+Rules can also be added/removed at runtime via `Monitorex.Alerts.add_rule/1` and `remove_rule/1`.
+
 ## Pages
 
 | Page | URL | Description |
@@ -260,6 +308,7 @@ The **health endpoint** (`GET /monitorex/health`) also exposes current ETS table
 | Inbound Recent | `/inbound_recent` | Live feed with filters |
 | Timeline | `/timeline` | Split-pane event inspector with request/response detail |
 | Route Detail | `/route/:key` | Consumer breakdown + recent requests |
+| Alerts | `/alerts` | Alert summary, firing alerts, history table |
 
 ## REST API
 
