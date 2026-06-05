@@ -33,6 +33,7 @@ defmodule Monitorex.IntegrationTest do
     )
 
     # Start an isolated Collector with a unique name
+    # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
     name = :"collector_int_#{System.unique_integer([:positive])}"
     {:ok, pid} = GenServer.start_link(Collector, [], name: name)
 
@@ -103,11 +104,11 @@ defmodule Monitorex.IntegrationTest do
       assert host.errors == 0
 
       endpoints = Storage.list_endpoints_for_host("api.example.com")
-      assert length(endpoints) == 1
-      assert hd(endpoints).path == "/users"
+      assert [endpoint] = endpoints
+      assert endpoint.path == "/users"
 
       recent = Storage.list_recent_outbound()
-      assert length(recent) >= 1
+      assert recent != []
     end
 
     test "multiple events increment counters", %{collector: pid} do
@@ -187,11 +188,11 @@ defmodule Monitorex.IntegrationTest do
       await_collector(pid)
 
       hosts = Storage.list_hosts()
-      assert length(hosts) == 1
-      assert hd(hosts).host == "finch-api.example.com"
+      assert [host] = hosts
+      assert host.host == "finch-api.example.com"
 
       recent = Storage.list_recent_outbound()
-      assert length(recent) >= 1
+      assert recent != []
     end
 
     test "Finch with string URL", %{collector: pid} do
@@ -254,7 +255,7 @@ defmodule Monitorex.IntegrationTest do
       assert consumer.requests == 1
 
       recent = Storage.list_recent_inbound()
-      assert length(recent) >= 1
+      assert recent != []
     end
   end
 
@@ -288,6 +289,7 @@ defmodule Monitorex.IntegrationTest do
         end
       )
 
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
       name = :"collector_dedup_#{System.unique_integer([:positive])}"
       {:ok, pid} = GenServer.start_link(Collector, [], name: name)
       {:ok, %{collector: pid}}

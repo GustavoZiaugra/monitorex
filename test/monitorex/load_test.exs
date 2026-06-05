@@ -46,7 +46,7 @@ defmodule Monitorex.LoadTest do
     pid
   end
 
-  defp await_cleanup(_pid, ms \\ 1000) do
+  defp await_cleanup(_pid, ms) do
     Process.sleep(ms)
   end
 

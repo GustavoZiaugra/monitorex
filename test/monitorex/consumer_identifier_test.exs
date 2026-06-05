@@ -3,7 +3,7 @@ defmodule Monitorex.ConsumerIdentifierTest do
 
   alias Monitorex.ConsumerIdentifier
 
-  defp conn(headers \\ []) do
+  defp conn(headers) do
     Plug.Test.conn(:get, "/", nil)
     |> Map.put(:req_headers, headers)
   end

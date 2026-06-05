@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased
+
+### Added
+- **Support for Elixir 1.20.0 and OTP 29** — CI matrix expanded to include `elixir: '1.20', otp: '29'` (#74)
+- Local development tool-versions updated to Elixir 1.20.0-otp-29 and Erlang 29.0
+
+### Fixed
+- Elixir 1.20 compatibility: pinned bitstring size variable in `EventHandler.truncate_body/2` with `^max` to satisfy new hard deprecation
+- Removed unused `Logger` require in `AlertHistory`
+- Removed unreachable nil clauses in `TimelinePage` that Elixir 1.20's compiler now correctly flags
+
+### Changed
+- `String.to_atom/1` → `String.to_existing_atom/1` in `DashboardLive.atomize_keys/1` (Credo)
+- Replaced `length/1` comparisons with empty-list checks in tests (Credo)
+- Added `# credo:disable-for-next-line` annotations for intentional runtime atom creation in tests
+
 ## 0.6.0 (2026-05-24)
 
 ### Added

@@ -497,7 +497,7 @@ defmodule Monitorex.EventHandler do
   defp truncate_body(body, max) when is_binary(body) and byte_size(body) <= max, do: body
 
   defp truncate_body(body, max) when is_binary(body) do
-    <<trimmed::binary-size(max), _rest::binary>> = body
+    <<trimmed::binary-size(^max), _rest::binary>> = body
     trimmed <> "\n[truncated]"
   end
 

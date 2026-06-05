@@ -68,7 +68,7 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
     test "list_hosts/0 returns aggregated host stats" do
       hosts = SQLite.list_hosts()
       assert is_list(hosts)
-      assert length(hosts) >= 1
+      assert hosts != []
 
       host = hd(hosts)
       assert host.host == "api.example.com"
@@ -79,7 +79,7 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
     test "list_recent_outbound/0 returns events ordered by timestamp desc" do
       events = SQLite.list_recent_outbound(limit: 10)
       assert is_list(events)
-      assert length(events) >= 1
+      assert events != []
 
       [first | _] = events
       assert first.direction == :outbound
@@ -143,7 +143,7 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
 
       routes = SQLite.list_routes()
       assert is_list(routes)
-      assert length(routes) >= 1
+      assert routes != []
 
       route = Enum.find(routes, &(&1.path == "/api/health"))
       assert route != nil
@@ -162,7 +162,7 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
     test "list_endpoints_for_host/1 returns per-host endpoint stats" do
       endpoints = SQLite.list_endpoints_for_host("api.example.com")
       assert is_list(endpoints)
-      assert length(endpoints) >= 1
+      assert endpoints != []
     end
 
     test "list_consumers_for_route/1 aggregates per-route consumers" do

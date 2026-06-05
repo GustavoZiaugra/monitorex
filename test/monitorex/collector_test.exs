@@ -35,6 +35,7 @@ defmodule Monitorex.CollectorTest do
   describe "start_link/1" do
     test "starts and creates all ETS tables" do
       # Use a unique name to avoid conflicts
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
       name = :"collector_start_#{System.unique_integer([:positive])}"
       {:ok, pid} = GenServer.start_link(Collector, [], name: name)
 
@@ -58,6 +59,7 @@ defmodule Monitorex.CollectorTest do
     test "creates dedup table when both tesla and finch in clients config" do
       Application.put_env(:monitorex, :clients, [:tesla, :finch])
 
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
       name = :"collector_dedup_#{System.unique_integer([:positive])}"
       {:ok, pid} = GenServer.start_link(Collector, [], name: name)
 
@@ -70,6 +72,7 @@ defmodule Monitorex.CollectorTest do
 
   describe "handle_event/1 — outbound" do
     setup do
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
       name = :"collector_outbound_#{System.unique_integer([:positive])}"
       {:ok, pid} = GenServer.start_link(Collector, [], name: name)
       %{pid: pid}
@@ -171,6 +174,7 @@ defmodule Monitorex.CollectorTest do
 
   describe "handle_event/1 — inbound" do
     setup do
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
       name = :"collector_inbound_#{System.unique_integer([:positive])}"
       {:ok, pid} = GenServer.start_link(Collector, [], name: name)
       %{pid: pid}
