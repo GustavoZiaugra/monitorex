@@ -1,8 +1,6 @@
 defmodule Monitorex.AuthenticationTest do
   use ExUnit.Case, async: false
 
-  import Phoenix.LiveView
-
   alias Monitorex.Authentication
 
   describe "on_mount/4" do
