@@ -16,6 +16,22 @@
 - Replaced `length/1` comparisons with empty-list checks in tests (Credo)
 - Added `# credo:disable-for-next-line` annotations for intentional runtime atom creation in tests
 
+### Security
+- Audited and updated dependencies to latest patch/minor versions (#85):
+  - `phoenix` 1.8.5 → 1.8.7
+  - `phoenix_live_view` 1.1.28 → 1.1.31
+  - `telemetry` 1.4.1 → 1.4.2
+  - `jason` 1.4.4 → 1.4.5
+  - `exqlite` 0.36.0 → 0.37.0
+  - `ex_doc` 0.40.1 → 0.40.3
+  - `floki` 0.38.1 → 0.38.3
+  - `req` 0.5.17 → 0.5.18
+  - `plug` 1.19.1 → 1.19.2
+  - `mint` 1.8.0 → 1.9.0
+  - `cowboy` 2.13.0 → 2.14.0
+  - `cowlib` 2.16.0 → 2.16.1
+  - `elixir_make` 0.9.0 → 0.10.0
+
 ## 0.6.0 (2026-05-24)
 
 ### Added
