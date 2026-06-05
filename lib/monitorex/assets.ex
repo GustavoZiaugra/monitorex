@@ -18,6 +18,8 @@ defmodule Monitorex.Assets do
 
   use Plug.Builder
 
+  alias Plug.Conn
+
   @external_resource Path.join(__DIR__, "../../priv/static/app.css")
   @external_resource Path.join(__DIR__, "../../priv/static/app.js")
 
@@ -27,8 +29,8 @@ defmodule Monitorex.Assets do
   @css_content File.read!(@css_path)
   @js_content File.read!(@js_path)
 
-  @css_hash :crypto.hash(:md5, @css_content) |> Base.encode16(case: :lower)
-  @js_hash :crypto.hash(:md5, @js_content) |> Base.encode16(case: :lower)
+  @css_hash Base.encode16(:crypto.hash(:md5, @css_content), case: :lower)
+  @js_hash Base.encode16(:crypto.hash(:md5, @js_content), case: :lower)
 
   @doc """
   Returns the MD5 hex digest of the CSS file contents.
@@ -86,7 +88,6 @@ defmodule Monitorex.Assets do
   end
 
   defp put_cache_headers(conn) do
-    conn
-    |> Plug.Conn.put_resp_header("cache-control", "public, max-age=31536000, immutable")
+    Conn.put_resp_header(conn, "cache-control", "public, max-age=31536000, immutable")
   end
 end

@@ -23,7 +23,7 @@ defmodule Monitorex.Notifiers.Discord do
             %{name: "Threshold", value: format_value(alert.threshold), inline: true},
             %{name: "Reason", value: alert.reason, inline: false}
           ],
-          timestamp: DateTime.from_unix!(alert.timestamp) |> DateTime.to_iso8601(),
+          timestamp: DateTime.to_iso8601(DateTime.from_unix!(alert.timestamp)),
           footer: %{text: "Monitorex"}
         }
       ]

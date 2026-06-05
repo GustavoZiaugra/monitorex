@@ -174,7 +174,7 @@ defmodule Monitorex.Components.Live.AlertsPage do
   defp format_value(v), do: to_string(v)
 
   defp format_time(ts) when is_integer(ts) do
-    DateTime.from_unix!(ts) |> Calendar.strftime("%Y-%m-%d %H:%M:%S")
+    Calendar.strftime(DateTime.from_unix!(ts), "%Y-%m-%d %H:%M:%S")
   end
 
   defp format_time(_), do: "-"

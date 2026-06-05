@@ -16,12 +16,14 @@ defmodule Monitorex.HealthPlug do
 
   import Plug.Conn
 
+  alias Monitorex.Health
+
   @doc false
   def init(opts), do: opts
 
   @doc false
   def call(conn, _opts) do
-    health = Monitorex.Health.check()
+    health = Health.check()
     status_code = health_status_to_http(health.status)
 
     conn

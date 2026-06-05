@@ -1,8 +1,8 @@
 defmodule Monitorex.DashboardLiveTest do
   use ExUnit.Case, async: true
 
-  alias Monitorex.DashboardLive
   alias Monitorex.Components.Live
+  alias Monitorex.DashboardLive
 
   describe "resolve_page/1" do
     test "returns default page for empty params" do
@@ -81,8 +81,8 @@ defmodule Monitorex.DashboardLiveTest do
 
   describe "mount/3" do
     test "assigns default page and component when no params" do
-      socket = %Phoenix.LiveView.Socket{}
-      {:ok, socket} = DashboardLive.mount(%{}, %{}, socket)
+      initial_socket = %Phoenix.LiveView.Socket{}
+      {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
 
       assert socket.assigns.page_name == "outbound"
       assert socket.assigns.page == Live.OutboundOverviewPage
@@ -90,18 +90,18 @@ defmodule Monitorex.DashboardLiveTest do
     end
 
     test "assigns correct page when params specify a page" do
-      socket = %Phoenix.LiveView.Socket{}
-      {:ok, socket} = DashboardLive.mount(%{"page" => "inbound"}, %{}, socket)
+      initial_socket = %Phoenix.LiveView.Socket{}
+      {:ok, socket} = DashboardLive.mount(%{"page" => "inbound"}, %{}, initial_socket)
 
       assert socket.assigns.page_name == "inbound"
       assert socket.assigns.page == Live.InboundOverviewPage
     end
 
     test "assigns host detail page when page=host and host param present" do
-      socket = %Phoenix.LiveView.Socket{}
+      initial_socket = %Phoenix.LiveView.Socket{}
 
       {:ok, socket} =
-        DashboardLive.mount(%{"page" => "host", "host" => "api.example.com"}, %{}, socket)
+        DashboardLive.mount(%{"page" => "host", "host" => "api.example.com"}, %{}, initial_socket)
 
       assert socket.assigns.page_name == "host"
       assert socket.assigns.page == Live.HostDetailPage
@@ -109,9 +109,9 @@ defmodule Monitorex.DashboardLiveTest do
     end
 
     test "starts refresh timer when connected" do
-      socket = %Phoenix.LiveView.Socket{}
+      initial_socket = %Phoenix.LiveView.Socket{}
 
-      {:ok, socket} = DashboardLive.mount(%{}, %{}, socket)
+      {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
 
       refute socket.assigns.page_name == nil
     end
@@ -119,18 +119,18 @@ defmodule Monitorex.DashboardLiveTest do
 
   describe "handle_params/3" do
     test "updates page when params change" do
-      socket = %Phoenix.LiveView.Socket{}
-      {:ok, socket} = DashboardLive.mount(%{}, %{}, socket)
+      initial_socket = %Phoenix.LiveView.Socket{}
+      {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
       assert socket.assigns.page_name == "outbound"
 
-      {:noreply, socket} = DashboardLive.handle_params(%{"page" => "inbound"}, "/inbound", socket)
-      assert socket.assigns.page_name == "inbound"
-      assert socket.assigns.page == Live.InboundOverviewPage
+      {:noreply, updated} = DashboardLive.handle_params(%{"page" => "inbound"}, "/inbound", socket)
+      assert updated.assigns.page_name == "inbound"
+      assert updated.assigns.page == Live.InboundOverviewPage
     end
 
     test "routes to correct component for each page type" do
-      socket = %Phoenix.LiveView.Socket{}
-      {:ok, socket} = DashboardLive.mount(%{}, %{}, socket)
+      initial_socket = %Phoenix.LiveView.Socket{}
+      {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
 
       routes = [
         {%{"page" => "outbound"}, Live.OutboundOverviewPage},
@@ -143,27 +143,27 @@ defmodule Monitorex.DashboardLiveTest do
       ]
 
       Enum.each(routes, fn {params, expected_module} ->
-        {:noreply, socket} = DashboardLive.handle_params(params, "/", socket)
+        {:noreply, updated} = DashboardLive.handle_params(params, "/", socket)
 
-        assert socket.assigns.page == expected_module,
-               "expected #{inspect(params)} to route to #{inspect(expected_module)}, got #{inspect(socket.assigns.page)}"
+        assert updated.assigns.page == expected_module,
+               "expected #{inspect(params)} to route to #{inspect(expected_module)}, got #{inspect(updated.assigns.page)}"
       end)
     end
   end
 
   describe "handle_info/2" do
     test ":refresh resends timer and triggers re-render" do
-      socket = %Phoenix.LiveView.Socket{}
-      {:ok, socket} = DashboardLive.mount(%{}, %{}, socket)
+      initial_socket = %Phoenix.LiveView.Socket{}
+      {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
 
-      assert {:noreply, _socket} = DashboardLive.handle_info(:refresh, socket)
+      assert {:noreply, _updated} = DashboardLive.handle_info(:refresh, socket)
     end
 
     test "{:navigate, path} pushes navigation" do
-      socket = %Phoenix.LiveView.Socket{}
-      {:ok, socket} = DashboardLive.mount(%{}, %{}, socket)
+      initial_socket = %Phoenix.LiveView.Socket{}
+      {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
 
-      assert {:noreply, _socket} = DashboardLive.handle_info({:navigate, "/host/test"}, socket)
+      assert {:noreply, _updated} = DashboardLive.handle_info({:navigate, "/host/test"}, socket)
     end
   end
 end

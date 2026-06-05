@@ -10,8 +10,8 @@ defmodule Monitorex.Components.Live.TimelinePage do
   import Monitorex.Components.Live.Helpers, only: [format_timestamp: 1]
 
   alias Monitorex.ClusterPage
-  alias Monitorex.HeaderRedactor
   alias Monitorex.Components.Core
+  alias Monitorex.HeaderRedactor
 
   @page_size 100
   @initial_load 50
@@ -372,19 +372,23 @@ defmodule Monitorex.Components.Live.TimelinePage do
 
   # ── Filter URL builder ──
 
+  # URL builder handles many filter combinations; splitting would hurt readability.
+  # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   defp build_filter_url(socket, overrides) do
     assigns = socket.assigns
 
     params =
-      %{
-        direction: Map.get(assigns, :direction, "outbound"),
-        search: overrides[:search] || Map.get(assigns, :search_query, "") || "",
-        status: overrides[:status] || Map.get(assigns, :filter_status, "") || "",
-        method: overrides[:method] || Map.get(assigns, :filter_method, "") || "",
-        show_all: overrides[:show_all] || if(Map.get(assigns, :show_all), do: "true", else: nil),
-        selected: overrides[:selected] || Map.get(assigns, :selected)
-      }
-      |> Map.reject(fn {_, v} -> is_nil(v) || v == "" end)
+      Map.reject(
+        %{
+          direction: Map.get(assigns, :direction, "outbound"),
+          search: overrides[:search] || Map.get(assigns, :search_query, "") || "",
+          status: overrides[:status] || Map.get(assigns, :filter_status, "") || "",
+          method: overrides[:method] || Map.get(assigns, :filter_method, "") || "",
+          show_all: overrides[:show_all] || if(Map.get(assigns, :show_all), do: "true", else: nil),
+          selected: overrides[:selected] || Map.get(assigns, :selected)
+        },
+        fn {_, v} -> is_nil(v) || v == "" end
+      )
 
     "?page=timeline" <>
       if(params[:direction] != "outbound", do: "&direction=#{params[:direction]}", else: "") <>

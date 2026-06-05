@@ -3,6 +3,7 @@ defmodule Monitorex.EventHandlerTest do
 
   alias Monitorex.Event
   alias Monitorex.EventHandler
+  alias Plug.Test
 
   # ── Event struct and helper functions ──
 
@@ -765,8 +766,10 @@ defmodule Monitorex.EventHandlerTest do
 
   describe "handle_phoenix_event/4" do
     test "parses Phoenix telemetry into Event" do
+      base_conn = Test.conn(:get, "/api/v1/users", nil)
+
       conn =
-        Plug.Test.conn(:get, "/api/v1/users", nil)
+        base_conn
         |> Map.put(:status, 200)
         |> Map.put(:host, "example.com")
 
@@ -802,8 +805,10 @@ defmodule Monitorex.EventHandlerTest do
     test "accepts path when inbound_path_prefixes matches" do
       Application.put_env(:monitorex, :inbound_path_prefixes, ["/api"])
 
+      base_conn = Test.conn(:get, "/api/v1/products", nil)
+
       conn =
-        Plug.Test.conn(:get, "/api/v1/products", nil)
+        base_conn
         |> Map.put(:status, 200)
         |> Map.put(:host, "example.com")
 
@@ -827,8 +832,10 @@ defmodule Monitorex.EventHandlerTest do
     test "filters path when inbound_path_prefixes does not match" do
       Application.put_env(:monitorex, :inbound_path_prefixes, ["/api"])
 
+      base_conn = Test.conn(:get, "/health", nil)
+
       conn =
-        Plug.Test.conn(:get, "/health", nil)
+        base_conn
         |> Map.put(:status, 200)
         |> Map.put(:host, "example.com")
 
@@ -851,8 +858,10 @@ defmodule Monitorex.EventHandlerTest do
     test "allows all paths when inbound_path_prefixes is not configured" do
       Application.delete_env(:monitorex, :inbound_path_prefixes)
 
+      base_conn = Test.conn(:get, "/health", nil)
+
       conn =
-        Plug.Test.conn(:get, "/health", nil)
+        base_conn
         |> Map.put(:status, 200)
         |> Map.put(:host, "example.com")
 
@@ -872,8 +881,10 @@ defmodule Monitorex.EventHandlerTest do
     end
 
     test "extracts consumer from conn when available" do
+      base_conn = Test.conn(:get, "/api/v1/orders", nil)
+
       conn =
-        Plug.Test.conn(:get, "/api/v1/orders", nil)
+        base_conn
         |> Map.put(:status, 200)
         |> Map.put(:host, "example.com")
         |> Map.put(:req_headers, [{"authorization", "Basic " <> Base.encode64("alice:pass")}])
@@ -894,8 +905,10 @@ defmodule Monitorex.EventHandlerTest do
     end
 
     test "redacts request and response headers from conn" do
+      base_conn = Test.conn(:get, "/api/v1/orders", nil)
+
       conn =
-        Plug.Test.conn(:get, "/api/v1/orders", nil)
+        base_conn
         |> Map.put(:status, 200)
         |> Map.put(:host, "example.com")
         |> Map.put(:req_headers, [
@@ -933,8 +946,10 @@ defmodule Monitorex.EventHandlerTest do
       Application.put_env(:monitorex, :store_request_body, true)
       Application.put_env(:monitorex, :store_response_body, true)
 
+      base_conn = Test.conn(:post, "/api/v1/orders", nil)
+
       conn =
-        Plug.Test.conn(:post, "/api/v1/orders", nil)
+        base_conn
         |> Map.put(:status, 201)
         |> Map.put(:host, "example.com")
 
@@ -957,8 +972,10 @@ defmodule Monitorex.EventHandlerTest do
     end
 
     test "handles error status codes in Phoenix events" do
+      base_conn = Test.conn(:get, "/api/v1/items", nil)
+
       conn =
-        Plug.Test.conn(:get, "/api/v1/items", nil)
+        base_conn
         |> Map.put(:status, 500)
         |> Map.put(:host, "example.com")
 

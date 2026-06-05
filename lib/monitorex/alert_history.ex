@@ -40,15 +40,13 @@ defmodule Monitorex.AlertHistory do
     metric_filter = Keyword.get(opts, :metric, :all)
 
     with_table(fn ->
-      entries =
-        :ets.tab2list(@table)
-        |> Enum.reverse()
-        |> Enum.map(fn {_ts, entry} -> entry end)
-        |> maybe_filter_status(status_filter)
-        |> maybe_filter_metric(metric_filter)
-        |> Enum.take(limit)
-
-      entries
+      @table
+      |> :ets.tab2list()
+      |> Enum.reverse()
+      |> Enum.map(fn {_ts, entry} -> entry end)
+      |> maybe_filter_status(status_filter)
+      |> maybe_filter_metric(metric_filter)
+      |> Enum.take(limit)
     end) || []
   end
 
@@ -56,8 +54,7 @@ defmodule Monitorex.AlertHistory do
   @spec firing_count() :: non_neg_integer()
   def firing_count do
     with_table(fn ->
-      :ets.tab2list(@table)
-      |> Enum.count(fn {_ts, entry} -> entry.status == :firing end)
+      Enum.count(:ets.tab2list(@table), fn {_ts, entry} -> entry.status == :firing end)
     end) || 0
   end
 

@@ -1,3 +1,5 @@
+# Collector orchestrates telemetry and storage; aliases are all required.
+# credo:disable-for-next-line Credo.Check.Refactor.ModuleDependencies
 defmodule Monitorex.Collector do
   @moduledoc """
   GenServer that owns ETS tables, attaches telemetry handlers, and runs
@@ -9,6 +11,9 @@ defmodule Monitorex.Collector do
   """
 
   use GenServer
+
+  alias Monitorex.Alerts
+  alias Monitorex.Collector.Handlers
 
   # ── ETS table names ──
 
@@ -180,14 +185,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :tesla},
         [:tesla, :request, :stop],
-        &Monitorex.Collector.Handlers.tesla/4,
+        &Handlers.tesla/4,
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :tesla_exception},
         [:tesla, :request, :exception],
-        &Monitorex.Collector.Handlers.tesla/4,
+        &Handlers.tesla/4,
         nil
       )
     end
@@ -196,14 +201,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :finch},
         [:finch, :request, :stop],
-        &Monitorex.Collector.Handlers.finch/4,
+        &Handlers.finch/4,
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :finch_exception},
         [:finch, :request, :exception],
-        &Monitorex.Collector.Handlers.finch/4,
+        &Handlers.finch/4,
         nil
       )
     end
@@ -212,14 +217,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :req},
         [:req, :request, :pipeline, :stop],
-        &Monitorex.Collector.Handlers.req/4,
+        &Handlers.req/4,
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :req_exception},
         [:req, :request, :pipeline, :error],
-        &Monitorex.Collector.Handlers.req/4,
+        &Handlers.req/4,
         nil
       )
     end
@@ -228,14 +233,14 @@ defmodule Monitorex.Collector do
       :telemetry.attach(
         {Monitorex.Collector, :phoenix},
         [:phoenix, :router_dispatch, :stop],
-        &Monitorex.Collector.Handlers.phoenix/4,
+        &Handlers.phoenix/4,
         nil
       )
 
       :telemetry.attach(
         {Monitorex.Collector, :phoenix_exception},
         [:phoenix, :router_dispatch, :exception],
-        &Monitorex.Collector.Handlers.phoenix/4,
+        &Handlers.phoenix/4,
         nil
       )
     end
@@ -279,7 +284,7 @@ defmodule Monitorex.Collector do
     backend().prune()
 
     # Evaluate alert thresholds
-    Monitorex.Alerts.evaluate()
+    Alerts.evaluate()
   end
 
   # ── Health check ──
@@ -291,7 +296,7 @@ defmodule Monitorex.Collector do
       safe_reattach(
         {Monitorex.Collector, :tesla},
         [:tesla, :request, :stop],
-        &Monitorex.Collector.Handlers.tesla/4
+        &Handlers.tesla/4
       )
     end
 
@@ -299,7 +304,7 @@ defmodule Monitorex.Collector do
       safe_reattach(
         {Monitorex.Collector, :finch},
         [:finch, :request, :stop],
-        &Monitorex.Collector.Handlers.finch/4
+        &Handlers.finch/4
       )
     end
 
@@ -307,7 +312,7 @@ defmodule Monitorex.Collector do
       safe_reattach(
         {Monitorex.Collector, :req},
         [:req, :request, :pipeline, :stop],
-        &Monitorex.Collector.Handlers.req/4
+        &Handlers.req/4
       )
     end
 
@@ -315,7 +320,7 @@ defmodule Monitorex.Collector do
       safe_reattach(
         {Monitorex.Collector, :phoenix},
         [:phoenix, :router_dispatch, :stop],
-        &Monitorex.Collector.Handlers.phoenix/4
+        &Handlers.phoenix/4
       )
     end
   end

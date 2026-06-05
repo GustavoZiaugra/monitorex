@@ -271,10 +271,9 @@ defmodule Monitorex.Cluster do
     if total_requests == 0 do
       nil
     else
-      items
-      |> Enum.reduce(0, fn item, acc ->
-        acc + (item[field] || 0) * (item.requests / total_requests)
-      end)
+    Enum.reduce(items, 0, fn item, acc ->
+      acc + (item[field] || 0) * (item.requests / total_requests)
+    end)
     end
   end
 end

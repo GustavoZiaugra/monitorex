@@ -57,7 +57,7 @@ defmodule Monitorex.URLRedactor do
         end)
 
       new_query = URI.encode_query(redacted)
-      %{uri | query: new_query} |> URI.to_string()
+      URI.to_string(%{uri | query: new_query})
     end
   end
 end

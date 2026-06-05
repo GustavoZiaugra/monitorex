@@ -17,6 +17,7 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
 
     @behaviour Monitorex.Storage.Backend
 
+    alias Exqlite.Sqlite3
     alias Monitorex.Event
 
     @default_limit 50
@@ -33,7 +34,7 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
       if existing do
         existing
       else
-        {:ok, db} = Exqlite.Sqlite3.open(path)
+        {:ok, db} = Sqlite3.open(path)
         init_schema(db)
         Process.put(:monitorex_sqlite_conn, db)
         db
@@ -179,8 +180,8 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
              total_duration = total_duration + ?4,
              last_seen = ?5;",
           [
-            key,
-            String.split(key, ":") |> hd(),
+    key,
+    hd(String.split(key, ":")),
             error_inc,
             event.duration_ms || 0.0,
             System.system_time(:microsecond)
@@ -339,19 +340,8 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
       consumer = Keyword.get(opts, :consumer)
       route = Keyword.get(opts, :route)
 
-      base = "direction = 'inbound'"
-      base = if status_class, do: base <> " AND status_class = '#{status_class}'", else: base
-      base = if consumer, do: base <> " AND consumer = '#{consumer}'", else: base
-
-      base =
-        if route do
-          [method, path] = String.split(route, ":", parts: 2)
-          base <> " AND method = '#{method}' AND path = '#{path}'"
-        else
-          base
-        end
-
-      sql = "SELECT * FROM events WHERE #{base} ORDER BY timestamp DESC LIMIT ?1 OFFSET ?2;"
+      where = build_inbound_where(status_class, consumer, route)
+      sql = "SELECT * FROM events WHERE #{where} ORDER BY timestamp DESC LIMIT ?1 OFFSET ?2;"
 
       {:ok, rows} = sql_query(conn(), sql, [limit, offset])
       Enum.map(rows, &row_to_event/1)
@@ -423,19 +413,8 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
       consumer = Keyword.get(opts, :consumer)
       route = Keyword.get(opts, :route)
 
-      base = "direction = 'inbound'"
-      base = if status_class, do: base <> " AND status_class = '#{status_class}'", else: base
-      base = if consumer, do: base <> " AND consumer = '#{consumer}'", else: base
-
-      base =
-        if route do
-          [method, path] = String.split(route, ":", parts: 2)
-          base <> " AND method = '#{method}' AND path = '#{path}'"
-        else
-          base
-        end
-
-      {:ok, rows} = sql_query(conn(), "SELECT COUNT(*) FROM events WHERE #{base};", [])
+      where = build_inbound_where(status_class, consumer, route)
+      {:ok, rows} = sql_query(conn(), "SELECT COUNT(*) FROM events WHERE #{where};", [])
 
       case rows do
         [[count]] -> count || 0
@@ -484,29 +463,45 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
       {base <> " AND status_class = '#{status_class}' AND host = ?1", [host]}
     end
 
+    defp build_inbound_where(status_class, consumer, route) do
+      [
+        "direction = 'inbound'",
+        if(status_class, do: "status_class = '#{status_class}'"),
+        if(consumer, do: "consumer = '#{consumer}'"),
+        if(route, do: route_where_clause(route))
+      ]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join(" AND ")
+    end
+
+    defp route_where_clause(route) do
+      [method, path] = String.split(route, ":", parts: 2)
+      "method = '#{method}' AND path = '#{path}'"
+    end
+
     defp sql_exec(db, sql, params) do
-      {:ok, stmt} = Exqlite.Sqlite3.prepare(db, sql)
-      :ok = Exqlite.Sqlite3.bind(stmt, params)
+      {:ok, stmt} = Sqlite3.prepare(db, sql)
+      :ok = Sqlite3.bind(stmt, params)
 
       try do
-        case Exqlite.Sqlite3.step(db, stmt) do
+        case Sqlite3.step(db, stmt) do
           :done -> :ok
           :busy -> :ok
           _ -> :ok
         end
       after
-        Exqlite.Sqlite3.release(db, stmt)
+        Sqlite3.release(db, stmt)
       end
     end
 
     defp sql_query(db, sql, params) do
-      {:ok, stmt} = Exqlite.Sqlite3.prepare(db, sql)
-      :ok = Exqlite.Sqlite3.bind(stmt, params)
+      {:ok, stmt} = Sqlite3.prepare(db, sql)
+      :ok = Sqlite3.bind(stmt, params)
 
       try do
-        Exqlite.Sqlite3.fetch_all(db, stmt)
+        Sqlite3.fetch_all(db, stmt)
       after
-        Exqlite.Sqlite3.release(db, stmt)
+        Sqlite3.release(db, stmt)
       end
     end
 

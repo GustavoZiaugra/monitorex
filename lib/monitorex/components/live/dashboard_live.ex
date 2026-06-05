@@ -1,3 +1,5 @@
+# DashboardLive routes to many page modules; aliases are all required.
+# credo:disable-for-next-line Credo.Check.Refactor.ModuleDependencies
 defmodule Monitorex.DashboardLive do
   @moduledoc """
   Root LiveView for the Monitorex dashboard.
@@ -119,8 +121,13 @@ defmodule Monitorex.DashboardLive do
 
   defp normalize_route_param(assigns) do
     case assigns do
-      %{host: route_key} -> Map.put(assigns, :route, route_key) |> Map.delete(:host)
-      _ -> assigns
+      %{host: route_key} ->
+        assigns
+        |> Map.put(:route, route_key)
+        |> Map.delete(:host)
+
+      _ ->
+        assigns
     end
   end
 

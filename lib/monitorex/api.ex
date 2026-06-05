@@ -68,18 +68,14 @@ defmodule Monitorex.Api do
     limit = params |> Map.get("limit", "50") |> parse_int(50) |> min(500) |> max(1)
     offset = params |> Map.get("offset", "0") |> parse_int(0) |> max(0)
 
-    opts = [limit: limit, offset: offset]
-
-    opts = maybe_add(opts, params, "host", :host)
-    opts = maybe_add(opts, params, "consumer", :consumer)
-    opts = maybe_add(opts, params, "route", :route)
-    opts = maybe_add(opts, params, "status_class", :status_class, &String.to_atom/1)
-    opts = maybe_add(opts, params, "method", :method)
-
-    opts = maybe_add_status(opts, params)
-    opts = maybe_add_since(opts, params)
-
-    opts
+    [limit: limit, offset: offset]
+    |> maybe_add(params, "host", :host)
+    |> maybe_add(params, "consumer", :consumer)
+    |> maybe_add(params, "route", :route)
+    |> maybe_add(params, "status_class", :status_class, &String.to_atom/1)
+    |> maybe_add(params, "method", :method)
+    |> maybe_add_status(params)
+    |> maybe_add_since(params)
   end
 
   @doc """

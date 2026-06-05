@@ -1,3 +1,5 @@
+# Many aliases are required for the REST API dispatch table.
+# credo:disable-for-next-line Credo.Check.Refactor.ModuleDependencies
 defmodule Monitorex.ApiPlug do
   @moduledoc """
   REST API plug for programmatic access to Monitorex telemetry data.
@@ -14,7 +16,7 @@ defmodule Monitorex.ApiPlug do
   """
 
   import Plug.Conn
-  alias Monitorex.{Api, Storage}
+  alias Monitorex.{Api, Health, Storage}
 
   @doc false
   def init(opts), do: opts
@@ -25,8 +27,7 @@ defmodule Monitorex.ApiPlug do
 
     # Handle CORS preflight
     if conn.method == "OPTIONS" do
-      conn
-      |> send_resp(204, "")
+      send_resp(conn, 204, "")
     else
       handle_request(conn, conn.method, conn.path_info)
     end
@@ -35,7 +36,7 @@ defmodule Monitorex.ApiPlug do
   # ── Route Dispatch ──
 
   defp handle_request(conn, "GET", path) do
-    path_parts = path |> Enum.reject(&(&1 == ""))
+    path_parts = Enum.reject(path, &(&1 == ""))
     dispatch(conn, path_parts)
   end
 
@@ -43,6 +44,8 @@ defmodule Monitorex.ApiPlug do
     Api.json_error(conn, "Method not allowed. Only GET and OPTIONS are supported.", 405)
   end
 
+  # Dispatch table is inherently complex; splitting would hurt readability.
+  # credo:disable-for-next-line Credo.Check.Refactor.CyclomaticComplexity
   defp dispatch(conn, ["hosts"]) do
     data = Storage.list_hosts()
     Api.json_ok(conn, data)
@@ -88,6 +91,41 @@ defmodule Monitorex.ApiPlug do
   end
 
   defp dispatch(conn, ["events"]) do
+    dispatch_events(conn)
+  end
+
+  defp dispatch(conn, ["events" | id_parts]) do
+    id_str = Enum.join(id_parts, "/")
+
+    case Integer.parse(id_str) do
+      {timestamp, _} ->
+        case Storage.get_event(timestamp) do
+          nil -> Api.json_error(conn, "Event not found", 404)
+          event -> Api.json_ok(conn, Api.event_to_api(event))
+        end
+
+      :error ->
+        Api.json_error(conn, "Invalid event ID. Must be a numeric timestamp.", 400)
+    end
+  end
+
+  defp dispatch(conn, ["metrics"]) do
+    dispatch_metrics(conn)
+  end
+
+  defp dispatch(conn, ["health"]) do
+    health = Health.check()
+
+    conn
+    |> put_resp_content_type("application/json")
+    |> send_resp(200, Jason.encode!(health))
+  end
+
+  defp dispatch(conn, _) do
+    Api.json_error(conn, "Not found. See /monitorex/api for available endpoints.", 404)
+  end
+
+  defp dispatch_events(conn) do
     params = conn.params
     filters = Api.parse_filters(params)
     direction = Map.get(params, "direction", "outbound")
@@ -110,14 +148,13 @@ defmodule Monitorex.ApiPlug do
 
     # Apply post-filters for method, status code, and since
     filtered =
-      events
-      |> Enum.filter(fn e -> filter_method(e, method) end)
-      |> Enum.filter(fn e -> filter_status(e, status_code) end)
-      |> Enum.filter(fn e -> filter_since(e, since_us) end)
+      Enum.filter(events, fn e ->
+        filter_method(e, method) and filter_status(e, status_code) and filter_since(e, since_us)
+      end)
 
     returned_count = length(filtered)
 
-    total_count =
+    post_filtered_count =
       if method || status_code || since_us do
         # With post-filters, total count is what was returned
         returned_count
@@ -126,79 +163,28 @@ defmodule Monitorex.ApiPlug do
       end
 
     api_data = Enum.map(filtered, &Api.event_to_api/1)
-    headers = Api.pagination_headers(total_count, filters, returned_count)
+    headers = Api.pagination_headers(post_filtered_count, filters, returned_count)
 
     Api.json_ok(conn, api_data, headers: headers)
   end
 
-  defp dispatch(conn, ["events" | id_parts]) do
-    id_str = Enum.join(id_parts, "/")
-
-    case Integer.parse(id_str) do
-      {timestamp, _} ->
-        case Storage.get_event(timestamp) do
-          nil -> Api.json_error(conn, "Event not found", 404)
-          event -> Api.json_ok(conn, Api.event_to_api(event))
-        end
-
-      :error ->
-        Api.json_error(conn, "Invalid event ID. Must be a numeric timestamp.", 400)
-    end
-  end
-
-  defp dispatch(conn, ["metrics"]) do
+  defp dispatch_metrics(conn) do
     params = conn.params
     _filters = Api.parse_filters(params)
     host = Map.get(params, "host")
-    window_secs = params |> Map.get("window", "300") |> parse_int(300)
+    window_secs = parse_int(Map.get(params, "window", "300"), 300)
 
-    # Get host-level metrics
     hosts = Storage.list_hosts()
+    host_data = build_host_data(hosts, host)
 
-    host_data =
-      if host do
-        Enum.find(hosts, %{}, &(&1.host == host))
-      else
-        # Aggregate across all hosts
-        %{
-          requests: Enum.reduce(hosts, 0, fn h, acc -> acc + (h.requests || 0) end),
-          errors: Enum.reduce(hosts, 0, fn h, acc -> acc + (h.errors || 0) end),
-          avg_latency: compute_aggregate_avg(hosts, :avg_latency, &(&1.requests || 0)),
-          p50: compute_aggregate_p(hosts, :p50),
-          p95: compute_aggregate_p(hosts, :p95),
-          p99: compute_aggregate_p(hosts, :p99)
-        }
-      end
-
-    # Compute RPS from recent events within the window
     now_us = System.system_time(:microsecond)
     window_us = window_secs * 1_000_000
     cutoff = now_us - window_us
 
     recent_outbound = Storage.list_recent_outbound(limit: 500)
+    windowed = filter_by_window(recent_outbound, cutoff)
 
-    windowed =
-      Enum.filter(recent_outbound, fn %{timestamp: ts} ->
-        is_integer(ts) and ts >= cutoff
-      end)
-
-    rps =
-      if window_secs > 0 and windowed != [] do
-        # Approximate: requests_in_window / window_secs
-        Float.round(length(windowed) / window_secs, 2)
-      else
-        0.0
-      end
-
-    # Error rate in window
-    window_errors = Enum.count(windowed, fn e -> is_integer(e.status) and e.status >= 400 end)
-
-    window_error_rate =
-      if windowed != [] do
-        Float.round(window_errors / length(windowed) * 100, 2)
-      else
-        0.0
-      end
+    {rps, window_errors, window_error_rate} = compute_window_stats(windowed, window_secs)
 
     data = %{
       hosts_count: length(hosts),
@@ -219,16 +205,45 @@ defmodule Monitorex.ApiPlug do
     Api.json_ok(conn, data)
   end
 
-  defp dispatch(conn, ["health"]) do
-    health = Monitorex.Health.check()
-
-    conn
-    |> put_resp_content_type("application/json")
-    |> send_resp(200, Jason.encode!(health))
+  defp build_host_data(hosts, nil) do
+    %{
+      requests: Enum.reduce(hosts, 0, fn h, acc -> acc + (h.requests || 0) end),
+      errors: Enum.reduce(hosts, 0, fn h, acc -> acc + (h.errors || 0) end),
+      avg_latency: compute_aggregate_avg(hosts, :avg_latency, &(&1.requests || 0)),
+      p50: compute_aggregate_p(hosts, :p50),
+      p95: compute_aggregate_p(hosts, :p95),
+      p99: compute_aggregate_p(hosts, :p99)
+    }
   end
 
-  defp dispatch(conn, _) do
-    Api.json_error(conn, "Not found. See /monitorex/api for available endpoints.", 404)
+  defp build_host_data(hosts, host) do
+    Enum.find(hosts, %{}, &(&1.host == host))
+  end
+
+  defp filter_by_window(recent_outbound, cutoff) do
+    Enum.filter(recent_outbound, fn %{timestamp: ts} ->
+      is_integer(ts) and ts >= cutoff
+    end)
+  end
+
+  defp compute_window_stats(windowed, window_secs) do
+    rps =
+      if window_secs > 0 and windowed != [] do
+        Float.round(length(windowed) / window_secs, 2)
+      else
+        0.0
+      end
+
+    window_errors = Enum.count(windowed, fn e -> is_integer(e.status) and e.status >= 400 end)
+
+    window_error_rate =
+      if windowed != [] do
+        Float.round(window_errors / length(windowed) * 100, 2)
+      else
+        0.0
+      end
+
+    {rps, window_errors, window_error_rate}
   end
 
   # ── Filter helpers ──
@@ -265,7 +280,7 @@ defmodule Monitorex.ApiPlug do
   defp parse_int(_, default), do: default
 
   defp compute_aggregate_avg(items, key, weight_fn) do
-    total_weight = Enum.sum(items |> Enum.map(weight_fn))
+    total_weight = Enum.sum(Enum.map(items, weight_fn))
 
     if total_weight > 0 do
       sum =

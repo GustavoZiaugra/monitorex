@@ -7,11 +7,11 @@ defmodule Monitorex.EventHandler do
   `(event_name, measurements, metadata, config)`.
   """
 
+  alias Monitorex.ConsumerIdentifier
   alias Monitorex.Event
+  alias Monitorex.HeaderRedactor
   alias Monitorex.UrlNormalizer
   alias Monitorex.URLRedactor
-  alias Monitorex.ConsumerIdentifier
-  alias Monitorex.HeaderRedactor
 
   @doc """
   Handles a Tesla telemetry event (`[:tesla, :request, :stop]`).
@@ -66,24 +66,26 @@ defmodule Monitorex.EventHandler do
     redacted_url = URLRedactor.redact(normalized_url)
     %URI{host: host, path: path} = URI.parse(normalized_url)
 
-    %Event{
-      source: :tesla,
-      direction: :outbound,
-      method: method,
-      host: host,
-      path: path,
-      full_url: redacted_url,
-      status: status,
-      status_class: Event.classify_status(status || 0),
-      duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: System.system_time(:microsecond),
-      dedup_key: {pid, ts},
-      request_headers: req_headers,
-      response_headers: resp_headers,
-      request_body: maybe_store_body(metadata[:request_body], :request),
-      response_body: maybe_store_body(metadata[:response_body], :response)
-    }
-    |> tag_slow_request(metadata)
+    tag_slow_request(
+      %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: method,
+        host: host,
+        path: path,
+        full_url: redacted_url,
+        status: status,
+        status_class: Event.classify_status(status || 0),
+        duration_ms: Event.duration_ms(measurements.duration),
+        timestamp: System.system_time(:microsecond),
+        dedup_key: {pid, ts},
+        request_headers: req_headers,
+        response_headers: resp_headers,
+        request_body: maybe_store_body(metadata[:request_body], :request),
+        response_body: maybe_store_body(metadata[:response_body], :response)
+      },
+      metadata
+    )
   end
 
   def handle_tesla_event([:tesla, :request, :exception], measurements, metadata, _config) do
@@ -108,23 +110,25 @@ defmodule Monitorex.EventHandler do
     normalized_url = if url_str != "unknown", do: UrlNormalizer.normalize(url_str), else: url_str
     redacted_url = URLRedactor.redact(normalized_url)
 
-    %Event{
-      source: :tesla,
-      direction: :outbound,
-      method: method,
-      host: URI.parse(normalized_url).host,
-      path: URI.parse(normalized_url).path,
-      full_url: redacted_url,
-      status: nil,
-      status_class: :server_error,
-      duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: System.system_time(:microsecond),
-      dedup_key: {pid, ts},
-      error: inspect(metadata[:reason] || metadata[:kind] || "Tesla exception"),
-      request_headers: req_headers,
-      response_headers: nil
-    }
-    |> tag_slow_request(metadata)
+    tag_slow_request(
+      %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: method,
+        host: URI.parse(normalized_url).host,
+        path: URI.parse(normalized_url).path,
+        full_url: redacted_url,
+        status: nil,
+        status_class: :server_error,
+        duration_ms: Event.duration_ms(measurements.duration),
+        timestamp: System.system_time(:microsecond),
+        dedup_key: {pid, ts},
+        error: inspect(metadata[:reason] || metadata[:kind] || "Tesla exception"),
+        request_headers: req_headers,
+        response_headers: nil
+      },
+      metadata
+    )
   end
 
   # Catch-all for unexpected Tesla telemetry events
@@ -179,24 +183,26 @@ defmodule Monitorex.EventHandler do
     ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
     pid = metadata[:pid] || self()
 
-    %Event{
-      source: :finch,
-      direction: :outbound,
-      method: method,
-      host: host,
-      path: path,
-      full_url: URLRedactor.redact(url_str),
-      status: status,
-      status_class: Event.classify_status(status || 0),
-      duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: System.system_time(:microsecond),
-      dedup_key: {pid, ts},
-      request_headers: req_headers,
-      response_headers: resp_headers,
-      request_body: maybe_store_body(metadata[:request_body], :request),
-      response_body: maybe_store_body(metadata[:response_body], :response)
-    }
-    |> tag_slow_request(metadata)
+    tag_slow_request(
+      %Event{
+        source: :finch,
+        direction: :outbound,
+        method: method,
+        host: host,
+        path: path,
+        full_url: URLRedactor.redact(url_str),
+        status: status,
+        status_class: Event.classify_status(status || 0),
+        duration_ms: Event.duration_ms(measurements.duration),
+        timestamp: System.system_time(:microsecond),
+        dedup_key: {pid, ts},
+        request_headers: req_headers,
+        response_headers: resp_headers,
+        request_body: maybe_store_body(metadata[:request_body], :request),
+        response_body: maybe_store_body(metadata[:response_body], :response)
+      },
+      metadata
+    )
   end
 
   def handle_finch_event([:finch, :request, :exception], measurements, metadata, _config) do
@@ -207,23 +213,25 @@ defmodule Monitorex.EventHandler do
       %{request: request} ->
         url_str = build_finch_url(request)
 
-        %Event{
-          source: :finch,
-          direction: :outbound,
-          method: Event.normalize_method(request.method),
-          host: request.host,
-          path: URI.parse(url_str).path,
-          full_url: URLRedactor.redact(url_str),
-          status: nil,
-          status_class: :server_error,
-          duration_ms: Event.duration_ms(measurements.duration),
-          timestamp: System.system_time(:microsecond),
-          dedup_key: {pid, ts},
-          error: inspect(metadata[:reason] || metadata[:result] || "Finch exception"),
-          request_headers: redact_headers_from_metadata(request.headers || []),
-          response_headers: nil
-        }
-        |> tag_slow_request(metadata)
+        tag_slow_request(
+          %Event{
+            source: :finch,
+            direction: :outbound,
+            method: Event.normalize_method(request.method),
+            host: request.host,
+            path: URI.parse(url_str).path,
+            full_url: URLRedactor.redact(url_str),
+            status: nil,
+            status_class: :server_error,
+            duration_ms: Event.duration_ms(measurements.duration),
+            timestamp: System.system_time(:microsecond),
+            dedup_key: {pid, ts},
+            error: inspect(metadata[:reason] || metadata[:result] || "Finch exception"),
+            request_headers: redact_headers_from_metadata(request.headers || []),
+            response_headers: nil
+          },
+          metadata
+        )
 
       _ ->
         %Event{
@@ -307,20 +315,22 @@ defmodule Monitorex.EventHandler do
     normalized_url = UrlNormalizer.normalize(url_str)
     redacted_url = URLRedactor.redact(normalized_url)
 
-    %Event{
-      source: :req,
-      direction: :outbound,
-      method: method,
-      host: host,
-      path: path,
-      full_url: redacted_url,
-      status: metadata.status,
-      status_class: Event.classify_status(metadata.status || 0),
-      duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: System.system_time(:microsecond),
-      response_headers: resp_headers
-    }
-    |> tag_slow_request(metadata)
+    tag_slow_request(
+      %Event{
+        source: :req,
+        direction: :outbound,
+        method: method,
+        host: host,
+        path: path,
+        full_url: redacted_url,
+        status: metadata.status,
+        status_class: Event.classify_status(metadata.status || 0),
+        duration_ms: Event.duration_ms(measurements.duration),
+        timestamp: System.system_time(:microsecond),
+        response_headers: resp_headers
+      },
+      metadata
+    )
   end
 
   def handle_req_event([:req, :request, :pipeline, :error], measurements, metadata, _config) do
@@ -328,22 +338,24 @@ defmodule Monitorex.EventHandler do
     method = Event.normalize_method(metadata.method)
     uri = URI.parse(url_str)
 
-    %Event{
-      source: :req,
-      direction: :outbound,
-      method: method,
-      host: uri.host,
-      path: uri.path,
-      full_url: URLRedactor.redact(url_str),
-      status: nil,
-      status_class: :server_error,
-      duration_ms: Event.duration_ms(measurements.duration),
-      timestamp: System.system_time(:microsecond),
-      request_headers: redact_headers_from_metadata(metadata[:headers] || []),
-      response_headers: nil,
-      error: inspect(metadata[:error] || "Req exception")
-    }
-    |> tag_slow_request(metadata)
+    tag_slow_request(
+      %Event{
+        source: :req,
+        direction: :outbound,
+        method: method,
+        host: uri.host,
+        path: uri.path,
+        full_url: URLRedactor.redact(url_str),
+        status: nil,
+        status_class: :server_error,
+        duration_ms: Event.duration_ms(measurements.duration),
+        timestamp: System.system_time(:microsecond),
+        request_headers: redact_headers_from_metadata(metadata[:headers] || []),
+        response_headers: nil,
+        error: inspect(metadata[:error] || "Req exception")
+      },
+      metadata
+    )
   end
 
   # Catch-all for unexpected Req telemetry events
@@ -385,25 +397,27 @@ defmodule Monitorex.EventHandler do
       req_headers = redact_headers_from_metadata(conn.req_headers)
       resp_headers = redact_headers_from_metadata(conn.resp_headers)
 
-      %Event{
-        source: :phoenix,
-        direction: :inbound,
-        method: conn.method,
-        host: conn.host,
-        path: path,
-        full_url: conn.request_path,
-        status: conn.status,
-        status_class: Event.classify_status(conn.status),
-        duration_ms: Event.duration_ms(measurements.duration),
-        consumer: ConsumerIdentifier.identify(conn),
-        timestamp: System.system_time(:microsecond),
-        dedup_key: {self(), System.monotonic_time()},
-        request_headers: req_headers,
-        response_headers: resp_headers,
-        request_body: maybe_store_body(metadata[:request_body], :request),
-        response_body: maybe_store_body(metadata[:response_body], :response)
-      }
-      |> tag_slow_request(metadata)
+      tag_slow_request(
+        %Event{
+          source: :phoenix,
+          direction: :inbound,
+          method: conn.method,
+          host: conn.host,
+          path: path,
+          full_url: conn.request_path,
+          status: conn.status,
+          status_class: Event.classify_status(conn.status),
+          duration_ms: Event.duration_ms(measurements.duration),
+          consumer: ConsumerIdentifier.identify(conn),
+          timestamp: System.system_time(:microsecond),
+          dedup_key: {self(), System.monotonic_time()},
+          request_headers: req_headers,
+          response_headers: resp_headers,
+          request_body: maybe_store_body(metadata[:request_body], :request),
+          response_body: maybe_store_body(metadata[:response_body], :response)
+        },
+        metadata
+      )
     end
   end
 

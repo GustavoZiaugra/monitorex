@@ -4,11 +4,13 @@ defmodule Monitorex.ConsumerIdentifier do
 
   ## Priority order
 
-  1. **Custom function** — `consumer_fn` in Application config (arity 1, receives `conn`)
-  2. **Basic-auth username** — decoded from `authorization` header, password discarded
-  3. **API key header** — value of `x-api-key` truncated to 8 characters
-  4. **`nil`** — unknown / anonymous consumer
+  1. **Custom function** - `consumer_fn` in Application config (arity 1, receives `conn`)
+  2. **Basic-auth username** - decoded from `authorization` header, password discarded
+  3. **API key header** - value of `x-api-key` truncated to 8 characters
+  4. **`nil`** - unknown / anonymous consumer
   """
+
+  alias Plug.Conn
 
   @doc """
   Identifies the consumer from a `Plug.Conn`.
@@ -42,7 +44,7 @@ defmodule Monitorex.ConsumerIdentifier do
 
   defp extract_basic_auth_username(conn) do
     with auth_value when is_binary(auth_value) <-
-           Plug.Conn.get_req_header(conn, "authorization") |> List.first(),
+           List.first(Conn.get_req_header(conn, "authorization")),
          "Basic " <> encoded <- auth_value,
          decoded when is_binary(decoded) <- base64_decode(encoded),
          [username | _] <- String.split(decoded, ":", parts: 2),
@@ -69,7 +71,7 @@ defmodule Monitorex.ConsumerIdentifier do
   # ── API key extraction ──
 
   defp extract_api_key(conn) do
-    case Plug.Conn.get_req_header(conn, "x-api-key") |> List.first() do
+    case List.first(Conn.get_req_header(conn, "x-api-key")) do
       nil -> nil
       key -> String.slice(key, 0, 8)
     end

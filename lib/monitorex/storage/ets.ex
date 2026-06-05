@@ -76,12 +76,15 @@ defmodule Monitorex.Storage.ETS do
   @impl true
   def list_hosts do
     with_table(@outbound_hosts, fn ->
-      :ets.foldl(
-        fn {host, agg}, acc -> [build_host_entry(host, agg) | acc] end,
-        [],
-        @outbound_hosts
+      Enum.sort_by(
+        :ets.foldl(
+          fn {host, agg}, acc -> [build_host_entry(host, agg) | acc] end,
+          [],
+          @outbound_hosts
+        ),
+        & &1.requests,
+        :desc
       )
-      |> Enum.sort_by(& &1.requests, :desc)
     end)
   end
 
@@ -122,35 +125,41 @@ defmodule Monitorex.Storage.ETS do
   @impl true
   def list_routes do
     with_table(@inbound_routes, fn ->
-      :ets.foldl(
-        fn {route_key, agg}, acc -> [build_route_entry(route_key, agg) | acc] end,
-        [],
-        @inbound_routes
+      Enum.sort_by(
+        :ets.foldl(
+          fn {route_key, agg}, acc -> [build_route_entry(route_key, agg) | acc] end,
+          [],
+          @inbound_routes
+        ),
+        & &1.requests,
+        :desc
       )
-      |> Enum.sort_by(& &1.requests, :desc)
     end)
   end
 
   @impl true
   def list_consumers do
     with_table(@inbound_consumers, fn ->
-      :ets.foldl(
-        fn {consumer, agg}, acc ->
-          [
-            %{
-              consumer: consumer,
-              requests: agg.requests || 0,
-              errors: agg.errors || 0,
-              total_duration: agg.total_duration || 0.0,
-              last_seen: agg.last_seen
-            }
-            | acc
-          ]
-        end,
-        [],
-        @inbound_consumers
+      Enum.sort_by(
+        :ets.foldl(
+          fn {consumer, agg}, acc ->
+            [
+              %{
+                consumer: consumer,
+                requests: agg.requests || 0,
+                errors: agg.errors || 0,
+                total_duration: agg.total_duration || 0.0,
+                last_seen: agg.last_seen
+              }
+              | acc
+            ]
+          end,
+          [],
+          @inbound_consumers
+        ),
+        & &1.requests,
+        :desc
       )
-      |> Enum.sort_by(& &1.requests, :desc)
     end)
   end
 
@@ -433,12 +442,13 @@ defmodule Monitorex.Storage.ETS do
     hosts =
       case :ets.info(@outbound_hosts) do
         :undefined -> []
-        _ -> :ets.foldl(fn {host, _}, acc -> [host | acc] end, [], @outbound_hosts) |> Enum.uniq()
+        _ -> Enum.uniq(:ets.foldl(fn {host, _}, acc -> [host | acc] end, [], @outbound_hosts))
       end
 
     Enum.each(hosts, fn host ->
       samples =
-        :ets.lookup(@outbound_duration_samples, host)
+        @outbound_duration_samples
+        |> :ets.lookup(host)
         |> Enum.map(fn {^host, ms} -> ms end)
         |> Enum.sort()
 
@@ -462,12 +472,13 @@ defmodule Monitorex.Storage.ETS do
     routes =
       case :ets.info(@inbound_routes) do
         :undefined -> []
-        _ -> :ets.foldl(fn {key, _}, acc -> [key | acc] end, [], @inbound_routes) |> Enum.uniq()
+        _ -> Enum.uniq(:ets.foldl(fn {key, _}, acc -> [key | acc] end, [], @inbound_routes))
       end
 
     Enum.each(routes, fn route_key ->
       samples =
-        :ets.lookup(@inbound_duration_samples, route_key)
+        @inbound_duration_samples
+        |> :ets.lookup(route_key)
         |> Enum.map(fn {^route_key, ms} -> ms end)
         |> Enum.sort()
 
@@ -544,7 +555,8 @@ defmodule Monitorex.Storage.ETS do
 
       _ ->
         samples =
-          :ets.lookup(@outbound_duration_samples, host)
+          @outbound_duration_samples
+          |> :ets.lookup(host)
           |> Enum.map(fn {^host, ms} -> ms end)
           |> Enum.sort()
 
@@ -606,7 +618,8 @@ defmodule Monitorex.Storage.ETS do
 
       _ ->
         samples =
-          :ets.lookup(@inbound_duration_samples, route_key)
+          @inbound_duration_samples
+          |> :ets.lookup(route_key)
           |> Enum.map(fn {^route_key, ms} -> ms end)
           |> Enum.sort()
 

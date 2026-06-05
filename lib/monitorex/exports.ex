@@ -13,16 +13,14 @@ defmodule Monitorex.Exports do
   """
   @spec to_csv([map()], [atom()]) :: String.t()
   def to_csv(data, fields) when is_list(fields) do
-    header = (fields |> Enum.map(&format_csv_cell/1) |> Enum.join(",")) <> "\n"
+    header = Enum.map_join(fields, ",", &format_csv_cell/1) <> "\n"
 
     rows =
-      data
-      |> Enum.map(fn row ->
-        fields
-        |> Enum.map(fn field -> format_csv_cell(Map.get(row, field, "")) end)
-        |> Enum.join(",")
+      Enum.map_join(data, "\n", fn row ->
+        Enum.map_join(fields, ",", fn field ->
+          format_csv_cell(Map.get(row, field, ""))
+        end)
       end)
-      |> Enum.join("\n")
 
     header <> rows
   end
@@ -37,13 +35,10 @@ defmodule Monitorex.Exports do
   def to_json(data, fields \\ []) do
     rows =
       if fields == [] do
-        data |> Enum.map(&struct_to_map/1)
+        Enum.map(data, &struct_to_map/1)
       else
-        data
-        |> Enum.map(fn row ->
-          fields
-          |> Enum.map(fn field -> {field, Map.get(row, field)} end)
-          |> Enum.into(%{})
+        Enum.map(data, fn row ->
+          Map.new(fields, fn field -> {field, Map.get(row, field)} end)
         end)
       end
 
