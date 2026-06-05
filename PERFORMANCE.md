@@ -24,7 +24,7 @@ grow linearly with unique hosts/routes/consumers (no unbounded leak).
 
 ## Throughput Benchmarks
 
-All numbers collected on this machine (Elixir 1.19.5, OTP 28, 64-bit Linux)
+All numbers collected on this machine (Elixir 1.20.0, OTP 29, 64-bit Linux)
 using `scripts/load_test.exs`.  Events are constructed as `Monitorex.Event`
 structs and fired into the Collector via `GenServer.cast`.
 
