@@ -125,6 +125,6 @@ defmodule Monitorex.DashboardLive do
   end
 
   defp atomize_keys(map) do
-    Map.new(map, fn {k, v} -> {String.to_atom(k), v} end)
+    Map.new(map, fn {k, v} -> {String.to_existing_atom(k), v} end)
   end
 end
