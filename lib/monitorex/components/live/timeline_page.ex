@@ -490,8 +490,6 @@ defmodule Monitorex.Components.Live.TimelinePage do
 
   # ── Header redaction display ──
 
-  defp redact_headers(nil, _redacted), do: []
-
   defp redact_headers(headers, redacted) do
     HeaderRedactor.redact_headers(headers, redacted)
   end
@@ -508,8 +506,6 @@ defmodule Monitorex.Components.Live.TimelinePage do
   defp format_duration(n) when is_number(n), do: "#{Float.round(n, 2)}ms"
   defp format_duration(_), do: "-"
 
-  defp truncate_text(nil, _max), do: "-"
-
   defp truncate_text(text, max) when is_binary(text) do
     if String.length(text) > max do
       String.slice(text, 0, max - 3) <> "..."
@@ -517,8 +513,6 @@ defmodule Monitorex.Components.Live.TimelinePage do
       text
     end
   end
-
-  defp maybe_truncate_body(nil), do: ""
 
   defp maybe_truncate_body(body) when is_binary(body) do
     if String.length(body) > 2000 do

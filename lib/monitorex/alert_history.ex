@@ -8,8 +8,6 @@ defmodule Monitorex.AlertHistory do
 
   use GenServer
 
-  require Logger
-
   @table :monitorex_alerts_history
   @default_max_entries 1_000
 
