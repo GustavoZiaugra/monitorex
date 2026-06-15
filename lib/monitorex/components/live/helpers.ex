@@ -14,16 +14,14 @@ defmodule Monitorex.Components.Live.Helpers do
   def format_timestamp(nil), do: "-"
 
   def format_timestamp(ts) when is_integer(ts) do
-    try do
-      ts
-      |> DateTime.from_unix(:microsecond)
-      |> case do
-        {:ok, dt} -> Calendar.strftime(dt, "%H:%M:%S")
-        _ -> "-#{ts}-"
-      end
-    rescue
-      _ -> "#{trunc(ts / 1_000_000)}s ago"
+    ts
+    |> DateTime.from_unix(:microsecond)
+    |> case do
+      {:ok, dt} -> Calendar.strftime(dt, "%H:%M:%S")
+      _ -> "-#{ts}-"
     end
+  rescue
+    _ -> "#{trunc(ts / 1_000_000)}s ago"
   end
 
   def format_timestamp(_), do: "-"

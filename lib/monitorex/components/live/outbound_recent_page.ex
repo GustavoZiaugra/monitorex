@@ -155,10 +155,10 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
       }
       |> then(fn p -> if sc != "", do: Map.put(p, "status_class", sc), else: p end)
       |> then(fn p -> if host != "", do: Map.put(p, "host", host), else: p end)
-      |> Enum.map(fn {k, v} -> "#{k}=#{URI.encode(v)}" end)
-      |> Enum.join("&")
 
-    "?" <> params
+    query = Enum.map_join(params, "&", fn {k, v} -> "#{k}=#{URI.encode(v)}" end)
+
+    "?" <> query
   end
 
   defp build_row(event) do

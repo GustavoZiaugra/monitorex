@@ -176,12 +176,11 @@ defmodule Monitorex.PrometheusExporter do
   # ── ETS table size metrics ──
 
   defp ets_size_metrics do
-    Enum.map(@tables, fn table ->
-      name = table |> Atom.to_string() |> String.replace("monitorex_", "")
+    Enum.map_join(@tables, "\n", fn table ->
+      name = String.replace(Atom.to_string(table), "monitorex_", "")
       size = ets_size(table)
       "monitorex_ets_size{table=\"#{name}\"} #{size}"
     end)
-    |> Enum.join("\n")
   end
 
   # ── Helpers ──

@@ -1,8 +1,8 @@
 defmodule Monitorex.StorageTest do
   use ExUnit.Case, async: false
 
-  alias Monitorex.Storage
   alias Monitorex.Event
+  alias Monitorex.Storage
 
   # ── Table names ──
 
@@ -227,7 +227,7 @@ defmodule Monitorex.StorageTest do
       result = Storage.list_endpoints_for_host("host-a")
       assert length(result) == 2
 
-      paths = Enum.map(result, & &1.path) |> Enum.sort()
+      paths = Enum.sort(Enum.map(result, & &1.path))
       assert paths == ["/posts", "/users"]
     end
 
@@ -517,7 +517,7 @@ defmodule Monitorex.StorageTest do
       result = Storage.list_routes()
       assert length(result) == 2
 
-      methods = Enum.map(result, & &1.method) |> Enum.sort()
+      methods = Enum.sort(Enum.map(result, & &1.method))
       assert methods == ["GET", "POST"]
     end
 

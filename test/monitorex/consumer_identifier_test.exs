@@ -2,10 +2,11 @@ defmodule Monitorex.ConsumerIdentifierTest do
   use ExUnit.Case, async: true
 
   alias Monitorex.ConsumerIdentifier
+  alias Plug.Conn
+  alias Plug.Test
 
   defp conn(headers) do
-    Plug.Test.conn(:get, "/", nil)
-    |> Map.put(:req_headers, headers)
+    Map.put(Test.conn(:get, "/", nil), :req_headers, headers)
   end
 
   describe "basic-auth username" do
@@ -72,7 +73,7 @@ defmodule Monitorex.ConsumerIdentifierTest do
   describe "custom consumer_fn config" do
     setup do
       Application.put_env(:monitorex, :consumer_fn, fn conn ->
-        Plug.Conn.get_req_header(conn, "x-consumer") |> List.first()
+        List.first(Conn.get_req_header(conn, "x-consumer"))
       end)
 
       on_exit(fn -> Application.delete_env(:monitorex, :consumer_fn) end)

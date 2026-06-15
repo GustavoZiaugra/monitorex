@@ -2,6 +2,7 @@ defmodule Monitorex.ResolverTest do
   use ExUnit.Case, async: true
 
   alias Monitorex.Resolver.Default
+  alias Plug.Conn
 
   describe "behaviour contract" do
     test "Default module implements resolve_user/1" do
@@ -20,7 +21,7 @@ defmodule Monitorex.ResolverTest do
     end
 
     test "resolve_access/1 returns :all for any user" do
-      assert Default.resolve_user(%Plug.Conn{}) |> Default.resolve_access() == :all
+      assert Default.resolve_access(Default.resolve_user(%Conn{})) == :all
       assert Default.resolve_access(%{id: 1, name: "admin"}) == :all
       assert Default.resolve_access(nil) == :all
     end

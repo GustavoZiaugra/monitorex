@@ -188,10 +188,11 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
       |> then(fn p -> if sc != "", do: Map.put(p, "status_class", sc), else: p end)
       |> then(fn p -> if consumer != "", do: Map.put(p, "consumer", consumer), else: p end)
       |> then(fn p -> if route != "", do: Map.put(p, "route", route), else: p end)
-      |> Enum.map(fn {k, v} -> "#{k}=#{URI.encode(v)}" end)
-      |> Enum.join("&")
 
-    "?" <> params
+    query =
+      Enum.map_join(params, "&", fn {k, v} -> "#{k}=#{URI.encode(v)}" end)
+
+    "?" <> query
   end
 
   defp build_row(event) do
@@ -206,23 +207,19 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
   end
 
   defp list_consumers do
-    try do
-      ClusterPage.list_consumers()
-      |> Enum.map(& &1.consumer)
-      |> Enum.sort()
-    rescue
-      _ -> []
-    end
+    ClusterPage.list_consumers()
+    |> Enum.map(& &1.consumer)
+    |> Enum.sort()
+  rescue
+    _ -> []
   end
 
   defp list_routes do
-    try do
-      ClusterPage.list_routes()
-      |> Enum.map(&"#{&1.method}:#{&1.path}")
-      |> Enum.sort()
-    rescue
-      _ -> []
-    end
+    ClusterPage.list_routes()
+    |> Enum.map(&"#{&1.method}:#{&1.path}")
+    |> Enum.sort()
+  rescue
+    _ -> []
   end
 
   defp format_duration(nil), do: "-"

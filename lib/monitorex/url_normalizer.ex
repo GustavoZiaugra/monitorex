@@ -60,9 +60,9 @@ defmodule Monitorex.UrlNormalizer do
 
     segments = String.split(path, "/", trim: true)
     custom_patterns = Application.get_env(:monitorex, :url_normalizer_patterns, [])
-    normalized = segments |> Enum.map(&normalize_segment(&1, custom_patterns))
+    normalized = Enum.map(segments, &normalize_segment(&1, custom_patterns))
 
-    %{uri | path: "/" <> Enum.join(normalized, "/")} |> URI.to_string()
+    URI.to_string(%{uri | path: "/" <> Enum.join(normalized, "/")})
   end
 
   @doc """
@@ -98,7 +98,7 @@ defmodule Monitorex.UrlNormalizer do
         |> MapSet.new()
 
       if MapSet.size(distinct) >= cardinality_limit and not MapSet.member?(distinct, normalized) do
-        %{uri | path: "/:other"} |> URI.to_string()
+        URI.to_string(%{uri | path: "/:other"})
       else
         normalized
       end

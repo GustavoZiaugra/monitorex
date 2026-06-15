@@ -1,3 +1,5 @@
+# Alerts coordinates multiple notifier backends; aliases are required.
+# credo:disable-for-next-line Credo.Check.Refactor.ModuleDependencies
 defmodule Monitorex.Alerts do
   @moduledoc """
   Threshold-based alert evaluation for Monitorex.
@@ -51,6 +53,9 @@ defmodule Monitorex.Alerts do
   require Logger
 
   alias Monitorex.AlertHistory
+  alias Monitorex.Notifiers.Discord
+  alias Monitorex.Notifiers.Email
+  alias Monitorex.Notifiers.Slack
 
   # ── Public API ──
 
@@ -264,13 +269,13 @@ defmodule Monitorex.Alerts do
           fire_webhook(url, alert)
 
         {:slack, url} ->
-          Task.start(fn -> Monitorex.Notifiers.Slack.notify(alert, url) end)
+          Task.start(fn -> Slack.notify(alert, url) end)
 
         {:discord, url} ->
-          Task.start(fn -> Monitorex.Notifiers.Discord.notify(alert, url) end)
+          Task.start(fn -> Discord.notify(alert, url) end)
 
         {:email, config} ->
-          Task.start(fn -> Monitorex.Notifiers.Email.notify(alert, config) end)
+          Task.start(fn -> Email.notify(alert, config) end)
 
         _ ->
           :ok

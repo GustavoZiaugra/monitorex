@@ -80,24 +80,20 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   def handle_event("go_recent_page", %{"page" => page_str}, socket) do
     page = String.to_integer(page_str)
     base = "?page=host&host=#{URI.encode(socket.assigns.host)}"
-    params = %{}
-
-    params =
-      if socket.assigns.sort_by != "requests",
-        do: Map.put(params, "sort_by", socket.assigns.sort_by),
-        else: params
-
-    params =
-      if socket.assigns.sort_dir != "desc",
-        do: Map.put(params, "sort_dir", socket.assigns.sort_dir),
-        else: params
-
-    params = Map.put(params, "recent_page", page)
+    sort_params =
+      %{
+        "sort_by" => socket.assigns.sort_by,
+        "sort_dir" => socket.assigns.sort_dir
+      }
+      |> Enum.reject(fn {k, v} ->
+        (k == "sort_by" and v == "requests") or (k == "sort_dir" and v == "desc")
+      end)
+      |> Map.new()
 
     query =
-      params
-      |> Enum.map(fn {k, v} -> "#{k}=#{URI.encode(to_string(v))}" end)
-      |> Enum.join("&")
+      sort_params
+      |> Map.put("recent_page", page)
+      |> Enum.map_join("&", fn {k, v} -> "#{k}=#{URI.encode(to_string(v))}" end)
 
     send(self(), {:navigate, base <> "&" <> query})
     {:noreply, socket}
@@ -219,7 +215,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   defp format_number(_), do: "0"
 
   defp format_percentage(n) when is_number(n) do
-    Float.round(n, 1) |> then(&"#{&1}%")
+    "#{Float.round(n / 1, 1)}%"
   end
 
   defp format_percentage(_), do: "0%"

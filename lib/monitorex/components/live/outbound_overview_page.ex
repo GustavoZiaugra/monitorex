@@ -131,13 +131,13 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
   defp format_number(_), do: "0"
 
   defp format_percentage(n) when is_number(n) do
-    Float.round(n, 1) |> then(&"#{&1}%")
+    "#{Float.round(n / 1, 1)}%"
   end
 
   defp format_percentage(_), do: "0%"
 
   defp format_duration(n) when is_number(n) do
-    Float.round(n, 2) |> then(&"#{&1}ms")
+    "#{Float.round(n, 2)}ms"
   end
 
   defp format_duration(_), do: "0ms"

@@ -17,8 +17,8 @@ defmodule Monitorex.ExportPlug do
   import Plug.Conn
 
   alias Monitorex.ClusterPage
-  alias Monitorex.Storage
   alias Monitorex.Exports
+  alias Monitorex.Storage
 
   @doc false
   def init(opts), do: opts

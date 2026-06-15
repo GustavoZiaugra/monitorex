@@ -2,11 +2,11 @@ defmodule Monitorex.Components.Live.PagesTest do
   use ExUnit.Case, async: true
   import Phoenix.LiveViewTest
 
-  alias Monitorex.Components.Live.OutboundRecentPage
   alias Monitorex.Components.Live.HostDetailPage
-  alias Monitorex.Components.Live.InboundOverviewPage
   alias Monitorex.Components.Live.InboundConsumersPage
+  alias Monitorex.Components.Live.InboundOverviewPage
   alias Monitorex.Components.Live.InboundRecentPage
+  alias Monitorex.Components.Live.OutboundRecentPage
   alias Monitorex.Components.Live.RouteDetailPage
 
   describe "OutboundRecentPage" do

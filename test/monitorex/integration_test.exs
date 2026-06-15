@@ -4,6 +4,7 @@ defmodule Monitorex.IntegrationTest do
   alias Monitorex.Collector
   alias Monitorex.EventHandler
   alias Monitorex.Storage
+  alias Plug.Test
 
   # ── Setup: start isolated Collector per test ──
 
@@ -222,8 +223,10 @@ defmodule Monitorex.IntegrationTest do
 
   describe "Phoenix pipeline (inbound)" do
     test "full flow with basic-auth consumer extraction", %{collector: pid} do
+      base_conn = Test.conn(:get, "/api/v1/users", nil)
+
       conn =
-        Plug.Test.conn(:get, "/api/v1/users", nil)
+        base_conn
         |> Map.put(:status, 200)
         |> Map.put(:host, "example.com")
         |> Map.put(:req_headers, [
@@ -373,10 +376,8 @@ defmodule Monitorex.IntegrationTest do
     test "phoenix event outside inbound_path_prefixes is not stored", %{collector: pid} do
       Application.put_env(:monitorex, :inbound_path_prefixes, ["/api"])
 
-      conn_in =
-        Plug.Test.conn(:get, "/api/v1/products", nil)
-        |> Map.put(:status, 200)
-        |> Map.put(:host, "example.com")
+      base_conn_in = Test.conn(:get, "/api/v1/products", nil)
+      conn_in = base_conn_in |> Map.put(:status, 200) |> Map.put(:host, "example.com")
 
       event_in =
         EventHandler.handle_phoenix_event(
@@ -389,10 +390,8 @@ defmodule Monitorex.IntegrationTest do
       assert event_in != nil
       Collector.handle_event(event_in, pid)
 
-      conn_out =
-        Plug.Test.conn(:get, "/health", nil)
-        |> Map.put(:status, 200)
-        |> Map.put(:host, "example.com")
+      base_conn_out = Test.conn(:get, "/health", nil)
+      conn_out = base_conn_out |> Map.put(:status, 200) |> Map.put(:host, "example.com")
 
       event_out =
         EventHandler.handle_phoenix_event(

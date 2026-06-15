@@ -35,7 +35,7 @@ defmodule Monitorex.Notifiers.Email do
     Value:    #{format_value(alert.value)}
     Threshold:#{format_value(alert.threshold)} (#{alert.operator})
     Reason:   #{alert.reason}
-    Time:     #{DateTime.from_unix!(alert.timestamp) |> DateTime.to_string()}
+    Time:     #{DateTime.to_string(DateTime.from_unix!(alert.timestamp))}
     """
 
     email =

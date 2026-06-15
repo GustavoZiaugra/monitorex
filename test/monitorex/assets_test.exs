@@ -2,6 +2,8 @@ defmodule Monitorex.AssetsTest do
   use ExUnit.Case, async: true
 
   alias Monitorex.Assets
+  alias Plug.Conn
+  alias Plug.Test
 
   describe "hash functions" do
     test "css_hash/0 returns a 32-character hex string" do
@@ -40,28 +42,30 @@ defmodule Monitorex.AssetsTest do
 
   describe "call/2" do
     test "serves CSS file" do
+      base_conn = Test.conn(:get, "/dashboard-assets/app.css")
+
       conn =
-        :get
-        |> Plug.Test.conn("/dashboard-assets/app.css")
+        base_conn
         |> Map.put(:path_info, ["dashboard-assets", "app.css"])
         |> Assets.call(Assets.init([]))
 
       assert conn.status == 200
-      assert Plug.Conn.get_resp_header(conn, "content-type") == ["text/css; charset=utf-8"]
+      assert Conn.get_resp_header(conn, "content-type") == ["text/css; charset=utf-8"]
       assert conn.resp_body =~ "tailwindcss"
       assert conn.resp_body =~ "--sidebar-width"
     end
 
     test "serves JS file" do
+      base_conn = Test.conn(:get, "/dashboard-assets/app.js")
+
       conn =
-        :get
-        |> Plug.Test.conn("/dashboard-assets/app.js")
+        base_conn
         |> Map.put(:path_info, ["dashboard-assets", "app.js"])
         |> Assets.call(Assets.init([]))
 
       assert conn.status == 200
 
-      assert Plug.Conn.get_resp_header(conn, "content-type") == [
+      assert Conn.get_resp_header(conn, "content-type") == [
                "application/javascript; charset=utf-8"
              ]
 
@@ -69,21 +73,23 @@ defmodule Monitorex.AssetsTest do
     end
 
     test "sets far-future cache headers" do
+      base_conn = Test.conn(:get, "/dashboard-assets/app.css")
+
       conn =
-        :get
-        |> Plug.Test.conn("/dashboard-assets/app.css")
+        base_conn
         |> Map.put(:path_info, ["dashboard-assets", "app.css"])
         |> Assets.call(Assets.init([]))
 
-      cache_control = Plug.Conn.get_resp_header(conn, "cache-control")
+      cache_control = Conn.get_resp_header(conn, "cache-control")
       assert cache_control != []
       assert hd(cache_control) =~ "max-age=31536000"
     end
 
     test "returns 404 for unknown asset" do
+      base_conn = Test.conn(:get, "/dashboard-assets/nonexistent.js")
+
       conn =
-        :get
-        |> Plug.Test.conn("/dashboard-assets/nonexistent.js")
+        base_conn
         |> Map.put(:path_info, ["dashboard-assets", "nonexistent.js"])
         |> Assets.call(Assets.init([]))
 
@@ -91,9 +97,10 @@ defmodule Monitorex.AssetsTest do
     end
 
     test "returns 404 for wrong path prefix" do
+      base_conn = Test.conn(:get, "/other/app.css")
+
       conn =
-        :get
-        |> Plug.Test.conn("/other/app.css")
+        base_conn
         |> Map.put(:path_info, ["other", "app.css"])
         |> Assets.call(Assets.init([]))
 

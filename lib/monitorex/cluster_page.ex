@@ -45,8 +45,7 @@ defmodule Monitorex.ClusterPage do
   @spec list_hosts() :: [map()]
   def list_hosts do
     if cluster_enabled?() do
-      Cluster.fetch_from_all_nodes(:list_hosts, [])
-      |> Cluster.merge_hosts()
+      Cluster.merge_hosts(Cluster.fetch_from_all_nodes(:list_hosts, []))
     else
       Storage.list_hosts()
     end
@@ -59,8 +58,7 @@ defmodule Monitorex.ClusterPage do
   @spec list_endpoints_for_host(String.t()) :: [map()]
   def list_endpoints_for_host(host) do
     if cluster_enabled?() do
-      Cluster.fetch_from_all_nodes(:list_endpoints_for_host, [host])
-      |> Cluster.merge_endpoints()
+      Cluster.merge_endpoints(Cluster.fetch_from_all_nodes(:list_endpoints_for_host, [host]))
     else
       Storage.list_endpoints_for_host(host)
     end
@@ -75,8 +73,7 @@ defmodule Monitorex.ClusterPage do
     if cluster_enabled?() do
       limit = Keyword.get(opts, :limit, 50)
 
-      Cluster.fetch_from_all_nodes(:list_recent_outbound, [opts])
-      |> Cluster.merge_recent(limit)
+      Cluster.merge_recent(Cluster.fetch_from_all_nodes(:list_recent_outbound, [opts]), limit)
     else
       Storage.list_recent_outbound(opts)
     end
@@ -89,8 +86,8 @@ defmodule Monitorex.ClusterPage do
   @spec count_recent_outbound(keyword()) :: non_neg_integer()
   def count_recent_outbound(opts \\ []) do
     if cluster_enabled?() do
-      Cluster.fetch_from_all_nodes(:count_recent_outbound, [opts])
-      |> Enum.reduce(0, fn {_node, count}, acc -> acc + count end)
+      nodes = Cluster.fetch_from_all_nodes(:count_recent_outbound, [opts])
+      Enum.reduce(nodes, 0, fn {_node, count}, acc -> acc + count end)
     else
       Storage.count_recent_outbound(opts)
     end
@@ -105,8 +102,7 @@ defmodule Monitorex.ClusterPage do
   @spec list_routes() :: [map()]
   def list_routes do
     if cluster_enabled?() do
-      Cluster.fetch_from_all_nodes(:list_routes, [])
-      |> Cluster.merge_routes()
+      Cluster.merge_routes(Cluster.fetch_from_all_nodes(:list_routes, []))
     else
       Storage.list_routes()
     end
@@ -119,8 +115,7 @@ defmodule Monitorex.ClusterPage do
   @spec list_consumers() :: [map()]
   def list_consumers do
     if cluster_enabled?() do
-      Cluster.fetch_from_all_nodes(:list_consumers, [])
-      |> Cluster.merge_consumers()
+      Cluster.merge_consumers(Cluster.fetch_from_all_nodes(:list_consumers, []))
     else
       Storage.list_consumers()
     end
@@ -133,8 +128,7 @@ defmodule Monitorex.ClusterPage do
   @spec list_consumers_for_route(String.t()) :: [map()]
   def list_consumers_for_route(route) do
     if cluster_enabled?() do
-      Cluster.fetch_from_all_nodes(:list_consumers_for_route, [route])
-      |> Cluster.merge_consumers()
+      Cluster.merge_consumers(Cluster.fetch_from_all_nodes(:list_consumers_for_route, [route]))
     else
       Storage.list_consumers_for_route(route)
     end
@@ -149,8 +143,7 @@ defmodule Monitorex.ClusterPage do
     if cluster_enabled?() do
       limit = Keyword.get(opts, :limit, 50)
 
-      Cluster.fetch_from_all_nodes(:list_recent_inbound, [opts])
-      |> Cluster.merge_recent(limit)
+      Cluster.merge_recent(Cluster.fetch_from_all_nodes(:list_recent_inbound, [opts]), limit)
     else
       Storage.list_recent_inbound(opts)
     end
@@ -163,8 +156,8 @@ defmodule Monitorex.ClusterPage do
   @spec count_recent_inbound(keyword()) :: non_neg_integer()
   def count_recent_inbound(opts \\ []) do
     if cluster_enabled?() do
-      Cluster.fetch_from_all_nodes(:count_recent_inbound, [opts])
-      |> Enum.reduce(0, fn {_node, count}, acc -> acc + count end)
+      nodes = Cluster.fetch_from_all_nodes(:count_recent_inbound, [opts])
+      Enum.reduce(nodes, 0, fn {_node, count}, acc -> acc + count end)
     else
       Storage.count_recent_inbound(opts)
     end
