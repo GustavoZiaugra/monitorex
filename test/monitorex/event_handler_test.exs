@@ -118,6 +118,39 @@ defmodule Monitorex.EventHandlerTest do
   # ── Tesla handler ──
 
   describe "handle_tesla_event/4" do
+    test "parses modern Tesla env struct telemetry" do
+      url = %URI{scheme: "https", host: "api.example.com", path: "/users/123", query: nil}
+      pid = self()
+      mono = System.monotonic_time()
+
+      metadata = %{
+        env: %{
+          url: url,
+          method: :get,
+          status: 200,
+          headers: [{"authorization", "secret"}]
+        },
+        pid: pid,
+        monotonic_time: mono
+      }
+
+      measurements = %{duration: 1_000_000}
+
+      event =
+        EventHandler.handle_tesla_event(
+          [:tesla, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.source == :tesla
+      assert event.method == "GET"
+      assert event.host == "api.example.com"
+      assert event.status == 200
+      assert event.dedup_key == {pid, mono}
+    end
+
     test "parses Tesla telemetry into Event" do
       url = %URI{scheme: "https", host: "api.example.com", path: "/users/123", query: nil}
       pid = self()
@@ -992,6 +1025,154 @@ defmodule Monitorex.EventHandlerTest do
 
       assert event.status == 500
       assert event.status_class == :server_error
+    end
+  end
+
+  # ── Slow request tracing ──
+
+  describe "tag_slow_request/2" do
+    test "tags event as slow when duration exceeds threshold" do
+      Application.put_env(:monitorex, :slow_request_threshold_ms, 100)
+      on_exit(fn -> Application.delete_env(:monitorex, :slow_request_threshold_ms) end)
+
+      event = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "a.com",
+        path: "/x",
+        status: 200,
+        status_class: :success,
+        duration_ms: 150.0
+      }
+
+      tagged = EventHandler.tag_slow_request(event, %{request_body: "req", response_body: "resp"})
+
+      assert tagged.slow == true
+      assert tagged.request_body == "req"
+      assert tagged.response_body == "resp"
+    end
+
+    test "does not tag event as slow when under threshold" do
+      Application.put_env(:monitorex, :slow_request_threshold_ms, 100)
+      on_exit(fn -> Application.delete_env(:monitorex, :slow_request_threshold_ms) end)
+
+      event = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "a.com",
+        path: "/x",
+        status: 200,
+        status_class: :success,
+        duration_ms: 50.0
+      }
+
+      tagged = EventHandler.tag_slow_request(event, %{request_body: "req", response_body: "resp"})
+
+      assert tagged.slow == false
+      assert tagged.request_body == nil
+      assert tagged.response_body == nil
+    end
+
+    test "disabled when threshold is nil" do
+      Application.put_env(:monitorex, :slow_request_threshold_ms, nil)
+      on_exit(fn -> Application.delete_env(:monitorex, :slow_request_threshold_ms) end)
+
+      event = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "a.com",
+        path: "/x",
+        status: 200,
+        status_class: :success,
+        duration_ms: 500.0
+      }
+
+      tagged = EventHandler.tag_slow_request(event, %{request_body: "req", response_body: "resp"})
+
+      assert tagged.slow == false
+    end
+
+    test "disabled when threshold is zero" do
+      Application.put_env(:monitorex, :slow_request_threshold_ms, 0)
+      on_exit(fn -> Application.delete_env(:monitorex, :slow_request_threshold_ms) end)
+
+      event = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "a.com",
+        path: "/x",
+        status: 200,
+        status_class: :success,
+        duration_ms: 500.0
+      }
+
+      tagged = EventHandler.tag_slow_request(event, %{request_body: "req", response_body: "resp"})
+
+      assert tagged.slow == false
+    end
+
+    test "handles nil event" do
+      assert EventHandler.tag_slow_request(nil, %{}) == nil
+    end
+
+    test "handles non-map metadata" do
+      event = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "a.com",
+        path: "/x",
+        status: 200,
+        status_class: :success,
+        duration_ms: 150.0
+      }
+
+      Application.put_env(:monitorex, :slow_request_threshold_ms, 100)
+      on_exit(fn -> Application.delete_env(:monitorex, :slow_request_threshold_ms) end)
+      tagged = EventHandler.tag_slow_request(event, "bad")
+      assert tagged.slow == true
+    end
+
+    test "truncates slow request bodies to max_body_bytes" do
+      Application.put_env(:monitorex, :slow_request_threshold_ms, 100)
+      Application.put_env(:monitorex, :max_body_bytes, 10)
+      on_exit(fn ->
+        Application.delete_env(:monitorex, :slow_request_threshold_ms)
+        Application.delete_env(:monitorex, :max_body_bytes)
+      end)
+
+      event = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "a.com",
+        path: "/x",
+        status: 200,
+        status_class: :success,
+        duration_ms: 150.0
+      }
+
+      large_body = String.duplicate("a", 100)
+
+      tagged =
+        EventHandler.tag_slow_request(event, %{
+          request_body: large_body,
+          response_body: large_body
+        })
+
+      assert String.ends_with?(tagged.request_body, "\n[truncated]")
+      assert byte_size(tagged.request_body) < byte_size(large_body)
+      assert String.ends_with?(tagged.response_body, "\n[truncated]")
+    end
+
+    test "env cleanup after slow_request tests" do
+      Application.put_env(:monitorex, :slow_request_threshold_ms, 50)
+      on_exit(fn -> Application.delete_env(:monitorex, :slow_request_threshold_ms) end)
+      assert Application.get_env(:monitorex, :slow_request_threshold_ms) == 50
     end
   end
 end

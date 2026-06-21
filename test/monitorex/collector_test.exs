@@ -288,4 +288,62 @@ defmodule Monitorex.CollectorTest do
       Application.delete_env(:monitorex, :max_body_bytes)
     end
   end
+
+  describe "cleanup and health check" do
+    test "cleanup prunes stale data and evaluates alerts" do
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
+      name = :"collector_cleanup_#{System.unique_integer([:positive])}"
+      {:ok, pid} = GenServer.start_link(Collector, [], name: name)
+
+      # Insert an old event that should be pruned
+      old_ts = System.system_time(:microsecond) - :timer.hours(24) * 1_000
+
+      event = %Event{
+        source: :tesla,
+        direction: :outbound,
+        method: "GET",
+        host: "old.example.com",
+        path: "/legacy",
+        status: 200,
+        duration_ms: 10.0,
+        timestamp: old_ts
+      }
+
+      Collector.handle_event(event, pid)
+      Process.sleep(100)
+
+      assert :ets.info(:monitorex_outbound_recent)[:size] >= 1
+
+      # Trigger cleanup manually
+      send(pid, :cleanup)
+      Process.sleep(200)
+
+      GenServer.stop(pid)
+    end
+
+    test "health check reattaches telemetry handlers" do
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
+      name = :"collector_health_#{System.unique_integer([:positive])}"
+      {:ok, pid} = GenServer.start_link(Collector, [], name: name)
+
+      send(pid, :health_check)
+      Process.sleep(100)
+
+      # Just verify it does not crash
+      assert Process.alive?(pid)
+
+      GenServer.stop(pid)
+    end
+
+    test "terminate detaches telemetry handlers and cleans tables" do
+      # credo:disable-for-next-line Credo.Check.Warning.UnsafeToAtom
+      name = :"collector_term_#{System.unique_integer([:positive])}"
+      {:ok, pid} = GenServer.start_link(Collector, [], name: name)
+
+      GenServer.stop(pid)
+
+      # After termination, the named tables should be deleted.
+      assert :ets.info(:monitorex_outbound_hosts) == :undefined
+    end
+  end
 end

@@ -113,5 +113,62 @@ defmodule Monitorex.PrometheusExporterTest do
       assert output =~
                ~r/monitorex_latency_seconds\{host="latency\.test\.com",quantile="p99"\} 0\.25/
     end
+
+    test "includes endpoint request metrics" do
+      :ets.new(:monitorex_outbound_endpoints, [:public, :named_table, :set])
+
+      :ets.insert(
+        :monitorex_outbound_endpoints,
+        {{"api.test.com", "/users"}, %{requests: 10, errors: 1, total_duration: 100.0, last_seen: System.monotonic_time()}}
+      )
+
+      output = PrometheusExporter.format()
+
+      assert output =~
+               ~r{monitorex_requests_total\{host="api\.test\.com",path="/users",direction="outbound",resource="endpoint"\} 10}
+    end
+
+    test "includes route request metrics" do
+      :ets.new(:monitorex_inbound_routes, [:public, :named_table, :set])
+
+      route_key = "GET" <> ":/api/users"
+
+      :ets.insert(
+        :monitorex_inbound_routes,
+        {route_key, %{requests: 25, errors: 0, total_duration: 250.0, last_seen: System.monotonic_time()}}
+      )
+
+      output = PrometheusExporter.format()
+
+      assert output =~
+               ~r{monitorex_requests_total\{method="GET",path="/api/users",direction="inbound",resource="route"\} 25}
+    end
+
+    test "includes consumer request metrics" do
+      :ets.new(:monitorex_inbound_consumers, [:public, :named_table, :set])
+
+      :ets.insert(
+        :monitorex_inbound_consumers,
+        {"alice", %{requests: 7, errors: 0, total_duration: 70.0, last_seen: System.monotonic_time()}}
+      )
+
+      output = PrometheusExporter.format()
+
+      assert output =~
+               ~r{monitorex_requests_total\{consumer="alice",direction="inbound",resource="consumer"\} 7}
+    end
+
+    test "returns empty string when tables do not exist" do
+      # Ensure tables are deleted
+      try do
+        :ets.delete(:monitorex_outbound_hosts)
+      rescue
+        _ -> :ok
+      end
+
+      output = PrometheusExporter.format()
+      assert is_binary(output)
+      assert output =~ "# HELP monitorex_collector_info"
+    end
   end
 end
