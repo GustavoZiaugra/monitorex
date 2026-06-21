@@ -6,22 +6,15 @@ on:
   pull_request:
     branches: [main]
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
 jobs:
   test:
+    name: Elixir ${{ matrix.elixir }} / OTP ${{ matrix.otp }}
     runs-on: ubuntu-latest
     strategy:
-      matrix:
-        elixir: ['1.15', '1.17']
-        otp: ['26', '27']
-        include:
-          - elixir: '1.20'
-            otp: '29'
       fail-fast: false
-
+      matrix:
+        elixir: ["1.15", "1.20"]
+        otp: ["26", "29"]
     steps:
       - uses: actions/checkout@v4
 
@@ -33,38 +26,14 @@ jobs:
       - name: Cache deps
         uses: actions/cache@v4
         with:
-          path: deps
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-mix-
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('mix.lock') }}
 
-      - name: Cache _build
-        uses: actions/cache@v4
-        with:
-          path: _build
-          key: ${{ runner.os }}-build-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ matrix.elixir }}-${{ matrix.otp }}-
-
-      - name: Cache Dialyzer PLTs
-        uses: actions/cache@v4
-        with:
-          path: _build/plt
-          key: ${{ runner.os }}-plt-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-plt-${{ matrix.elixir }}-${{ matrix.otp }}-
-
-      - name: Install dependencies
-        run: mix deps.get
-
-      - name: Compile
-        run: mix compile --warnings-as-errors
-
-      - name: Run tests
-        run: mix test
-
-      - name: Static analysis (Credo)
-        run: mix credo --min-priority high || true
-
-      - name: Type checking (Dialyzer)
-        run: mix dialyzer
+      - run: mix deps.get
+      - run: mix compile --warnings-as-errors
+      - run: mix credo
+      - run: mix dialyzer
+      - run: mix test
+      - run: mix run scripts/smoke_test.exs
