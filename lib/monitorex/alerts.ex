@@ -289,7 +289,7 @@ defmodule Monitorex.Alerts do
     Task.start(fn ->
       try do
         headers = [{"content-type", "application/json"}]
-        body = Jason.encode!(alert)
+        body = Jason.encode!(sanitize_alert(alert))
 
         case :hackney.post(url, headers, body, [:with_body, timeout: 10_000]) do
           {:ok, status, _hdrs, _resp} when status in 200..299 -> :ok
@@ -320,6 +320,10 @@ defmodule Monitorex.Alerts do
       :undefined -> nil
       _ -> fun.()
     end
+  end
+
+  defp sanitize_alert(alert) do
+    Map.drop(alert, [:notifiers, :status, :acknowledged_at, :snoozed_until, :id])
   end
 
   defp format_value(v) when is_float(v), do: :erlang.float_to_binary(v, decimals: 4)
