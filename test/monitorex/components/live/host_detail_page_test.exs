@@ -1,8 +1,14 @@
 defmodule Monitorex.Components.Live.HostDetailPageTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   import Phoenix.LiveViewTest
+  import Monitorex.LiveComponentFixtures
 
   alias Monitorex.Components.Live.HostDetailPage
+
+  setup do
+    reset_ets_tables()
+    :ok
+  end
 
   describe "update/2" do
     test "renders empty state when host has no data" do
@@ -31,6 +37,27 @@ defmodule Monitorex.Components.Live.HostDetailPageTest do
       assert html =~ "Recent Requests"
       assert html =~ "No endpoints found"
       assert html =~ "No recent requests for this host"
+    end
+
+    test "renders host metrics and endpoints when data exists" do
+      insert_outbound_event(method: "GET", path: "/users", duration_ms: 25.0)
+
+      insert_outbound_event(
+        method: "POST",
+        path: "/orders",
+        status: 500,
+        status_class: :server_error,
+        duration_ms: 120.0
+      )
+
+      html = render_component(HostDetailPage, %{id: "test", host: "api.example.com"})
+
+      assert html =~ "api.example.com"
+      assert html =~ "2"
+      assert html =~ "/users"
+      assert html =~ "/orders"
+      assert html =~ "25"
+      assert html =~ "120"
     end
   end
 
@@ -79,6 +106,23 @@ defmodule Monitorex.Components.Live.HostDetailPageTest do
       assert_raise FunctionClauseError, fn ->
         HostDetailPage.handle_event("sort", %{"key" => "invalid"}, socket)
       end
+    end
+
+    test "go_recent_page event navigates with page" do
+      socket = %Phoenix.LiveView.Socket{
+        assigns: %{
+          host: "example.com",
+          sort_by: "requests",
+          sort_dir: "desc"
+        }
+      }
+
+      assert {:noreply, _socket} =
+               HostDetailPage.handle_event("go_recent_page", %{"page" => "2"}, socket)
+
+      assert_received {:navigate, url}
+      assert url =~ "recent_page=2"
+      assert url =~ "host=example.com"
     end
   end
 end

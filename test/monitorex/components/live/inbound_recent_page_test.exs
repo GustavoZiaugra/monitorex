@@ -1,8 +1,14 @@
 defmodule Monitorex.Components.Live.InboundRecentPageTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   import Phoenix.LiveViewTest
+  import Monitorex.LiveComponentFixtures
 
   alias Monitorex.Components.Live.InboundRecentPage
+
+  setup do
+    reset_ets_tables()
+    :ok
+  end
 
   describe "update/2" do
     test "renders empty state when no events" do
@@ -39,6 +45,44 @@ defmodule Monitorex.Components.Live.InboundRecentPageTest do
         })
 
       assert html =~ "Recent Inbound Requests"
+    end
+
+    test "renders recent inbound events" do
+      insert_inbound_event(method: "GET", path: "/api/items", consumer: "svc-a")
+
+      insert_inbound_event(
+        method: "POST",
+        path: "/api/orders",
+        consumer: "svc-b",
+        status: 500,
+        status_class: :server_error,
+        duration_ms: 45.0
+      )
+
+      html = render_component(InboundRecentPage, %{id: "test"})
+
+      assert html =~ "svc-a"
+      assert html =~ "svc-b"
+      assert html =~ "GET:/api/items"
+      assert html =~ "POST:/api/orders"
+      assert html =~ "200"
+      assert html =~ "500"
+    end
+
+    test "renders with consumer and route filters" do
+      insert_inbound_event(method: "GET", path: "/api/items", consumer: "svc-a")
+      insert_inbound_event(method: "POST", path: "/api/orders", consumer: "svc-b")
+
+      html =
+        render_component(InboundRecentPage, %{
+          id: "test",
+          consumer: "svc-a",
+          route: "GET:/api/items"
+        })
+
+      assert html =~ "svc-a"
+      assert html =~ "GET:/api/items"
+      refute html =~ "data-label=\"Consumer\">svc-b"
     end
   end
 

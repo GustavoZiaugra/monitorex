@@ -169,5 +169,137 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
       consumers = SQLite.list_consumers_for_route("GET:/api/health")
       assert is_list(consumers)
     end
+
+    test "list_recent_inbound/1 filters by status_class, consumer and route" do
+      ts = System.system_time(:microsecond)
+
+      event = %Event{
+        timestamp: ts,
+        direction: :inbound,
+        method: :post,
+        host: nil,
+        path: "/api/orders",
+        status: 500,
+        status_class: :server_error,
+        duration_ms: 200.0,
+        consumer: "checkout",
+        slow: true,
+        dedup_key: nil
+      }
+
+      :ok = SQLite.record_event(event)
+
+      all = SQLite.list_recent_inbound(limit: 10)
+      assert Enum.any?(all, &(&1.path == "/api/orders"))
+
+      filtered =
+        SQLite.list_recent_inbound(
+          limit: 10,
+          status_class: :server_error,
+          consumer: "checkout",
+          route: "POST:/api/orders"
+        )
+
+      assert length(filtered) >= 1
+      assert hd(filtered).status_class == :server_error
+
+      empty = SQLite.list_recent_inbound(limit: 10, consumer: "missing")
+      assert empty == []
+    end
+
+    test "count_recent_inbound/1 returns matching count" do
+      :ok =
+        SQLite.record_event(%Event{
+          timestamp: System.system_time(:microsecond),
+          direction: :inbound,
+          method: :get,
+          host: nil,
+          path: "/api/error",
+          status: 500,
+          status_class: :server_error,
+          duration_ms: 50.0,
+          consumer: nil,
+          slow: false,
+          dedup_key: nil
+        })
+
+      count = SQLite.count_recent_inbound()
+      assert is_integer(count)
+      assert count >= 1
+
+      filtered = SQLite.count_recent_inbound(status_class: :server_error)
+      assert is_integer(filtered)
+      assert filtered >= 1
+    end
+
+    test "list_slow_outbound/1 and list_slow_inbound/1 return slow events" do
+      :ok =
+        SQLite.record_event(%Event{
+          timestamp: System.system_time(:microsecond),
+          direction: :outbound,
+          method: :get,
+          host: "slow.example.com",
+          path: "/slow",
+          status: 200,
+          status_class: :success,
+          duration_ms: 9999.0,
+          consumer: nil,
+          slow: true,
+          dedup_key: nil
+        })
+
+      slow_out = SQLite.list_slow_outbound(limit: 10)
+      assert Enum.any?(slow_out, &(&1.host == "slow.example.com"))
+
+      :ok =
+        SQLite.record_event(%Event{
+          timestamp: System.system_time(:microsecond),
+          direction: :inbound,
+          method: :get,
+          host: nil,
+          path: "/slow-in",
+          status: 200,
+          status_class: :success,
+          duration_ms: 9999.0,
+          consumer: "frontend",
+          slow: true,
+          dedup_key: nil
+        })
+
+      slow_in = SQLite.list_slow_inbound(limit: 10)
+      assert Enum.any?(slow_in, &(&1.path == "/slow-in"))
+    end
+
+    test "list_recent_outbound/1 filters by status_class and host" do
+      :ok =
+        SQLite.record_event(%Event{
+          timestamp: System.system_time(:microsecond),
+          direction: :outbound,
+          method: :get,
+          host: "filter.example.com",
+          path: "/filtered",
+          status: 500,
+          status_class: :server_error,
+          duration_ms: 10.0,
+          consumer: nil,
+          slow: false,
+          dedup_key: nil
+        })
+
+      by_status = SQLite.list_recent_outbound(limit: 10, status_class: :server_error)
+      assert Enum.any?(by_status, &(&1.host == "filter.example.com"))
+
+      by_host = SQLite.list_recent_outbound(limit: 10, host: "filter.example.com")
+      assert Enum.any?(by_host, &(&1.path == "/filtered"))
+
+      by_both =
+        SQLite.list_recent_outbound(
+          limit: 10,
+          status_class: :server_error,
+          host: "filter.example.com"
+        )
+
+      assert Enum.any?(by_both, &(&1.path == "/filtered"))
+    end
   end
 end

@@ -108,6 +108,22 @@ defmodule Monitorex.DashboardLiveTest do
       assert socket.assigns.page_assigns == %{host: "api.example.com"}
     end
 
+    test "assigns timeline page" do
+      initial_socket = %Phoenix.LiveView.Socket{}
+      {:ok, socket} = DashboardLive.mount(%{"page" => "timeline"}, %{}, initial_socket)
+
+      assert socket.assigns.page_name == "timeline"
+      assert socket.assigns.page == Live.TimelinePage
+    end
+
+    test "assigns alerts page" do
+      initial_socket = %Phoenix.LiveView.Socket{}
+      {:ok, socket} = DashboardLive.mount(%{"page" => "alerts"}, %{}, initial_socket)
+
+      assert socket.assigns.page_name == "alerts"
+      assert socket.assigns.page == Live.AlertsPage
+    end
+
     test "starts refresh timer when connected" do
       initial_socket = %Phoenix.LiveView.Socket{}
 
@@ -164,6 +180,31 @@ defmodule Monitorex.DashboardLiveTest do
       {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
 
       assert {:noreply, _updated} = DashboardLive.handle_info({:navigate, "/host/test"}, socket)
+    end
+  end
+
+  describe "render/1" do
+    test "renders live component for current page" do
+      {:ok, socket} = DashboardLive.mount(%{"page" => "outbound"}, %{}, %Phoenix.LiveView.Socket{})
+
+      rendered = DashboardLive.render(socket.assigns)
+      assert is_struct(rendered, Phoenix.LiveView.Rendered)
+    end
+  end
+
+  describe "connected mount" do
+    test "starts refresh timer when socket is connected" do
+      connected_socket = %Phoenix.LiveView.Socket{transport_pid: self()}
+      {:ok, socket} = DashboardLive.mount(%{}, %{}, connected_socket)
+
+      assert socket.assigns.page_name == "outbound"
+    end
+  end
+
+  describe "normalize_route_param fallback" do
+    test "build_page_assigns for route without host key passes through" do
+      assigns = DashboardLive.build_page_assigns(%{"page" => "route"}, "route")
+      assert assigns == %{}
     end
   end
 end

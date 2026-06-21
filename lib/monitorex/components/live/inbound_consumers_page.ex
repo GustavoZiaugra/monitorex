@@ -107,7 +107,7 @@ defmodule Monitorex.Components.Live.InboundConsumersPage do
           end)
 
         "avg_latency" ->
-          Enum.sort_by(consumers, &(&1.avg_latency || 0))
+          Enum.sort_by(consumers, &(Map.get(&1, :avg_latency, 0) || 0))
 
         "last_seen" ->
           Enum.sort_by(consumers, &(&1.last_seen || 0))

@@ -7,6 +7,7 @@ defmodule Monitorex.MixProject do
       version: "0.6.0",
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
+      elixirc_paths: elixirc_paths(Mix.env()),
       aliases: aliases(),
       deps: deps(),
       docs: docs(),
@@ -16,6 +17,9 @@ defmodule Monitorex.MixProject do
       ]
     ]
   end
+
+  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(_), do: ["lib"]
 
   def cli do
     [preferred_envs: ["hex.publish": :prod]]
@@ -105,7 +109,8 @@ defmodule Monitorex.MixProject do
       {:dialyxir, "~> 1.4", only: :dev, runtime: false},
       {:hackney, "~> 1.18", optional: true},
       {:gen_smtp, "~> 1.2", optional: true},
-      {:exqlite, "~> 0.29", optional: true}
+      {:exqlite, "~> 0.29", optional: true},
+      {:meck, "~> 1.2", only: :test}
     ]
   end
 

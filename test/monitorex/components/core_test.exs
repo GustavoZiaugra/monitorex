@@ -69,6 +69,21 @@ defmodule Monitorex.Components.CoreTest do
       assert html =~ ~s(phx-click="sort")
       assert html =~ ~s(phx-value-key="name")
     end
+
+    test "renders sort indicator when column is active" do
+      assigns = %{
+        columns: [
+          %{label: "Name", key: :name, sortable?: true}
+        ],
+        rows: [%{name: "test"}],
+        sort_by: :name,
+        sort_dir: "asc"
+      }
+
+      html = render_component(&Core.data_table/1, assigns)
+
+      assert html =~ "▲"
+    end
   end
 
   describe "summary_card/1" do
@@ -159,6 +174,35 @@ defmodule Monitorex.Components.CoreTest do
 
       assert html =~ "999 Unknown"
     end
+
+    test "renders default class for non-standard status" do
+      assigns = %{status: 0}
+
+      html = render_component(&Core.status_badge/1, assigns)
+
+      assert html =~ "badge-default"
+    end
+
+    test "renders common status texts" do
+      for {status, text} <- [
+            {204, "No Content"},
+            {301, "Moved Permanently"},
+            {304, "Not Modified"},
+            {400, "Bad Request"},
+            {401, "Unauthorized"},
+            {403, "Forbidden"},
+            {405, "Method Not Allowed"},
+            {409, "Conflict"},
+            {422, "Unprocessable Entity"},
+            {429, "Too Many Requests"},
+            {502, "Bad Gateway"},
+            {503, "Service Unavailable"},
+            {504, "Gateway Timeout"}
+          ] do
+        html = render_component(&Core.status_badge/1, %{status: status})
+        assert html =~ text
+      end
+    end
   end
 
   describe "node_selector/1" do
@@ -198,6 +242,99 @@ defmodule Monitorex.Components.CoreTest do
       html = render_component(&Core.node_selector/1, assigns)
 
       assert html =~ ~s(phx-change="select_node")
+    end
+  end
+
+  describe "metric_tile/1" do
+    test "renders metric with label and value" do
+      assigns = %{label: "RPS", value: "42"}
+      html = render_component(&Core.metric_tile/1, assigns)
+
+      assert html =~ "RPS"
+      assert html =~ "42"
+    end
+  end
+
+  describe "page_header/1" do
+    test "renders title and subtitle" do
+      assigns = %{title: "Overview", subtitle: "Dashboard summary"}
+      html = render_component(&Core.page_header/1, assigns)
+
+      assert html =~ "Overview"
+      assert html =~ "Dashboard summary"
+    end
+
+    test "renders without subtitle" do
+      assigns = %{title: "Overview"}
+      html = render_component(&Core.page_header/1, assigns)
+
+      assert html =~ "Overview"
+    end
+  end
+
+  describe "pagination/1" do
+    test "renders pagination controls" do
+      assigns = %{current: 1, total: 5, event: "change_page"}
+      html = render_component(&Core.pagination/1, assigns)
+
+      assert html =~ "1 / 5"
+      assert html =~ ~s(phx-click="change_page")
+      assert html =~ "Next"
+    end
+
+    test "disables previous on first page" do
+      assigns = %{current: 1, total: 3}
+      html = render_component(&Core.pagination/1, assigns)
+
+      assert html =~ "disabled"
+    end
+
+    test "disables next on last page" do
+      assigns = %{current: 3, total: 3}
+      html = render_component(&Core.pagination/1, assigns)
+
+      assert html =~ "disabled"
+    end
+
+    test "renders ellipsis for large page counts" do
+      assigns = %{current: 2, total: 20}
+      html = render_component(&Core.pagination/1, assigns)
+
+      assert html =~ "5"
+      assert html =~ "20"
+
+      assigns = %{current: 19, total: 20}
+      html = render_component(&Core.pagination/1, assigns)
+
+      assert html =~ "16"
+      assert html =~ "20"
+
+      assigns = %{current: 10, total: 20}
+      html = render_component(&Core.pagination/1, assigns)
+
+      assert html =~ "9"
+      assert html =~ "10"
+      assert html =~ "11"
+    end
+  end
+
+  describe "export_button/1" do
+    test "renders CSV and JSON export links" do
+      assigns = %{page_name: "outbound_overview"}
+      html = render_component(&Core.export_button/1, assigns)
+
+      assert html =~ "/export/outbound_overview/csv"
+      assert html =~ "/export/outbound_overview/json"
+    end
+  end
+
+  describe "back_link/1" do
+    test "renders back link with path" do
+      assigns = %{to: "/inbound", label: "Back to inbound"}
+      html = render_component(&Core.back_link/1, assigns)
+
+      assert html =~ "/inbound"
+      assert html =~ "Back to inbound"
     end
   end
 end

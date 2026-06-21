@@ -53,6 +53,17 @@ defmodule Monitorex.AlertHistoryTest do
       assert AlertHistory.list_history(status: :acknowledged) == []
     end
 
+    test "filters by metric" do
+      a1 = sample_alert()
+      a2 = %{sample_alert() | id: System.system_time(:microsecond) + 1, metric: :requests_per_min}
+      AlertHistory.record_alert(a1)
+      AlertHistory.record_alert(a2)
+
+      assert length(AlertHistory.list_history(metric: :error_rate)) == 1
+      assert length(AlertHistory.list_history(metric: :requests_per_min)) == 1
+      assert AlertHistory.list_history(metric: :host_down) == []
+    end
+
     test "respects limit" do
       for i <- 1..5 do
         alert = %{sample_alert() | id: System.system_time(:microsecond) + i}
@@ -132,5 +143,14 @@ defmodule Monitorex.AlertHistoryTest do
       AlertHistory.trim()
       assert length(AlertHistory.list_history()) == 3
     end
+
+    test "does nothing when count is within max" do
+      Application.put_env(:monitorex, :max_alert_history, 100)
+      AlertHistory.record_alert(sample_alert())
+
+      AlertHistory.trim()
+      assert length(AlertHistory.list_history()) == 1
+    end
   end
+
 end

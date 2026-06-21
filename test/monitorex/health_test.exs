@@ -2,6 +2,12 @@ defmodule Monitorex.HealthTest do
   use ExUnit.Case, async: false
 
   alias Monitorex.Health
+  alias Monitorex.LiveComponentFixtures
+
+  setup do
+    LiveComponentFixtures.reset_ets_tables()
+    :ok
+  end
 
   describe "check/0" do
     test "returns a map with all expected keys" do
@@ -48,6 +54,28 @@ defmodule Monitorex.HealthTest do
       result = Health.check()
       assert is_integer(result.uptime_seconds)
       assert result.uptime_seconds >= 0
+    end
+
+    test "status becomes degraded when recent tables are near capacity" do
+      original_max = Application.get_env(:monitorex, :max_recent, 500)
+      Application.put_env(:monitorex, :max_recent, 10)
+
+      try do
+        for i <- 1..15 do
+          :ets.insert(:monitorex_outbound_recent, {i, %{}})
+        end
+
+        result = Health.check()
+        assert result.status == :degraded
+      after
+        Application.put_env(:monitorex, :max_recent, original_max)
+
+        try do
+          :ets.delete_all_objects(:monitorex_outbound_recent)
+        rescue
+          _ -> :ok
+        end
+      end
     end
   end
 end

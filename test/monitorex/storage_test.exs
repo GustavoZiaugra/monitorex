@@ -1035,4 +1035,34 @@ defmodule Monitorex.StorageTest do
       assert Storage.get_event(999) == nil
     end
   end
+
+  describe "list_slow_outbound/1" do
+    test "returns empty list when table is missing" do
+      assert Storage.list_slow_outbound() == []
+    end
+
+    test "returns slow outbound events" do
+      create_tables()
+
+      :ets.insert(:monitorex_slow_outbound, {1, %Event{timestamp: 1, method: "GET", host: "a", path: "/x", status: 200, status_class: :success}})
+
+      [event] = Storage.list_slow_outbound()
+      assert event.host == "a"
+    end
+  end
+
+  describe "list_slow_inbound/1" do
+    test "returns empty list when table is missing" do
+      assert Storage.list_slow_inbound() == []
+    end
+
+    test "returns slow inbound events" do
+      create_tables()
+
+      :ets.insert(:monitorex_slow_inbound, {1, %Event{timestamp: 1, method: "GET", path: "/api", status: 200, status_class: :success, consumer: "alice"}})
+
+      [event] = Storage.list_slow_inbound()
+      assert event.path == "/api"
+    end
+  end
 end
