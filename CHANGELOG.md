@@ -2,8 +2,19 @@
 
 ## Unreleased
 
+## 0.7.0 (2026-06-21)
+
 ### Added
-- **Support for Elixir 1.20.0 and OTP 29** — CI matrix expanded to include `elixir: '1.20', otp: '29'` (#74)
+- **Support for Elixir 1.20.0 and OTP 29** — CI matrix expanded to include `elixir: '1.20', otp: '29'` (#83)
+- **CI smoke test pipeline** — route-level acceptance smoke test hits every dashboard route in CI (#91)
+- **AGENTS.md** — test conventions, architecture notes, and tooling commands for contributors (#90)
+
+### Changed
+- **Test coverage** increased to 93.51% across all modules (#89)
+- **Code quality** — resolved all Credo strict-mode warnings (#88):
+  - `String.to_atom/1` → `String.to_existing_atom/1` in `DashboardLive.atomize_keys/1`
+  - Replaced `length/1` comparisons with empty-list checks in tests
+  - Added `# credo:disable-for-next-line` annotations for intentional runtime atom creation in tests
 - Local development tool-versions updated to Elixir 1.20.0-otp-29 and Erlang 29.0
 
 ### Fixed
@@ -11,13 +22,8 @@
 - Removed unused `Logger` require in `AlertHistory`
 - Removed unreachable nil clauses in `TimelinePage` that Elixir 1.20's compiler now correctly flags
 
-### Changed
-- `String.to_atom/1` → `String.to_existing_atom/1` in `DashboardLive.atomize_keys/1` (Credo)
-- Replaced `length/1` comparisons with empty-list checks in tests (Credo)
-- Added `# credo:disable-for-next-line` annotations for intentional runtime atom creation in tests
-
 ### Security
-- Audited and updated dependencies to latest patch/minor versions (#85):
+- Audited and updated dependencies to latest patch/minor versions (#87):
   - `phoenix` 1.8.5 → 1.8.7
   - `phoenix_live_view` 1.1.28 → 1.1.31
   - `telemetry` 1.4.1 → 1.4.2
