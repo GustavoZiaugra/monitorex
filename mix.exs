@@ -96,18 +96,18 @@ defmodule Monitorex.MixProject do
   defp deps do
     [
       {:phoenix, "~> 1.8"},
-      {:phoenix_live_view, "~> 1.1"},
+      {:phoenix_live_view, "~> 1.2"},
       {:telemetry, "~> 1.4"},
       {:jason, "~> 1.4"},
       {:req_telemetry, "~> 0.1", optional: true},
       {:esbuild, "~> 0.10.0", runtime: false},
-      {:tailwind, "~> 0.4.1", runtime: Mix.env() == :dev},
+      {:tailwind, "~> 0.5", runtime: Mix.env() == :dev},
       {:plug_cowboy, "~> 2.7", only: :dev},
       {:floki, "~> 0.38.1", only: :test},
       {:ex_doc, "~> 0.40.1", runtime: false},
       {:credo, "~> 1.7", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: :dev, runtime: false},
-      {:hackney, "~> 1.18", optional: true},
+      {:hackney, "~> 4.5", optional: true},
       {:gen_smtp, "~> 1.2", optional: true},
       {:exqlite, "~> 0.29", optional: true},
       {:meck, "~> 1.2", only: :test}
