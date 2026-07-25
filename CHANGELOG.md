@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.7.1 (2026-07-24)
+
+### Security
+- **hackney** `~> 1.18` → `~> 4.5` — fixes CVEs CVE-2026-47075, CVE-2026-47076, CVE-2026-47069, CVE-2026-47071 (#96)
+- **phoenix_live_view** `~> 1.1` → `~> 1.2` — latest 1.2.7 with ongoing security support (#96)
+- **tailwind** `~> 0.4.1` → `~> 0.5` — latest 0.5.1 (#96)
+- Transitive dependency updates: `certifi`, `cowboy`, `cowlib`, `idna`, `parse_trans`, `phoenix`, `plug`, `plug_cowboy`, `websock_adapter` (#96)
+
 ## 0.7.0 (2026-06-21)
 
 ### Added
