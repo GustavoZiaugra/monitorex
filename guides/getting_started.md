@@ -9,7 +9,7 @@ Add `monitorex` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:monitorex, "~> 0.4.0"}
+    {:monitorex, "~> 0.7.0"}
   ]
 end
 ```
