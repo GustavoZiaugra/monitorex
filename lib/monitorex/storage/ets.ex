@@ -445,12 +445,18 @@ defmodule Monitorex.Storage.ETS do
         _ -> Enum.uniq(:ets.foldl(fn {host, _}, acc -> [host | acc] end, [], @outbound_hosts))
       end
 
+    samples_ok? = :ets.info(@outbound_duration_samples) != :undefined
+
     Enum.each(hosts, fn host ->
       samples =
-        @outbound_duration_samples
-        |> :ets.lookup(host)
-        |> Enum.map(fn {^host, ms} -> ms end)
-        |> Enum.sort()
+        if samples_ok? do
+          @outbound_duration_samples
+          |> :ets.lookup(host)
+          |> Enum.map(fn {^host, ms} -> ms end)
+          |> Enum.sort()
+        else
+          []
+        end
 
       if length(samples) >= 10 do
         {p50, p95, p99} = compute_percentile_values(samples)
@@ -475,12 +481,18 @@ defmodule Monitorex.Storage.ETS do
         _ -> Enum.uniq(:ets.foldl(fn {key, _}, acc -> [key | acc] end, [], @inbound_routes))
       end
 
+    samples_ok? = :ets.info(@inbound_duration_samples) != :undefined
+
     Enum.each(routes, fn route_key ->
       samples =
-        @inbound_duration_samples
-        |> :ets.lookup(route_key)
-        |> Enum.map(fn {^route_key, ms} -> ms end)
-        |> Enum.sort()
+        if samples_ok? do
+          @inbound_duration_samples
+          |> :ets.lookup(route_key)
+          |> Enum.map(fn {^route_key, ms} -> ms end)
+          |> Enum.sort()
+        else
+          []
+        end
 
       if length(samples) >= 10 do
         {p50, p95, p99} = compute_percentile_values(samples)
