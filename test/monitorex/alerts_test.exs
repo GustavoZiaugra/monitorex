@@ -315,7 +315,6 @@ defmodule Monitorex.AlertsTest do
         }
       ])
 
-      # Just verify evaluate does not crash with webhook notifier configured.
       alerts = Alerts.evaluate()
       assert length(alerts) == 1
 
@@ -326,6 +325,8 @@ defmodule Monitorex.AlertsTest do
       seed_hosts([
         {"api.bad.com", %{requests: 100, errors: 50, total_duration: 5000.0, last_seen: System.monotonic_time()}}
       ])
+
+      on_exit(fn -> Application.delete_env(:monitorex, :alerts) end)
 
       for {label, response} <- [
             {"2xx", {:ok, 200, [], "ok"}},
@@ -349,10 +350,8 @@ defmodule Monitorex.AlertsTest do
 
         assert length(Alerts.evaluate()) == 1
 
-        Application.delete_env(:monitorex, :alerts)
         :meck.unload(:hackney)
 
-        # Reset debounce table between iterations
         try do
           :ets.delete_all_objects(:monitorex_alert_debounce)
         rescue
