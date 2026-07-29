@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 0.7.2 (2026-07-28)
+
+### Fixed
+- **OTP 29 crash** — `compute_percentiles/1` now guards all ETS operations with `try/rescue` to prevent GenServer termination when the cleanup timer fires during test table resets (#98)
+- **Flaky webhook test** — register `on_exit` cleanup immediately after `Application.put_env` so config is cleaned up even on assertion failure (#99)
+
+### Changed
+- Dependency bumps: `credo` 1.7.18→1.7.19, `db_connection` 2.10.1→2.10.2, `exqlite` 0.37.0→0.39.0, `floki` 0.38.3→0.38.4 (#98)
+
 ## 0.7.1 (2026-07-24)
 
 ### Security
