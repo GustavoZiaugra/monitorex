@@ -61,7 +61,7 @@ defmodule Monitorex.Layouts do
             Monitorex
           </a>
 
-          <div class="nav-section-label">Dashboard</div>
+          <div class="nav-section-label">Outbound</div>
           <div class="nav-links">
             <a href={nav_href(@mount_prefix, "/")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -69,29 +69,13 @@ defmodule Monitorex.Layouts do
                 <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
                 <line x1="12" y1="22.08" x2="12" y2="12" />
               </svg>
-              Outbound
+              Overview
             </a>
             <a href={nav_href(@mount_prefix, "/outbound_recent")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
-              Outbound Recent
-            </a>
-            <a href={nav_href(@mount_prefix, "/timeline")}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                <line x1="9" y1="3" x2="9" y2="21" />
-                <line x1="3" y1="9" x2="21" y2="9" />
-              </svg>
-              Timeline
-            </a>
-            <a href={nav_href(@mount_prefix, "/alerts")}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                <line x1="12" y1="9" x2="12" y2="13" />
-                <line x1="12" y1="17" x2="12.01" y2="17" />
-              </svg>
-              Alerts
+              Recent
             </a>
           </div>
 
@@ -118,6 +102,26 @@ defmodule Monitorex.Layouts do
                 <polyline points="12 6 12 12 16 14" />
               </svg>
               Recent
+            </a>
+          </div>
+
+          <div class="nav-section-label">Analysis</div>
+          <div class="nav-links">
+            <a href={nav_href(@mount_prefix, "/timeline")}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <line x1="9" y1="3" x2="9" y2="21" />
+                <line x1="3" y1="9" x2="21" y2="9" />
+              </svg>
+              Timeline
+            </a>
+            <a href={nav_href(@mount_prefix, "/alerts")}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              Alerts
             </a>
           </div>
 
