@@ -105,7 +105,9 @@ defmodule Monitorex.LayoutsTest do
         """)
 
       assert html =~ "Outbound"
-      assert html =~ "Outbound Recent"
+      assert html =~ "Analysis"
+      assert html =~ "Timeline"
+      assert html =~ "Alerts"
       assert html =~ "Overview"
       assert html =~ "Consumers"
       assert html =~ "Recent"
