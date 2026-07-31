@@ -76,7 +76,7 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
       </div>
 
       <div class="routes-table">
-        <Core.data_table columns={@table_columns} rows={@route_rows} empty_message="No routes found" sort_by={@sort_by} sort_dir={@sort_dir} />
+        <Core.data_table columns={@table_columns} rows={@route_rows} empty_message="No routes found" sort_by={@sort_by} sort_dir={@sort_dir} target={@myself} />
       </div>
     </div>
     """
