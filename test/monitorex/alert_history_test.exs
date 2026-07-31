@@ -186,5 +186,4 @@ defmodule Monitorex.AlertHistoryTest do
       refute Enum.any?(history, &(&1.status == :snoozed))
     end
   end
-
 end

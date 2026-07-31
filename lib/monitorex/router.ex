@@ -47,7 +47,7 @@ defmodule Monitorex.Router do
       live_session :monitorex_dashboard,
         root_layout: {Monitorex.Layouts, :root},
         on_mount: [Monitorex.Authentication, Monitorex.MountOptions],
-        session: {Monitorex.MountOptions, :session, [assets_path, socket_path]} do
+        session: {Monitorex.MountOptions, :session, ["/dashboard-assets", "/live"]} do
         get "/dashboard-assets/*path", Monitorex.Assets, :call
         live "/", Monitorex.DashboardLive, :index
         live "/:page", Monitorex.DashboardLive, :index
