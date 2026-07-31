@@ -143,6 +143,27 @@ defmodule Monitorex.AlertHistory do
 
   @impl true
   def handle_call(:expire_snoozes, _from, state) do
+    do_expire_snoozes()
+    {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_call(:trim, _from, state) do
+    do_trim()
+    {:reply, :ok, state}
+  end
+
+  @impl true
+  def handle_info(:cleanup, state) do
+    do_expire_snoozes()
+    do_trim()
+    schedule_cleanup()
+    {:noreply, state}
+  end
+
+  # ── Private ──
+
+  defp do_expire_snoozes do
     now = System.system_time(:second)
 
     :ets.foldl(
@@ -157,12 +178,9 @@ defmodule Monitorex.AlertHistory do
       :ok,
       @table
     )
-
-    {:reply, :ok, state}
   end
 
-  @impl true
-  def handle_call(:trim, _from, state) do
+  defp do_trim do
     max_entries = Application.get_env(:monitorex, :max_alert_history, @default_max_entries)
     count = :ets.info(@table, :size)
 
@@ -181,19 +199,7 @@ defmodule Monitorex.AlertHistory do
 
       Enum.each(keys, &:ets.delete(@table, &1))
     end
-
-    {:reply, :ok, state}
   end
-
-  @impl true
-  def handle_info(:cleanup, state) do
-    expire_snoozes()
-    trim()
-    schedule_cleanup()
-    {:noreply, state}
-  end
-
-  # ── Private ──
 
   defp create_table do
     case :ets.info(@table) do

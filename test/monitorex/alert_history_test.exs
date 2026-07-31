@@ -153,4 +153,37 @@ defmodule Monitorex.AlertHistoryTest do
     end
   end
 
+  describe "cleanup cycle" do
+    test "handle_info(:cleanup, state) does not crash and keeps ETS intact" do
+      alert = sample_alert()
+      AlertHistory.record_alert(alert)
+
+      assert {:noreply, %{}} = AlertHistory.handle_info(:cleanup, %{})
+
+      history = AlertHistory.list_history()
+      assert length(history) == 1
+      assert hd(history).id == alert.id
+    end
+
+    test "handle_info(:cleanup, state) expires snoozes and trims" do
+      Application.put_env(:monitorex, :max_alert_history, 3)
+      on_exit(fn -> Application.delete_env(:monitorex, :max_alert_history) end)
+
+      for i <- 1..5 do
+        alert = %{sample_alert() | id: System.system_time(:microsecond) + i}
+        AlertHistory.record_alert(alert)
+      end
+
+      snoozed = AlertHistory.list_history() |> List.first()
+      AlertHistory.snooze(snoozed.id, 1)
+      Process.sleep(1100)
+
+      assert {:noreply, %{}} = AlertHistory.handle_info(:cleanup, %{})
+
+      history = AlertHistory.list_history()
+      assert length(history) == 3
+      refute Enum.any?(history, &(&1.status == :snoozed))
+    end
+  end
+
 end
