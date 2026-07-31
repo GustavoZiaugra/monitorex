@@ -292,10 +292,10 @@ By default, Monitorex stores all data in ETS tables (in-memory). You can optiona
 
 ```elixir
 # Use ETS (default)
-config :monitorex, :storage, Monitorex.Storage.ETS
+config :monitorex, :storage_backend, Monitorex.Storage.ETS
 
 # Use SQLite — requires :exqlite in your deps
-config :monitorex, :storage, Monitorex.Storage.SQLite
+config :monitorex, :storage_backend, Monitorex.Storage.SQLite
 config :monitorex, :sqlite_path, "/var/lib/monitorex/data.db"
 ```
 

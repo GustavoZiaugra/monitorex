@@ -83,7 +83,7 @@ config :monitorex,
 
   # Optional: persist across restarts (ETS is the default and is wiped on
   # restart). Requires {:exqlite, "~> 0.29"} in your deps.
-  # storage: Monitorex.Storage.SQLite,
+  # storage_backend: Monitorex.Storage.SQLite,
   # sqlite_path: "/var/lib/monitorex/data.db"
 ```
 
@@ -253,7 +253,7 @@ Monitorex defaults to **ETS storage (in-memory)**:
   backend (add `{:exqlite, "~> 0.29"}` to your deps):
 
   ```elixir
-  config :monitorex, :storage, Monitorex.Storage.SQLite
+  config :monitorex, :storage_backend, Monitorex.Storage.SQLite
   config :monitorex, :sqlite_path, "/var/lib/monitorex/data.db"
   ```
 
