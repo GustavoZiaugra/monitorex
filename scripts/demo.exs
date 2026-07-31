@@ -322,7 +322,7 @@ Monitorex.DemoSeeder.seed()
 config = [
   server: true,
   http: [ip: {0, 0, 0, 0}, port: 4000],
-  secret_key_base: Base.encode64(:crypto.strong_rand_bytes(32)),
+  secret_key_base: Base.encode64(:crypto.strong_rand_bytes(48)),
   debug_errors: true,
 ]
 

@@ -67,10 +67,15 @@ defmodule Monitorex.Assets do
   """
   def call(conn, _opts) do
     cond do
-      List.ends_with?(conn.path_info, ["app.css"]) -> serve_css(conn)
-      List.ends_with?(conn.path_info, ["app.js"]) -> serve_js(conn)
+      ends_with?(conn.path_info, ["app.css"]) -> serve_css(conn)
+      ends_with?(conn.path_info, ["app.js"]) -> serve_js(conn)
       true -> serve_not_found(conn)
     end
+  end
+
+  defp ends_with?(list, suffix) do
+    {_head, tail} = Enum.split(list, -length(suffix))
+    tail == suffix
   end
 
   defp serve_css(conn) do
