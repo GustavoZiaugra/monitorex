@@ -178,7 +178,13 @@ defmodule Monitorex.EventHandler do
            redact_headers_from_metadata(metadata[:req_headers] || []), s}
       end
 
-    resp_headers = redact_headers_from_metadata(metadata[:resp_headers] || [])
+    resp_headers =
+      redact_headers_from_metadata(
+        extract_finch_response(metadata, :headers) || metadata[:resp_headers] || []
+      )
+
+    req_body = extract_finch_request_body(metadata) || metadata[:request_body]
+    resp_body = extract_finch_response(metadata, :body) || metadata[:response_body]
 
     ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
     pid = metadata[:pid] || self()
@@ -198,8 +204,8 @@ defmodule Monitorex.EventHandler do
         dedup_key: {pid, ts},
         request_headers: req_headers,
         response_headers: resp_headers,
-        request_body: maybe_store_body(metadata[:request_body], :request),
-        response_body: maybe_store_body(metadata[:response_body], :response)
+        request_body: maybe_store_body(req_body, :request),
+        response_body: maybe_store_body(resp_body, :response)
       },
       metadata
     )
@@ -271,9 +277,48 @@ defmodule Monitorex.EventHandler do
 
       _ ->
         case metadata[:result] do
+          {:ok, {_req, {status, _headers, _body, _trailers}}} when is_integer(status) -> status
+          {:ok, {status, _headers, _body, _trailers}} when is_integer(status) -> status
           {:ok, %{status: status}} -> status
           _ -> metadata[:status]
         end
+    end
+  end
+
+  # Finch telemetry carries the response as either `metadata[:response]`
+  # (a `%Finch.Response{}` struct), `metadata[:result]` (`{:ok, response}` /
+  # `{:error, reason}`), or — for the Req adapter — `{:ok, {req, {status,
+  # headers, body, trailers}}}`. Extract a field from whichever is present.
+  defp extract_finch_response(metadata, field) do
+    case metadata[:response] do
+      %{} = resp -> Map.get(resp, field)
+      _ -> nil
+    end ||
+      case metadata[:result] do
+        {:ok, {_req, {_status, headers, body, _trailers}}} ->
+          case field do
+            :headers -> headers
+            :body -> body
+          end
+
+        {:ok, {_status, headers, body, _trailers}} ->
+          case field do
+            :headers -> headers
+            :body -> body
+          end
+
+        {:ok, %{} = resp} ->
+          Map.get(resp, field)
+
+        _ ->
+          nil
+      end
+  end
+
+  defp extract_finch_request_body(metadata) do
+    case metadata[:request] do
+      %{body: body} -> body
+      _ -> nil
     end
   end
 
@@ -441,7 +486,11 @@ defmodule Monitorex.EventHandler do
     |> HeaderRedactor.redact_headers()
   end
 
-  defp maybe_store_body(body, _direction) when is_nil(body) or not is_binary(body), do: nil
+  defp maybe_store_body(body, _direction) when is_nil(body), do: nil
+
+  defp maybe_store_body(body, direction) when not is_binary(body) do
+    maybe_store_body(to_binary(body), direction)
+  end
 
   defp maybe_store_body(body, :request) do
     if Application.get_env(:monitorex, :store_request_body, false), do: body, else: nil
@@ -450,6 +499,9 @@ defmodule Monitorex.EventHandler do
   defp maybe_store_body(body, :response) do
     if Application.get_env(:monitorex, :store_response_body, false), do: body, else: nil
   end
+
+  defp to_binary(body) when is_list(body), do: IO.iodata_to_binary(body)
+  defp to_binary(_), do: nil
 
   # Converts a URI struct or string URL to a string
   defp url_to_string(%URI{} = uri), do: URI.to_string(uri)
@@ -491,8 +543,12 @@ defmodule Monitorex.EventHandler do
     threshold = Application.get_env(:monitorex, :slow_request_threshold_ms, 2_000)
 
     if threshold && threshold > 0 && event.duration_ms && event.duration_ms >= threshold do
-      req_body = metadata[:request_body] || metadata[:req_body]
-      resp_body = metadata[:response_body] || metadata[:resp_body]
+      req_body =
+        metadata[:request_body] || metadata[:req_body] || extract_finch_request_body(metadata)
+
+      resp_body =
+        metadata[:response_body] || metadata[:resp_body] ||
+          extract_finch_response(metadata, :body)
 
       max_bytes = Application.get_env(:monitorex, :max_body_bytes, 10_000)
 
@@ -508,12 +564,11 @@ defmodule Monitorex.EventHandler do
   end
 
   defp truncate_body(nil, _max), do: nil
+  defp truncate_body(body, max) when not is_binary(body), do: truncate_body(to_binary(body), max)
   defp truncate_body(body, max) when is_binary(body) and byte_size(body) <= max, do: body
 
   defp truncate_body(body, max) when is_binary(body) do
     <<trimmed::binary-size(^max), _rest::binary>> = body
     trimmed <> "\n[truncated]"
   end
-
-  defp truncate_body(_, _), do: nil
 end

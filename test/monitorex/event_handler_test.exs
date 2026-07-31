@@ -565,6 +565,195 @@ defmodule Monitorex.EventHandlerTest do
       assert is_integer(event.timestamp)
     end
 
+    test "captures request/response headers and bodies from Finch structs when enabled" do
+      Application.put_env(:monitorex, :store_request_body, true)
+      Application.put_env(:monitorex, :store_response_body, true)
+
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "POST",
+        path: "/orders",
+        headers: [{"content-type", "application/json"}, {"authorization", "Bearer s3cr3t"}],
+        body: ~S({"order_id": "abc"}),
+        query: nil
+      }
+
+      metadata = %{
+        name: :test_pool,
+        request: request,
+        result:
+          {:ok,
+           %{
+             status: 201,
+             body: ~S({"created": true}),
+             headers: [{"content-type", "application/json"}, {"x-request-id", "req-1"}]
+           }}
+      }
+
+      measurements = %{duration: 1_000_000}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.request_headers == [
+               {"content-type", "application/json"},
+               {"authorization", "••••redacted••••"}
+             ]
+
+      assert event.response_headers == [
+               {"content-type", "application/json"},
+               {"x-request-id", "req-1"}
+             ]
+
+      assert event.request_body == ~S({"order_id": "abc"})
+      assert event.response_body == ~S({"created": true})
+
+      Application.delete_env(:monitorex, :store_request_body)
+      Application.delete_env(:monitorex, :store_response_body)
+    end
+
+    test "handles the Req-adapter Finch response tuple with iodata bodies" do
+      Application.put_env(:monitorex, :store_request_body, true)
+      Application.put_env(:monitorex, :store_response_body, true)
+
+      request = %{
+        scheme: :http,
+        host: "localhost",
+        port: 4000,
+        method: "POST",
+        path: "/echo/orders",
+        headers: [{"content-type", "application/json"}],
+        body: [~S({"order_id": "), "abc", ~S("})],
+        query: nil
+      }
+
+      metadata = %{
+        name: Req.Finch,
+        request: request,
+        result:
+          {:ok,
+           {%{method: :post, url: URI.parse("http://localhost:4000/echo/orders")},
+            {201,
+             [{"content-type", "application/json; charset=utf-8"}, {"x-request-id", "req-9"}],
+             [~S({"ok":true,"order_id":"), "abc", ~S("})], []}}}
+      }
+
+      measurements = %{duration: 2_000_000}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.status == 201
+      assert event.status_class == :success
+
+      assert event.response_headers == [
+               {"content-type", "application/json; charset=utf-8"},
+               {"x-request-id", "req-9"}
+             ]
+
+      assert event.request_body == ~S({"order_id": "abc"})
+      assert event.response_body == ~S({"ok":true,"order_id":"abc"})
+
+      Application.delete_env(:monitorex, :store_request_body)
+      Application.delete_env(:monitorex, :store_response_body)
+    end
+
+    test "handles the flat Req-adapter Finch response tuple" do
+      Application.put_env(:monitorex, :store_request_body, true)
+      Application.put_env(:monitorex, :store_response_body, true)
+
+      request = %{
+        scheme: :http,
+        host: "localhost",
+        port: 4000,
+        method: "GET",
+        path: "/echo/users",
+        headers: [{"accept", "application/json"}],
+        body: nil,
+        query: nil
+      }
+
+      metadata = %{
+        name: Req.Finch,
+        request: request,
+        result:
+          {:ok,
+           {200, [{"content-type", "application/json"}, {"x-request-id", "req-flat"}],
+            [~S({"ok":true})], []}}
+      }
+
+      measurements = %{duration: 1_000_000}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.status == 200
+
+      assert event.response_headers == [
+               {"content-type", "application/json"},
+               {"x-request-id", "req-flat"}
+             ]
+
+      assert event.response_body == ~S({"ok":true})
+
+      Application.delete_env(:monitorex, :store_request_body)
+      Application.delete_env(:monitorex, :store_response_body)
+    end
+
+    test "captures bodies for slow requests from Finch structs even without body storage" do
+      Application.put_env(:monitorex, :slow_request_threshold_ms, 1)
+
+      request = %{
+        scheme: :http,
+        host: "localhost",
+        port: 4000,
+        method: "POST",
+        path: "/echo/slow",
+        headers: [],
+        body: [~S({"slow":), "true", ~S(})],
+        query: nil
+      }
+
+      metadata = %{
+        name: Req.Finch,
+        request: request,
+        result: {:ok, {200, [{"content-type", "application/json"}], [~S({"slow":true})], []}}
+      }
+
+      measurements = %{duration: 5_000_000}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.slow == true
+      assert event.request_body == ~S({"slow":true})
+      assert event.response_body == ~S({"slow":true})
+
+      Application.delete_env(:monitorex, :slow_request_threshold_ms)
+    end
+
     test "handles new Finch format exception event" do
       request = %{
         scheme: :https,
@@ -1140,6 +1329,7 @@ defmodule Monitorex.EventHandlerTest do
     test "truncates slow request bodies to max_body_bytes" do
       Application.put_env(:monitorex, :slow_request_threshold_ms, 100)
       Application.put_env(:monitorex, :max_body_bytes, 10)
+
       on_exit(fn ->
         Application.delete_env(:monitorex, :slow_request_threshold_ms)
         Application.delete_env(:monitorex, :max_body_bytes)
