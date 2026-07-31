@@ -60,7 +60,8 @@ defmodule Monitorex.DashboardLive do
 
   @impl true
   def handle_info({:navigate, path}, socket) do
-    {:noreply, push_navigate(socket, to: path)}
+    to = if String.starts_with?(path, "?"), do: "/" <> path, else: path
+    {:noreply, push_navigate(socket, to: to)}
   end
 
   @impl true

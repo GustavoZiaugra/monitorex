@@ -216,6 +216,30 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
       assert html =~ "old" or html =~ "Older" or html =~ "min ago"
     end
 
+    test "renders selected event details when selected id is beyond the initial load" do
+      deep_ts = System.system_time(:microsecond) - 60 * 60 * 1_000_000
+
+      for i <- 1..60 do
+        insert_outbound_event(path: "/req#{i}")
+      end
+
+      insert_outbound_event(
+        path: "/deep-link",
+        full_url: "https://deep-link.example.com/x",
+        timestamp: deep_ts
+      )
+
+      html =
+        render_component(TimelinePage, %{
+          id: "timeline-test",
+          direction: "outbound",
+          selected: to_string(deep_ts)
+        })
+
+      assert html =~ "Request Details"
+      assert html =~ "deep-link.example.com"
+    end
+
     test "direction fallback returns empty events" do
       html =
         render_component(TimelinePage, %{

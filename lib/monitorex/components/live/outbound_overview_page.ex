@@ -71,7 +71,7 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
     ~H"""
     <div class="outbound-overview">
       <Core.page_header title="Outbound Overview" subtitle="Monitor outbound HTTP requests by host">
-        <Core.node_selector nodes={@nodes} selected={@selected_node} event="select_node" />
+        <Core.node_selector nodes={@nodes} selected={@selected_node} event="select_node" target={@myself} />
         <Core.export_button page_name="outbound_overview" />
       </Core.page_header>
 
@@ -82,7 +82,7 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
       </div>
 
       <div class="hosts-table">
-        <Core.data_table columns={@table_columns} rows={@table_rows} empty_message="No hosts found" sort_by={@sort_by} sort_dir={@sort_dir} />
+        <Core.data_table columns={@table_columns} rows={@table_rows} empty_message="No hosts found" sort_by={@sort_by} sort_dir={@sort_dir} target={@myself} />
       </div>
     </div>
     """

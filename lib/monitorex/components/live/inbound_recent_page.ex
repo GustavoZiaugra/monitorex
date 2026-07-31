@@ -113,16 +113,16 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
       <div class="filters">
         <label class="filter-label">
           Status:
-          <span class={status_chip_class("2xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="2xx">2xx</span>
-          <span class={status_chip_class("3xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="3xx">3xx</span>
-          <span class={status_chip_class("4xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="4xx">4xx</span>
-          <span class={status_chip_class("5xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="5xx">5xx</span>
-          <span :if={@filter_status_class != ""} class="filter-chip" phx-click="filter_status_class" phx-value-status_class="">Clear</span>
+          <span class={status_chip_class("2xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="2xx" phx-target={@myself}>2xx</span>
+          <span class={status_chip_class("3xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="3xx" phx-target={@myself}>3xx</span>
+          <span class={status_chip_class("4xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="4xx" phx-target={@myself}>4xx</span>
+          <span class={status_chip_class("5xx", @filter_status_class)} phx-click="filter_status_class" phx-value-status_class="5xx" phx-target={@myself}>5xx</span>
+          <span :if={@filter_status_class != ""} class="filter-chip" phx-click="filter_status_class" phx-value-status_class="" phx-target={@myself}>Clear</span>
         </label>
 
         <label class="filter-label">
           Consumer:
-          <select class="filter-select" phx-change="filter_consumer">
+          <select class="filter-select" phx-change="filter_consumer" phx-target={@myself}>
             <option value="">All Consumers</option>
             <option :for={c <- @consumers} value={c} selected={c == @filter_consumer}><%= c %></option>
           </select>
@@ -130,7 +130,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
 
         <label class="filter-label">
           Route:
-          <select class="filter-select" phx-change="filter_route">
+          <select class="filter-select" phx-change="filter_route" phx-target={@myself}>
             <option value="">All Routes</option>
             <option :for={r <- @routes} value={r} selected={r == @filter_route}><%= r %></option>
           </select>
@@ -169,7 +169,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
         </div>
       </div>
 
-      <Core.pagination current={@page} total={@total_pages} event="go_page" />
+      <Core.pagination current={@page} total={@total_pages} event="go_page" target={@myself} />
     </div>
     """
   end

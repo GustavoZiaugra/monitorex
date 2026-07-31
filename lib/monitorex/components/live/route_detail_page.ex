@@ -117,7 +117,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
 
       <h3>Top Consumers</h3>
       <div class="consumers-table">
-        <Core.data_table columns={[
+        <Core.data_table target={@myself} columns={[
           %{label: "Consumer", key: :consumer, sortable?: true},
           %{label: "Requests", key: :requests, sortable?: true},
           %{label: "Error Rate", key: :error_rate, sortable?: true},
@@ -157,7 +157,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
         </table>
       </div>
 
-      <Core.pagination current={@recent_page} total={@recent_total_pages} event="go_recent_page" />
+      <Core.pagination current={@recent_page} total={@recent_total_pages} event="go_recent_page" target={@myself} />
     </div>
     """
   end

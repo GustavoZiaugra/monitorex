@@ -107,6 +107,7 @@ defmodule Monitorex.Components.Live.AlertsPage do
             columns={history_columns()}
             rows={history_rows(@history)}
             empty_message="No alert history"
+            target={@myself}
           />
         <% end %>
       </div>

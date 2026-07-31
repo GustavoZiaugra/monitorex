@@ -18,3 +18,15 @@ config :tailwind,
     ),
     cd: Path.expand("..", __DIR__)
   ]
+
+if config_env() == :test do
+  config :monitorex, Monitorex.TestEndpoint,
+    url: [host: "localhost"],
+    server: false,
+    live_view: [signing_salt: "test_salt_monitorex"],
+    secret_key_base: String.duplicate("a", 64)
+
+  config :monitorex, Monitorex.PubSub,
+    name: Monitorex.PubSub,
+    adapter: Phoenix.PubSub.PG2
+end
