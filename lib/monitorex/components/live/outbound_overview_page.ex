@@ -16,20 +16,22 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
     mount_prefix = assigns[:mount_prefix] || "/"
     hosts = ClusterPage.list_hosts()
 
-    total_requests = Enum.reduce(hosts, 0, &(&1.requests + &2))
-    total_errors = Enum.reduce(hosts, 0, &(&1.errors + &2))
-    total_duration = Enum.reduce(hosts, 0, &(&1.total_duration + &2))
+    nodes = Enum.map(hosts, & &1.host)
+    selected_node = assigns[:node] || ""
+
+    filtered_hosts = if selected_node == "", do: hosts, else: Enum.filter(hosts, &(&1.host == selected_node))
+
+    total_requests = Enum.reduce(filtered_hosts, 0, &(&1.requests + &2))
+    total_errors = Enum.reduce(filtered_hosts, 0, &(&1.errors + &2))
+    total_duration = Enum.reduce(filtered_hosts, 0, &(&1.total_duration + &2))
 
     error_rate = if total_requests > 0, do: total_errors / total_requests * 100, else: 0.0
     avg_latency = if total_requests > 0, do: total_duration / total_requests, else: 0.0
 
-    nodes = Enum.map(hosts, & &1.host)
-    selected_node = assigns[:node] || ""
-
     sort_by = assigns[:sort_by] || "requests"
     sort_dir = assigns[:sort_dir] || "desc"
 
-    sorted_hosts = sort_hosts(hosts, sort_by, sort_dir)
+    sorted_hosts = sort_hosts(filtered_hosts, sort_by, sort_dir)
     table_columns = build_table_columns()
     table_rows = build_table_rows(sorted_hosts)
 
@@ -53,6 +55,13 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
   @impl true
   def handle_event("navigate", %{"path" => path}, socket) do
     send(self(), {:navigate, path})
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("select_node", %{"select_node" => node}, socket) do
+    base = "?page=outbound&node=#{URI.encode(node)}"
+    send(self(), {:navigate, base})
     {:noreply, socket}
   end
 
