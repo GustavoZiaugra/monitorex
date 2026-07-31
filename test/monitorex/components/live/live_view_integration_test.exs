@@ -282,7 +282,7 @@ defmodule Monitorex.Components.Live.LiveViewIntegrationTest do
     end
 
     test "go_recent_page via pagination" do
-      for i <- 1..25 do
+      for _i <- 1..25 do
         insert_inbound_event(path: "/api/items")
       end
 
