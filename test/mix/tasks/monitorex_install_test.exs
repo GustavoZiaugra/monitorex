@@ -79,7 +79,7 @@ defmodule Mix.Tasks.Monitorex.InstallTest do
       router = file_content(igniter, "lib/test_web/router.ex")
 
       assert router =~ ~s|scope "/monitoring" do|
-      assert router =~ "pipe_through(:browser)"
+      assert router =~ "pipe_through(:monitoring)"
       assert router =~ "http_dashboard(api_path: false)"
       assert router =~ "import Monitorex.Router"
 
@@ -260,6 +260,31 @@ defmodule Mix.Tasks.Monitorex.InstallTest do
         |> run_install()
 
       assert Enum.any?(igniter.warnings, &(&1 =~ "existing `scope \"/api\"`"))
+    end
+
+    test "uses a dedicated :monitoring pipeline without protect_from_forgery" do
+      router_without_pipeline = """
+      defmodule TestWeb.Router do
+        use Phoenix.Router
+
+        scope "/", TestWeb do
+          get "/", PageController, :home
+        end
+      end
+      """
+
+      igniter =
+        project(@mix_exs, "import Config\n", router_without_pipeline)
+        |> run_install()
+
+      router = file_content(igniter, "lib/test_web/router.ex")
+
+      assert router =~ "pipeline :monitoring do"
+      assert router =~ ~s|plug(:accepts, ["html"])|
+      assert router =~ "plug(:fetch_session)"
+      assert router =~ "plug(:fetch_live_flash)"
+      refute router =~ "protect_from_forgery"
+      assert router =~ "pipe_through(:monitoring)"
     end
   end
 end

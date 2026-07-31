@@ -18,6 +18,11 @@ if Code.ensure_loaded?(Igniter) do
         collides with an existing scope)
       * whether `:req_telemetry` should be added (`:req` present but `:req_telemetry` absent)
 
+    The mount uses a dedicated `:monitoring` pipeline — deliberately **not** your
+    `:browser` pipeline. `:browser` includes `protect_from_forgery`, which rejects the
+    cross-origin `app.js` asset request with a 403; the `:monitoring` pipeline omits it
+    (see the installation guide).
+
     ## Options
 
     * `--path` - the path to mount the dashboard at (default: `/monitoring`)
@@ -152,19 +157,18 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp ensure_pipeline(igniter, router) do
-      {igniter, has_browser?} = Igniter.Libs.Phoenix.has_pipeline(igniter, router, :browser)
+      {igniter, has_pipeline?} = Igniter.Libs.Phoenix.has_pipeline(igniter, router, :monitoring)
 
-      if has_browser? do
+      if has_pipeline? do
         igniter
       else
         Igniter.Libs.Phoenix.add_pipeline(
           igniter,
-          :browser,
+          :monitoring,
           """
           plug :accepts, ["html"]
           plug :fetch_session
           plug :fetch_live_flash
-          plug :protect_from_forgery
           """, router: router)
       end
     end
@@ -174,7 +178,7 @@ if Code.ensure_loaded?(Igniter) do
         igniter,
         mount_path,
         """
-        pipe_through :browser
+        pipe_through :monitoring
         http_dashboard(api_path: false)
         """, router: router, placement: :after)
     end

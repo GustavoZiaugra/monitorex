@@ -68,9 +68,10 @@ The installer detects from your application's AST:
 | `req_telemetry` requirement | `:req` present but `:req_telemetry` absent → offered as a dependency |
 
 It writes the `config :monitorex, :sources` config, adds `import Monitorex.Router` plus a
-`scope` + `pipe_through :browser` mount in your router, and adds `req_telemetry` when
-needed. The manual steps below remain fully supported — the installer automates them,
-it does not replace them.
+`scope` + `pipe_through :monitoring` mount in your router, and adds `req_telemetry` when
+needed. The mount uses a dedicated `:monitoring` pipeline **without** `protect_from_forgery`
+so the dashboard assets aren't rejected with a 403 (see the installation guide). The manual
+steps below remain fully supported — the installer automates them, it does not replace them.
 
 ### Manual installation
 
