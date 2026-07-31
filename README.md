@@ -61,36 +61,51 @@ mix deps.get
 
 ## Quick Start
 
-### 1. Configure sources
+> **For a real Phoenix app, read the [Installation Guide](guides/getting_started.md) first.** The steps below include the essentials that the happy path leaves out (REST API security, pipeline requirements, Tesla-on-Finch dedup).
+
+### 1. Configure sources and deduplication
 
 In `config/config.exs`:
 
 ```elixir
+# Only attach the sources you use. :phoenix monitors inbound; the rest are outbound.
 config :monitorex, :sources, [:tesla, :finch, :req, :phoenix]
+
+# REQUIRED if Tesla runs on the Finch adapter (very common): both libraries
+# emit telemetry for the same request, so without this every outbound request
+# is counted twice.
+config :monitorex, :clients, [:tesla, :finch]
 ```
 
 ### 2. Mount the dashboard in your router
 
+The dashboard scope needs a pipeline **without** `protect_from_forgery` (it
+rejects the cross-origin script GET with a 403 on `app.js`; CSS is unaffected)
+and **without** your app's CSP plug (Monitorex scripts carry no nonce). Mount on
+a dedicated host or a path prefix:
+
 ```elixir
 # lib/my_app_web/router.ex
 defmodule MyAppWeb.Router do
-  use Phoenix.Router
+  use MyAppWeb, :router
   import Monitorex.Router
 
-  pipeline :browser do
+  # Dashboard pipeline — mirrors :browser minus protect_from_forgery / CSP.
+  pipeline :monitoring do
     plug :accepts, ["html"]
     plug :fetch_session
     plug :fetch_live_flash
-    plug :put_root_layout, html: {MyAppWeb.Layouts, :root}
-    plug :protect_from_forgery
   end
 
-  scope "/monitoring" do
-    pipe_through :browser
-    http_dashboard []
+  scope "/", host: "monitoring." do
+    pipe_through :monitoring
+    # api_path: false — the REST API is unauthenticated and defaults to /api.
+    http_dashboard api_path: false
   end
 end
 ```
+
+Point a `monitoring.` subdomain at your app, or use a path prefix (`scope "/monitoring"`).
 
 ### 3. Start your server
 
@@ -98,7 +113,20 @@ end
 mix phx.server
 ```
 
-Visit `/monitoring` to see your dashboard.
+Visit your dashboard (e.g. `http://monitoring.localhost:4000` or `/monitoring`) to see it.
+
+### Mounting: path prefix vs. dedicated host
+
+`http_dashboard/1` emits **scope-relative** routes (`live "/"`, `get("/dashboard-assets/*path")`, `forward("/api")`), so a path prefix such as `scope "/monitoring"` is supported at the router level. However, the current release's bundled layout still hardcodes root-relative asset URLs (`/dashboard-assets/app.css`) and nav links; the layout-fix for prefix mounts is in progress. Until it merges, mount at the root of a dedicated host:
+
+```elixir
+scope "/", host: "monitoring." do
+  pipe_through :monitoring
+  http_dashboard api_path: false
+end
+```
+
+Point a `monitoring.` subdomain at your app and the dashboard's root-relative URLs resolve correctly. See the [Installation Guide](guides/getting_started.md) for the full matrix.
 
 ## Configuration
 
@@ -172,7 +200,9 @@ Monitorex identifies inbound consumers by priority:
 
 ### Deduplication
 
-When both Tesla and Finch are used in the same application, the same HTTP request may fire events from both libraries. Enable dedup to prevent double-counting:
+> **⚠️ Required if Tesla runs on the Finch adapter.** Tesla's Finch adapter emits both `:tesla` and `:finch` telemetry events for the same request. Without dedup, every outbound request is counted twice.
+
+Enable dedup by listing both clients:
 
 ```elixir
 config :monitorex, :clients, [:tesla, :finch]
@@ -198,7 +228,7 @@ config :monitorex, :redacted_headers, [
 
 **Body storage**
 
-Body capture is disabled by default to limit memory usage:
+Body capture is disabled by default to limit memory usage. Without it, the timeline detail pane shows headers but **empty bodies** — enable it to see request/response bodies:
 
 ```elixir
 # Store request and/or response bodies on the Event struct
@@ -208,6 +238,8 @@ config :monitorex, :store_response_body, true
 # Truncate bodies larger than N bytes (default: 10_000)
 config :monitorex, :max_body_bytes, 10_000
 ```
+
+Slow requests (past `:slow_request_threshold_ms`) capture bodies even when this is disabled.
 
 ### Memory Management
 
@@ -225,6 +257,8 @@ config :monitorex, :max_recent_inbound, 500  # inbound
 # Stale entry TTL (aggregate tables)
 config :monitorex, :endpoint_ttl, :timer.hours(1)
 ```
+
+> **Data lifetime:** storage is ETS (in-memory) by default — everything is lost on restart. Enable the SQLite backend for persistence (below). The recent buffers hold `:max_recent` events per direction and **silently evict older events**, which breaks `?selected=` deep links (e.g. `/timeline?selected=1779232233155167`) once an event is evicted.
 
 ### Slow Request Tracing
 
@@ -258,10 +292,10 @@ By default, Monitorex stores all data in ETS tables (in-memory). You can optiona
 
 ```elixir
 # Use ETS (default)
-config :monitorex, :storage, Monitorex.Storage.ETS
+config :monitorex, :storage_backend, Monitorex.Storage.ETS
 
 # Use SQLite — requires :exqlite in your deps
-config :monitorex, :storage, Monitorex.Storage.SQLite
+config :monitorex, :storage_backend, Monitorex.Storage.SQLite
 config :monitorex, :sqlite_path, "/var/lib/monitorex/data.db"
 ```
 
@@ -311,6 +345,8 @@ Rules can also be added/removed at runtime via `Monitorex.Alerts.add_rule/1` and
 | Alerts | `/alerts` | Alert summary, firing alerts, history table |
 
 ## REST API
+
+> **⚠️ Security warning.** Monitorex ships a built-in JSON REST API that mounts **outside** `live_session` with **no authentication** — anyone who can reach your endpoint can read hosts, events, and metrics. It defaults to `api_path: "/api"`, which collides with the API scope of most real apps. **Disable it unless you need it:** pass `api_path: false` to `http_dashboard/1` (see below). The API also sends `Access-Control-Allow-Origin: *`, so it is effectively public even on an authenticated dashboard scope.
 
 Monitorex ships a built-in JSON REST API for programmatic access to telemetry data. The API is auto-mounted at `/api` (configurable via the `:api_path` option in `http_dashboard/1`).
 
@@ -393,24 +429,13 @@ curl "http://localhost:4000/api/events/1779232233155167"
 
 ### Disabling the API
 
-Set `:api_path` to `nil` or `false`:
+Pass `api_path: false` to `http_dashboard/1` — recommended unless you need programmatic access:
 
 ```elixir
 http_dashboard api_path: false
 ```
 
-> **Note:** The API is mounted inside the scope pipeline. For production use, consider mounting it in a separate scope without `:browser` pipeline to avoid CSRF protection on non-GET methods:
-
-> ```elixir
-> scope "/monitoring" do
->   pipe_through :browser
->   http_dashboard api_path: false
-> end
->
-> scope "/monitoring/api" do
->   forward "/", Monitorex.ApiPlug
-> end
-> ```
+> The API is mounted inside the scope pipeline. If you keep it, mount it under your own pipeline and/or a dedicated path (see the [Installation Guide](guides/getting_started.md)).
 
 ## Asset Pipeline
 
