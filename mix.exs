@@ -27,7 +27,7 @@ defmodule Monitorex.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :hackney],
+      extra_applications: [:logger],
       mod: {Monitorex.Application, []}
     ]
   end
