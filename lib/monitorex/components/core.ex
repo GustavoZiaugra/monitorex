@@ -302,7 +302,7 @@ defmodule Monitorex.Components.Core do
   def export_button(assigns) do
     ~H"""
     <div class={["export-dropdown", @class]}>
-      <a href={"#{@prefix}/export/#{@page_name}/csv"} class="export-btn" download>
+      <a href={"#{export_prefix(@prefix)}/export/#{@page_name}/csv"} class="export-btn" download>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
@@ -310,7 +310,7 @@ defmodule Monitorex.Components.Core do
         </svg>
         CSV
       </a>
-      <a href={"#{@prefix}/export/#{@page_name}/json"} class="export-btn" download>
+      <a href={"#{export_prefix(@prefix)}/export/#{@page_name}/json"} class="export-btn" download>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="7 10 12 15 17 10"/>
@@ -344,4 +344,7 @@ defmodule Monitorex.Components.Core do
     </a>
     """
   end
+
+  defp export_prefix(prefix) when prefix in ["", "/", nil], do: ""
+  defp export_prefix(prefix), do: "/" <> String.trim(prefix, "/")
 end
