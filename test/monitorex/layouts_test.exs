@@ -3,6 +3,7 @@ defmodule Monitorex.LayoutsTest do
   import Phoenix.Component
   import Phoenix.LiveViewTest
 
+  alias Monitorex.Assets
   alias Monitorex.Layouts
 
   describe "root/1" do
@@ -19,7 +20,7 @@ defmodule Monitorex.LayoutsTest do
       assert html =~ "Monitorex"
     end
 
-    test "includes CSS and JS asset links" do
+    test "includes versioned CSS and JS asset links" do
       assigns = %{inner_content: "", flash: %{}}
 
       html =
@@ -27,8 +28,72 @@ defmodule Monitorex.LayoutsTest do
         <Layouts.root inner_content={@inner_content} flash={@flash} />
         """)
 
-      assert html =~ "/dashboard-assets/app.css"
-      assert html =~ "/dashboard-assets/app.js"
+      assert html =~ "/dashboard-assets/app.css?v=#{Assets.css_hash()}"
+      assert html =~ "/dashboard-assets/app.js?v=#{Assets.js_hash()}"
+      refute html =~ ~s{href="/dashboard-assets/app.css"}
+      refute html =~ ~s{href="/dashboard-assets/app.js"}
+    end
+
+    test "renders csrf token meta" do
+      assigns = %{inner_content: "", flash: %{}}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.root inner_content={@inner_content} flash={@flash} />
+        """)
+
+      assert html =~ ~s{<meta name="csrf-token" content=}
+    end
+
+    test "renders socket path meta with default value" do
+      assigns = %{inner_content: "", flash: %{}}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.root inner_content={@inner_content} flash={@flash} />
+        """)
+
+      assert html =~ ~s{<meta name="monitorex-socket-path" content="/live"}
+    end
+
+    test "uses mount prefix for asset links and navigation links" do
+      assigns = %{inner_content: "", flash: %{}, mount_prefix: "/monitoring"}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.root inner_content={@inner_content} flash={@flash} mount_prefix={@mount_prefix} />
+        """)
+
+      assert html =~ "/monitoring/dashboard-assets/app.css?v=#{Assets.css_hash()}"
+      assert html =~ "/monitoring/dashboard-assets/app.js?v=#{Assets.js_hash()}"
+      assert html =~ ~s{href="/monitoring/"}
+      assert html =~ ~s{href="/monitoring/outbound_recent"}
+      assert html =~ ~s{href="/monitoring/inbound_consumers"}
+      assert html =~ ~s{href="/monitoring/cluster"}
+      refute html =~ ~s{href="/outbound_recent"}
+    end
+
+    test "uses custom assets path for asset links" do
+      assigns = %{inner_content: "", flash: %{}, assets_path: "/custom-assets"}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.root inner_content={@inner_content} flash={@flash} assets_path={@assets_path} />
+        """)
+
+      assert html =~ "/custom-assets/app.css?v=#{Assets.css_hash()}"
+      assert html =~ "/custom-assets/app.js?v=#{Assets.js_hash()}"
+    end
+
+    test "uses custom socket path meta value" do
+      assigns = %{inner_content: "", flash: %{}, socket_path: "/ws/live"}
+
+      html =
+        rendered_to_string(~H"""
+        <Layouts.root inner_content={@inner_content} flash={@flash} socket_path={@socket_path} />
+        """)
+
+      assert html =~ ~s{<meta name="monitorex-socket-path" content="/ws/live"}
     end
 
     test "renders sidebar navigation links" do

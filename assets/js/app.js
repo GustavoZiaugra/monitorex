@@ -1,4 +1,7 @@
 // Monitorex Dashboard — Client JS v2
+import {Socket} from "phoenix";
+import {LiveSocket} from "phoenix_live_view";
+
 (function() {
   'use strict';
 
@@ -70,3 +73,11 @@
     setupResizeHandler();
   });
 })();
+
+const csrfMeta = document.querySelector("meta[name='csrf-token']");
+const socketMeta = document.querySelector("meta[name='monitorex-socket-path']");
+const csrfToken = csrfMeta ? csrfMeta.getAttribute("content") : "";
+const socketPath = socketMeta ? socketMeta.getAttribute("content") : "/live";
+
+const liveSocket = new LiveSocket(socketPath, Socket, {params: {_csrf_token: csrfToken}});
+liveSocket.connect();

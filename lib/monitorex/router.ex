@@ -22,7 +22,9 @@ defmodule Monitorex.Router do
     * `:live_view` — module to use as the dashboard LiveView (default: `Monitorex.DashboardLive`)
     * `:layout` — root layout module (default: `{Monitorex.Layouts, :root}`)
     * `:assets_path` — asset mount path (default: `"/dashboard-assets"`)
-    * `:on_mount` — additional on_mount hooks (default: `[Monitorex.Authentication]`)
+    * `:socket_path` — LiveSocket path of the host application's
+      `Phoenix.LiveView.Socket` endpoint (default: `"/live"`)
+    * `:on_mount` — additional on_mount hooks (default: `[Monitorex.Authentication, Monitorex.MountOptions]`)
     * `:api_path` — API mount path (default: `"/api"`). Set to `nil` or `false` to disable the REST API entirely.
 
   ## Example
@@ -33,7 +35,8 @@ defmodule Monitorex.Router do
 
       live_session :monitorex_dashboard,
         root_layout: {Monitorex.Layouts, :root},
-        on_mount: [Monitorex.Authentication] do
+        on_mount: [Monitorex.Authentication, Monitorex.MountOptions],
+        session: {Monitorex.MountOptions, :session, ["/dashboard-assets", "/live"]} do
         get "/dashboard-assets/*path", Monitorex.Assets, :call
         live "/", Monitorex.DashboardLive, :index
         live "/:page", Monitorex.DashboardLive, :index
@@ -47,8 +50,9 @@ defmodule Monitorex.Router do
     live_view = Keyword.get(opts, :live_view, Monitorex.DashboardLive)
     layout = Keyword.get(opts, :layout, {Monitorex.Layouts, :root})
     assets_path = Keyword.get(opts, :assets_path, "/dashboard-assets")
+    socket_path = Keyword.get(opts, :socket_path, "/live")
     health_path = Keyword.get(opts, :health_path, "/monitorex/health")
-    on_mount = Keyword.get(opts, :on_mount, [Monitorex.Authentication])
+    on_mount = Keyword.get(opts, :on_mount, [Monitorex.Authentication, Monitorex.MountOptions])
     api_path = Keyword.get(opts, :api_path, "/api")
 
     api_forward =
@@ -76,7 +80,8 @@ defmodule Monitorex.Router do
       # Define the live session with root layout and authentication
       live_session :monitorex_dashboard,
         root_layout: unquote(layout),
-        on_mount: unquote(on_mount) do
+        on_mount: unquote(on_mount),
+        session: {Monitorex.MountOptions, :session, [unquote(assets_path), unquote(socket_path)]} do
         live("/", unquote(live_view), :index)
         live("/:page", unquote(live_view), :index)
         live("/:page/:host", unquote(live_view), :index)

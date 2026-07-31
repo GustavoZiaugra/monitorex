@@ -55,15 +55,19 @@ defmodule Monitorex.Assets do
 
   @doc """
   Plug call callback. Serves the requested asset file or returns 404.
+
+  The request path is matched against the configured mount path by its
+  trailing segments, so assets are served correctly when the dashboard is
+  mounted under a path prefix — whether the prefix comes from the endpoint
+  mount (`conn.script_name`), a router `scope`, or a reverse proxy.
   """
   def call(conn, %{at: at}) do
-    path = conn.path_info
     base_path = at |> String.trim("/") |> String.split("/")
 
-    case path -- base_path do
-      ["app.css"] -> serve_css(conn)
-      ["app.js"] -> serve_js(conn)
-      _ -> serve_not_found(conn)
+    cond do
+      List.ends_with?(conn.path_info, base_path ++ ["app.css"]) -> serve_css(conn)
+      List.ends_with?(conn.path_info, base_path ++ ["app.js"]) -> serve_js(conn)
+      true -> serve_not_found(conn)
     end
   end
 

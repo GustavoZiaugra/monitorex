@@ -80,6 +80,19 @@ defmodule Monitorex.RouterTest do
       assert expanded != nil
     end
 
+    test "accepts custom socket_path option" do
+      expanded =
+        Macro.expand(
+          quote do
+            import Monitorex.Router
+            http_dashboard(socket_path: "/ws/live")
+          end,
+          __ENV__
+        )
+
+      assert expanded != nil
+    end
+
     test "accepts custom on_mount option" do
       expanded =
         Macro.expand(

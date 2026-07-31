@@ -66,6 +66,13 @@ mix phx.server
 
 Visit `/monitoring` to see your real-time HTTP telemetry dashboard.
 
+The dashboard is mountable under any path prefix — asset and navigation links
+are derived from the mount point. The LiveView client connects to your app's
+socket endpoint at `/live` by default; pass `:socket_path` to `http_dashboard`
+if yours is mounted elsewhere. Your `:browser` pipeline must run
+`:protect_from_forgery` so the client can obtain a CSRF token for the socket
+connection.
+
 ## Next Steps
 
 - **Authentication** — implement the `Monitorex.Resolver` behaviour to control dashboard access

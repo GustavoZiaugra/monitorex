@@ -13,13 +13,25 @@ defmodule Monitorex.Layouts do
 
   Includes:
     * HTML5 doctype and responsive viewport meta
-    * Title "Monitorex"
-    * CSS and JS asset links
+    * CSRF token and LiveSocket path metas for the LiveView client
+    * Versioned CSS and JS asset links
     * Sidebar navigation with icons for Outbound, Inbound, and Cluster nodes
     * Flash group rendering
     * Main content area yielding `@inner_content`
+
+  The asset links and navigation hrefs are built from `@mount_prefix` so the
+  dashboard works when mounted under a path prefix. When rendered outside the
+  LiveView mount (e.g. in tests or with a custom `:on_mount`), `@mount_prefix`,
+  `@assets_path` and `@socket_path` default to `/`, `/dashboard-assets` and
+  `/live` respectively.
   """
   def root(assigns) do
+    assigns =
+      assigns
+      |> Map.put_new(:mount_prefix, "/")
+      |> Map.put_new(:assets_path, "/dashboard-assets")
+      |> Map.put_new(:socket_path, "/live")
+
     ~H"""
     <!DOCTYPE html>
     <html lang="en">
@@ -27,8 +39,10 @@ defmodule Monitorex.Layouts do
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>Monitorex</title>
-        <link rel="stylesheet" href={"/dashboard-assets/app.css"} />
-        <script defer src={"/dashboard-assets/app.js"}></script>
+        <meta name="csrf-token" content={Plug.CSRFProtection.get_csrf_token()} />
+        <meta name="monitorex-socket-path" content={@socket_path} />
+        <link rel="stylesheet" href={asset_href(@mount_prefix, @assets_path, "app.css", Monitorex.Assets.css_hash())} />
+        <script defer src={asset_href(@mount_prefix, @assets_path, "app.js", Monitorex.Assets.js_hash())}></script>
       </head>
       <body>
         <button id="nav-toggle" class="nav-toggle" aria-label="Toggle navigation">
@@ -40,7 +54,7 @@ defmodule Monitorex.Layouts do
         </button>
 
         <nav>
-          <a href="/" class="nav-brand">
+          <a href={nav_href(@mount_prefix, "/")} class="nav-brand">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
             </svg>
@@ -49,7 +63,7 @@ defmodule Monitorex.Layouts do
 
           <div class="nav-section-label">Dashboard</div>
           <div class="nav-links">
-            <a href="/">
+            <a href={nav_href(@mount_prefix, "/")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
                 <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
@@ -57,13 +71,13 @@ defmodule Monitorex.Layouts do
               </svg>
               Outbound
             </a>
-            <a href="/outbound_recent">
+            <a href={nav_href(@mount_prefix, "/outbound_recent")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
               </svg>
               Outbound Recent
             </a>
-            <a href="/timeline">
+            <a href={nav_href(@mount_prefix, "/timeline")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                 <line x1="9" y1="3" x2="9" y2="21" />
@@ -71,7 +85,7 @@ defmodule Monitorex.Layouts do
               </svg>
               Timeline
             </a>
-            <a href="/alerts">
+            <a href={nav_href(@mount_prefix, "/alerts")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 <line x1="12" y1="9" x2="12" y2="13" />
@@ -83,13 +97,13 @@ defmodule Monitorex.Layouts do
 
           <div class="nav-section-label">Inbound</div>
           <div class="nav-links">
-            <a href="/inbound">
+            <a href={nav_href(@mount_prefix, "/inbound")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
               </svg>
               Overview
             </a>
-            <a href="/inbound_consumers">
+            <a href={nav_href(@mount_prefix, "/inbound_consumers")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
                 <circle cx="9" cy="7" r="4" />
@@ -98,7 +112,7 @@ defmodule Monitorex.Layouts do
               </svg>
               Consumers
             </a>
-            <a href="/inbound_recent">
+            <a href={nav_href(@mount_prefix, "/inbound_recent")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="10" />
                 <polyline points="12 6 12 12 16 14" />
@@ -109,7 +123,7 @@ defmodule Monitorex.Layouts do
 
           <div class="nav-section-label">Cluster</div>
           <div class="nav-links">
-            <a href="/cluster">
+            <a href={nav_href(@mount_prefix, "/cluster")}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="2" y="2" width="8" height="8" rx="2" />
                 <rect x="14" y="2" width="8" height="8" rx="2" />
@@ -129,6 +143,16 @@ defmodule Monitorex.Layouts do
     </html>
     """
   end
+
+  defp asset_href(prefix, assets_path, filename, hash) do
+    base = "/" <> String.trim(assets_path, "/")
+    "#{prefix_part(prefix)}#{base}/#{filename}?v=#{hash}"
+  end
+
+  defp nav_href(prefix, path), do: "#{prefix_part(prefix)}#{path}"
+
+  defp prefix_part(prefix) when prefix in ["", "/", nil], do: ""
+  defp prefix_part(prefix), do: "/" <> String.trim(prefix, "/")
 
   @doc """
   Renders flash messages for the Dashboard.
