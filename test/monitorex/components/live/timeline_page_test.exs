@@ -120,8 +120,8 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
           status: "server_error"
         })
 
-      assert html =~ "500"
-      refute html =~ "200"
+      assert html =~ "status-dot-server-error"
+      refute html =~ "status-dot-success"
     end
 
     test "filters events by method" do
