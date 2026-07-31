@@ -43,6 +43,38 @@ Monitorex monitors outbound (Tesla, Finch/Req) and inbound (Phoenix) HTTP traffi
 
 ## Installation
 
+### Installer (recommended)
+
+The fastest way to add Monitorex is with [Igniter](https://hex.pm/packages/igniter), the
+standard installer framework for Elixir. It inspects your application and configures
+Monitorex automatically, showing a diff before writing anything:
+
+```bash
+# install igniter if you don't have it yet
+mix archive.install hex igniter_new
+
+# install and configure monitorex
+mix igniter.install monitorex
+```
+
+The installer detects from your application's AST:
+
+| Decision | Detection |
+|---|---|
+| Which sources to enable | which of `:tesla` / `:finch` / `:req` are in your dep tree (`:phoenix` is always enabled) |
+| Whether dedup is needed | `config :tesla, adapter: {Tesla.Adapter.Finch, _}` present → sets `clients: [:tesla, :finch]` |
+| REST API handling | the built-in API is disabled (`http_dashboard api_path: false`) so it never collides with an existing `scope "/api"` |
+| Where to mount | `--path` option, default `/monitoring` (warns if it collides with an existing scope) |
+| `req_telemetry` requirement | `:req` present but `:req_telemetry` absent → offered as a dependency |
+
+It writes the `config :monitorex, :sources` config, adds `import Monitorex.Router` plus a
+`scope` + `pipe_through :monitoring` mount in your router, and adds `req_telemetry` when
+needed. The mount uses a dedicated `:monitoring` pipeline **without** `protect_from_forgery`
+so the dashboard assets aren't rejected with a 403 (see the installation guide). The manual
+steps below remain fully supported — the installer automates them, it does not replace them.
+
+### Manual installation
+
 Add `monitorex` to your `mix.exs`:
 
 ```elixir

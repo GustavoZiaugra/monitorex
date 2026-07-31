@@ -13,7 +13,8 @@ defmodule Monitorex.MixProject do
       docs: docs(),
       package: package(),
       dialyzer: [
-        ignore_warnings: ".dialyzer_ignore.exs"
+        ignore_warnings: ".dialyzer_ignore.exs",
+        plt_add_apps: [:mix]
       ]
     ]
   end
@@ -97,6 +98,7 @@ defmodule Monitorex.MixProject do
     [
       {:phoenix, "~> 1.8"},
       {:phoenix_live_view, "~> 1.2"},
+      {:igniter, "~> 0.6", optional: true},
       {:telemetry, "~> 1.4"},
       {:jason, "~> 1.4"},
       {:req_telemetry, "~> 0.1", optional: true},
