@@ -179,7 +179,7 @@ port = 12_000 + rem(System.unique_integer([:positive]), 10_000)
 config = [
   server: true,
   http: [ip: {127, 0, 0, 1}, port: port],
-  secret_key_base: Base.encode64(:crypto.strong_rand_bytes(32)),
+  secret_key_base: Base.encode64(:crypto.strong_rand_bytes(48)),
   debug_errors: false,
   check_origin: false,
 ]

@@ -160,6 +160,27 @@ end
 
 Point a `monitoring.` subdomain at your app and the dashboard's root-relative URLs resolve correctly. See the [Installation Guide](guides/getting_started.md) for the full matrix.
 
+### Mounting under a path prefix
+
+The dashboard is fully mountable under a path prefix. Asset links and
+navigation links are derived from the mount point, so a `scope "/monitoring"`
+(or mounting the endpoint behind a reverse proxy) works out of the box.
+
+The LiveView client connects to your app's LiveView socket endpoint. By
+default it uses `/live`; pass `:socket_path` if your app mounts
+`Phoenix.LiveView.Socket` elsewhere:
+
+```elixir
+scope "/monitoring" do
+  pipe_through :browser
+  http_dashboard socket_path: "/live"
+end
+```
+
+Make sure the pipeline includes `:protect_from_forgery` (or
+`Plug.CSRFProtection`) so the dashboard can read the CSRF token it needs to
+establish the LiveView socket connection.
+
 ## Configuration
 
 ### Sources

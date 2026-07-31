@@ -4,7 +4,14 @@ import Config
 config :esbuild,
   version: "0.25.4",
   monitorex: [
-    args: ~w(assets/js/app.js --bundle --target=es2022 --outfile=priv/static/app.js),
+    args: ~w(
+      assets/js/app.js
+      --bundle
+      --target=es2022
+      --outfile=priv/static/app.js
+      --alias:phoenix=./deps/phoenix/priv/static/phoenix.mjs
+      --alias:phoenix_live_view=./deps/phoenix_live_view/priv/static/phoenix_live_view.esm.js
+    ),
     cd: Path.expand("..", __DIR__)
   ]
 

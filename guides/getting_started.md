@@ -130,7 +130,14 @@ mix phx.server
 Visit `https://monitoring.example.com/` (or `http://localhost:4000/` while
 testing locally) to see your dashboard.
 
-## 3. Where it can be mounted
+The dashboard is mountable under any path prefix — asset and navigation links
+are derived from the mount point. The LiveView client connects to your app's
+socket endpoint at `/live` by default; pass `:socket_path` to `http_dashboard`
+if yours is mounted elsewhere. Your `:browser` pipeline must run
+`:protect_from_forgery` so the client can obtain a CSRF token for the socket
+connection.
+
+## Where it can be mounted
 
 The `http_dashboard` macro emits **scope-relative** routes (`live "/"`,
 `get("/dashboard-assets/*path")`, `forward("/api")`), so a path prefix is
