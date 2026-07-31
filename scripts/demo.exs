@@ -3,10 +3,11 @@
 
 Application.put_env(:monitorex, :sources, [])
 Application.put_env(:phoenix, :serve_endpoints, true)
-Application.put_env(:monitorex, Monitorex.DemoEndpoint, [
+
+Application.put_env(:monitorex, Monitorex.DemoEndpoint,
   live_view: [signing_salt: "Rf3Pnq8iKj2Lx9vM0sAa"],
   render_errors: [view: Monitorex.ErrorView, accepts: ~w(html)]
-])
+)
 
 # ── Router ──
 defmodule Monitorex.DemoRouter do
@@ -14,22 +15,22 @@ defmodule Monitorex.DemoRouter do
   import Monitorex.Router
 
   pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_flash
-    plug :put_root_layout, {Monitorex.Layouts, :root}
-    plug :protect_from_forgery
+    plug(:accepts, ["html"])
+    plug(:fetch_session)
+    plug(:fetch_flash)
+    plug(:put_root_layout, {Monitorex.Layouts, :root})
+    plug(:protect_from_forgery)
   end
 
   # Assets unpiped: protect_from_forgery rejects cross-origin script GETs
   # (403 on app.js), so the asset route must bypass it.
   scope "/" do
-    get "/dashboard-assets/*path", Monitorex.Assets, :call
+    get("/dashboard-assets/*path", Monitorex.Assets, :call)
   end
 
   scope "/" do
-    pipe_through :browser
-    http_dashboard []
+    pipe_through(:browser)
+    http_dashboard([])
   end
 end
 
@@ -43,15 +44,15 @@ defmodule Monitorex.DemoEndpoint do
     signing_salt: "demo"
   ]
 
-  socket "/live", Phoenix.LiveView.Socket,
-    websocket: [connect_info: [session: @session_config]]
+  socket("/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_config]])
 
-  plug Plug.Session,
+  plug(Plug.Session,
     store: :cookie,
     key: "_demo_key",
     signing_salt: "demo"
+  )
 
-  plug Monitorex.DemoRouter
+  plug(Monitorex.DemoRouter)
 end
 
 # ── Seed Data ──
@@ -89,37 +90,60 @@ defmodule Monitorex.DemoSeeder do
 
     # Recent tables need ordered_set
     try do
-      :ets.new(:monitorex_outbound_recent, [:public, :named_table, :ordered_set, read_concurrency: true])
+      :ets.new(:monitorex_outbound_recent, [
+        :public,
+        :named_table,
+        :ordered_set,
+        read_concurrency: true
+      ])
     rescue
       _ -> :ok
     end
+
     try do
-      :ets.new(:monitorex_inbound_recent, [:public, :named_table, :ordered_set, read_concurrency: true])
+      :ets.new(:monitorex_inbound_recent, [
+        :public,
+        :named_table,
+        :ordered_set,
+        read_concurrency: true
+      ])
     rescue
       _ -> :ok
     end
+
     # Duration tables need bag
     try do
-      :ets.new(:monitorex_outbound_duration_samples, [:public, :named_table, :bag, read_concurrency: true])
+      :ets.new(:monitorex_outbound_duration_samples, [
+        :public,
+        :named_table,
+        :bag,
+        read_concurrency: true
+      ])
     rescue
       _ -> :ok
     end
+
     try do
-      :ets.new(:monitorex_inbound_duration_samples, [:public, :named_table, :bag, read_concurrency: true])
+      :ets.new(:monitorex_inbound_duration_samples, [
+        :public,
+        :named_table,
+        :bag,
+        read_concurrency: true
+      ])
     rescue
       _ -> :ok
     end
   end
 
   defp seed_outbound do
-    now_ms = System.system_time(:millisecond)
+    now_us = System.system_time(:microsecond)
 
     hosts = [
-      {"api.example.com", 342, 12, 15_200.0, now_ms - 60_000, "Finch"},
-      {"cdn.example.com", 1_891, 3, 48_500.0, now_ms - 120_000, "Tesla"},
-      {"auth.example.com", 156, 8, 6_800.0, now_ms - 300_000, "Finch"},
-      {"payments.example.com", 89, 15, 12_400.0, now_ms - 600_000, "Tesla"},
-      {"logs.example.com", 45, 0, 1_200.0, now_ms - 900_000, "Finch"},
+      {"api.example.com", 342, 12, 15_200.0, now_us - 60_000_000, "Finch"},
+      {"cdn.example.com", 1_891, 3, 48_500.0, now_us - 120_000_000, "Tesla"},
+      {"auth.example.com", 156, 8, 6_800.0, now_us - 300_000_000, "Finch"},
+      {"payments.example.com", 89, 15, 12_400.0, now_us - 600_000_000, "Tesla"},
+      {"logs.example.com", 45, 0, 1_200.0, now_us - 900_000_000, "Finch"}
     ]
 
     endpoints = %{
@@ -128,51 +152,59 @@ defmodule Monitorex.DemoSeeder do
         {"/posts", 85, 2, 2_400.0},
         {"/comments", 62, 3, 1_800.0},
         {"/search", 45, 2, 4_200.0},
-        {"/upload", 30, 1, 3_200.0},
+        {"/upload", 30, 1, 3_200.0}
       ],
       "cdn.example.com" => [
         {"/images/*", 1_200, 1, 28_000.0},
         {"/assets/*", 450, 1, 14_000.0},
-        {"/videos/*", 241, 1, 6_500.0},
+        {"/videos/*", 241, 1, 6_500.0}
       ],
       "auth.example.com" => [
         {"/login", 60, 2, 2_800.0},
         {"/token/refresh", 50, 3, 2_200.0},
         {"/logout", 30, 1, 1_000.0},
-        {"/verify", 16, 2, 800.0},
+        {"/verify", 16, 2, 800.0}
       ],
       "payments.example.com" => [
         {"/charge", 30, 8, 5_200.0},
         {"/refund", 25, 3, 3_600.0},
         {"/subscription", 20, 2, 2_200.0},
-        {"/invoice", 14, 2, 1_400.0},
+        {"/invoice", 14, 2, 1_400.0}
       ],
       "logs.example.com" => [
         {"/ingest", 30, 0, 800.0},
-        {"/search", 15, 0, 400.0},
-      ],
+        {"/search", 15, 0, 400.0}
+      ]
     }
 
     # Seed host aggregates
     Enum.each(hosts, fn {host, requests, errors, total_duration, last_seen, client} ->
-      :ets.insert(:monitorex_outbound_hosts, {host, %{
-        requests: requests,
-        errors: errors,
-        total_duration: total_duration,
-        last_seen: last_seen,
-        client: client
-      }})
+      :ets.insert(
+        :monitorex_outbound_hosts,
+        {host,
+         %{
+           requests: requests,
+           errors: errors,
+           total_duration: total_duration,
+           last_seen: last_seen,
+           client: client
+         }}
+      )
     end)
 
     # Seed endpoint aggregates
     Enum.each(endpoints, fn {host, eps} ->
       Enum.each(eps, fn {path, requests, errors, total_duration} ->
-        :ets.insert(:monitorex_outbound_endpoints, {{host, path}, %{
-          requests: requests,
-          errors: errors,
-          total_duration: total_duration,
-          last_seen: System.system_time(:millisecond)
-        }})
+        :ets.insert(
+          :monitorex_outbound_endpoints,
+          {{host, path},
+           %{
+             requests: requests,
+             errors: errors,
+             total_duration: total_duration,
+             last_seen: System.system_time(:microsecond)
+           }}
+        )
       end)
     end)
 
@@ -204,11 +236,12 @@ defmodule Monitorex.DemoSeeder do
       {"payments.example.com", "/subscription", "POST", 200, 200.5, 950_000},
       {"api.example.com", "/search", "GET", 404, 1.5, 900_000},
       {"api.example.com", "/upload", "POST", 200, 520.0, 850_000},
-      {"cdn.example.com", "/assets/app.js", "GET", 200, 1.8, 800_000},
+      {"cdn.example.com", "/assets/app.js", "GET", 200, 1.8, 800_000}
     ]
 
     Enum.each(recent_events, fn {host, path, method, status, duration_ms, ts_ago} ->
       ts = now - ts_ago
+
       event = %Event{
         source: :demo,
         direction: :outbound,
@@ -224,47 +257,56 @@ defmodule Monitorex.DemoSeeder do
         timestamp: ts,
         dedup_key: {host, path, method, ts}
       }
+
       :ets.insert(:monitorex_outbound_recent, {ts, event})
       :ets.insert(:monitorex_outbound_duration_samples, {host, duration_ms})
     end)
   end
 
   defp seed_inbound do
-    now_ms = System.system_time(:millisecond)
+    now_us = System.system_time(:microsecond)
 
     routes = [
-      {"GET:/api/users", 345, 8, 12_400.0, now_ms - 30_000},
-      {"POST:/api/users", 120, 5, 18_500.0, now_ms - 60_000},
-      {"GET:/api/posts", 280, 4, 9_800.0, now_ms - 90_000},
-      {"POST:/api/posts", 95, 2, 15_200.0, now_ms - 120_000},
-      {"GET:/api/search", 180, 12, 25_000.0, now_ms - 150_000},
-      {"DELETE:/api/comments", 45, 1, 2_800.0, now_ms - 180_000},
-      {"PUT:/api/users/:id", 78, 3, 6_500.0, now_ms - 210_000},
+      {"GET:/api/users", 345, 8, 12_400.0, now_us - 30_000_000},
+      {"POST:/api/users", 120, 5, 18_500.0, now_us - 60_000_000},
+      {"GET:/api/posts", 280, 4, 9_800.0, now_us - 90_000_000},
+      {"POST:/api/posts", 95, 2, 15_200.0, now_us - 120_000_000},
+      {"GET:/api/search", 180, 12, 25_000.0, now_us - 150_000_000},
+      {"DELETE:/api/comments", 45, 1, 2_800.0, now_us - 180_000_000},
+      {"PUT:/api/users/:id", 78, 3, 6_500.0, now_us - 210_000_000}
     ]
 
     Enum.each(routes, fn {key, requests, errors, total_duration, last_seen} ->
-      :ets.insert(:monitorex_inbound_routes, {key, %{
-        requests: requests,
-        errors: errors,
-        total_duration: total_duration,
-        last_seen: last_seen
-      }})
+      :ets.insert(
+        :monitorex_inbound_routes,
+        {key,
+         %{
+           requests: requests,
+           errors: errors,
+           total_duration: total_duration,
+           last_seen: last_seen
+         }}
+      )
     end)
 
     consumers = [
-      {"myapp-web", 450, 10, 18_000.0, now_ms - 30_000},
-      {"myapp-worker", 320, 8, 42_000.0, now_ms - 120_000},
-      {"myapp-cron", 85, 2, 3_400.0, now_ms - 300_000},
-      {"partner-integration", 120, 15, 28_000.0, now_ms - 60_000},
+      {"myapp-web", 450, 10, 18_000.0, now_us - 30_000_000},
+      {"myapp-worker", 320, 8, 42_000.0, now_us - 120_000_000},
+      {"myapp-cron", 85, 2, 3_400.0, now_us - 300_000_000},
+      {"partner-integration", 120, 15, 28_000.0, now_us - 60_000_000}
     ]
 
     Enum.each(consumers, fn {name, requests, errors, total_duration, last_seen} ->
-      :ets.insert(:monitorex_inbound_consumers, {name, %{
-        requests: requests,
-        errors: errors,
-        total_duration: total_duration,
-        last_seen: last_seen
-      }})
+      :ets.insert(
+        :monitorex_inbound_consumers,
+        {name,
+         %{
+           requests: requests,
+           errors: errors,
+           total_duration: total_duration,
+           last_seen: last_seen
+         }}
+      )
     end)
   end
 
@@ -286,11 +328,12 @@ defmodule Monitorex.DemoSeeder do
       {"PUT", "/api/users/:id", "myapp-worker", 200, 4.1, 60_000},
       {"DELETE", "/api/comments", "myapp-cron", 204, 1.2, 65_000},
       {"GET", "/api/users", "partner-integration", 401, 0.8, 70_000},
-      {"POST", "/api/posts", "myapp-worker", 422, 35.6, 75_000},
+      {"POST", "/api/posts", "myapp-worker", 422, 35.6, 75_000}
     ]
 
     Enum.each(inbound_events, fn {method, path, consumer, status, duration_ms, ts_ago} ->
       ts = now_ms - ts_ago
+
       event = %Event{
         source: :demo,
         direction: :inbound,
@@ -305,6 +348,7 @@ defmodule Monitorex.DemoSeeder do
         timestamp: ts,
         dedup_key: {:inbound, method, path, ts}
       }
+
       :ets.insert(:monitorex_inbound_recent, {ts, event})
       route_key = "#{method}:#{path}"
       :ets.insert(:monitorex_inbound_duration_samples, {route_key, duration_ms})
@@ -329,7 +373,7 @@ config = [
   server: true,
   http: [ip: {0, 0, 0, 0}, port: 4000],
   secret_key_base: Base.encode64(:crypto.strong_rand_bytes(48)),
-  debug_errors: true,
+  debug_errors: true
 ]
 
 # Need to cache the assets content before starting
