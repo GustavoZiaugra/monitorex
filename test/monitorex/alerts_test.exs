@@ -3,6 +3,26 @@ defmodule Monitorex.AlertsTest do
 
   alias Monitorex.Alerts
 
+  setup_all do
+    # The host app's background Collector calls Alerts.evaluate/0 on its
+    # cleanup cycle. A concurrent evaluation that lands in the same second
+    # as a test's own evaluate/0 records the same alert key as debounced on
+    # the shared :monitorex_alert_debounce table, so the test sees [] where
+    # it expects its alert. Stop the app for this module and start only the
+    # GenServers these tests use; the full app is restarted on exit.
+    Application.stop(:monitorex)
+    {:ok, _} = Monitorex.AlertHistory.start_link([])
+    {:ok, _} = Monitorex.Alerts.start_link([])
+
+    on_exit(fn ->
+      if pid = Process.whereis(Monitorex.Alerts), do: GenServer.stop(pid)
+      if pid = Process.whereis(Monitorex.AlertHistory), do: GenServer.stop(pid)
+      Application.ensure_all_started(:monitorex)
+    end)
+
+    :ok
+  end
+
   setup do
     Enum.each(
       [
@@ -315,6 +335,8 @@ defmodule Monitorex.AlertsTest do
         }
       ])
 
+      on_exit(fn -> Application.delete_env(:monitorex, :alerts) end)
+
       alerts = Alerts.evaluate()
       assert length(alerts) == 1
 
@@ -327,6 +349,7 @@ defmodule Monitorex.AlertsTest do
       ])
 
       on_exit(fn -> Application.delete_env(:monitorex, :alerts) end)
+      on_exit(fn -> unload_meck(:hackney) end)
 
       for {label, response} <- [
             {"2xx", {:ok, 200, [], "ok"}},
@@ -423,6 +446,8 @@ defmodule Monitorex.AlertsTest do
     :meck.new(module, [:unstick, :passthrough])
     :meck.expect(module, :notify, fn _alert, _config -> :ok end)
 
+    on_exit(fn -> unload_meck(module) end)
+
     Application.put_env(:monitorex, :alerts, [
       %{
         name: "Notifier #{key}",
@@ -435,9 +460,19 @@ defmodule Monitorex.AlertsTest do
       }
     ])
 
+    on_exit(fn -> Application.delete_env(:monitorex, :alerts) end)
+
     assert length(Alerts.evaluate()) == 1
 
     Application.delete_env(:monitorex, :alerts)
     :meck.unload(module)
+  end
+
+  defp unload_meck(module) do
+    try do
+      :meck.unload(module)
+    catch
+      :error, {:not_mocked, _} -> :ok
+    end
   end
 end

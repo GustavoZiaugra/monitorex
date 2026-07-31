@@ -200,7 +200,7 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
           route: "POST:/api/orders"
         )
 
-      assert length(filtered) >= 1
+      assert filtered != []
       assert hd(filtered).status_class == :server_error
 
       empty = SQLite.list_recent_inbound(limit: 10, consumer: "missing")
