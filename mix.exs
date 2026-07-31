@@ -13,7 +13,8 @@ defmodule Monitorex.MixProject do
       docs: docs(),
       package: package(),
       dialyzer: [
-        ignore_warnings: ".dialyzer_ignore.exs"
+        ignore_warnings: ".dialyzer_ignore.exs",
+        plt_add_apps: [:mix]
       ]
     ]
   end
