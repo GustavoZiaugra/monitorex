@@ -108,7 +108,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
       <Core.back_link to={back_href(assigns, "/")} label="Back to Outbound" />
 
       <Core.page_header title={@host} subtitle="Host detail and performance metrics">
-        <Core.export_button page_name="host_detail" />
+        <Core.export_button page_name="host_detail" prefix={@mount_prefix} />
         </Core.page_header>
 
       <div class="summary-cards">

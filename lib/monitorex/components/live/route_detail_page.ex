@@ -108,7 +108,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
       <Core.back_link to={back_href(assigns, "/inbound")} label="Back to Inbound" />
 
       <Core.page_header title={@route_key} subtitle="Route detail and consumer metrics">
-        <Core.export_button page_name="route_detail" />
+        <Core.export_button page_name="route_detail" prefix={@mount_prefix} />
         </Core.page_header>
 
       <div class="summary-cards">

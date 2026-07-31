@@ -19,6 +19,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
 
   @impl true
   def update(assigns, socket) do
+    mount_prefix = assigns[:mount_prefix] || "/"
     direction = assigns[:direction] || "outbound"
     selected_id = assigns[:selected] && String.to_integer(assigns[:selected])
     search_query = assigns[:search] || ""
@@ -37,6 +38,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
 
     socket =
       socket
+      |> assign(:mount_prefix, mount_prefix)
       |> assign(:direction, direction)
       |> assign(:all_events, filtered)
       |> assign(:events, display_events)
@@ -120,7 +122,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
           </p>
         </div>
         <div class="page-header-actions">
-          <Core.export_button page_name="timeline" />
+          <Core.export_button page_name="timeline" prefix={@mount_prefix} />
           <div class="timeline-tabs">
             <button
               phx-click="select_direction" phx-value-direction="outbound" phx-target={@myself}

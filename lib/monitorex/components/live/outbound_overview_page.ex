@@ -13,6 +13,7 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
 
   @impl true
   def update(assigns, socket) do
+    mount_prefix = assigns[:mount_prefix] || "/"
     hosts = ClusterPage.list_hosts()
 
     total_requests = Enum.reduce(hosts, 0, &(&1.requests + &2))
@@ -34,6 +35,7 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
 
     socket =
       socket
+      |> assign(:mount_prefix, mount_prefix)
       |> assign(:hosts, sorted_hosts)
       |> assign(:table_columns, table_columns)
       |> assign(:table_rows, table_rows)
@@ -72,7 +74,7 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
     <div class="outbound-overview">
       <Core.page_header title="Outbound Overview" subtitle="Monitor outbound HTTP requests by host">
         <Core.node_selector nodes={@nodes} selected={@selected_node} event="select_node" target={@myself} />
-        <Core.export_button page_name="outbound_overview" />
+        <Core.export_button page_name="outbound_overview" prefix={@mount_prefix} />
       </Core.page_header>
 
       <div class="summary-cards">
