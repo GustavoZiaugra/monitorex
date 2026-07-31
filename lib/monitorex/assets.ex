@@ -43,11 +43,13 @@ defmodule Monitorex.Assets do
   def js_hash, do: @js_hash
 
   @doc """
-  Plug init callback. Accepts options including `:at` for the mount path.
+  Plug init callback.
 
   ## Options
 
-    * `:at` — the path prefix where assets are mounted (default: `"/dashboard-assets"`)
+    * `:at` — accepted for backwards compatibility (default: `"/dashboard-assets"`).
+      The request path is matched by its trailing filename segment, so the
+      option no longer affects serving.
   """
   def init(_opts) do
     %{at: "/dashboard-assets"}
@@ -56,17 +58,17 @@ defmodule Monitorex.Assets do
   @doc """
   Plug call callback. Serves the requested asset file or returns 404.
 
-  The request path is matched against the configured mount path by its
-  trailing segments, so assets are served correctly when the dashboard is
-  mounted under a path prefix — whether the prefix comes from the endpoint
-  mount (`conn.script_name`), a router `scope`, or a reverse proxy.
+  The filename is matched by the trailing path segment, so assets are served
+  correctly when the dashboard is mounted under any path prefix — whether the
+  prefix comes from the endpoint mount (`conn.script_name`), a router `scope`,
+  a reverse proxy, or a custom `assets_path`. The router route pattern (e.g.
+  `get "/dashboard-assets/*path"`) guarantees the request reached this plug
+  only under the configured asset mount path.
   """
-  def call(conn, %{at: at}) do
-    base_path = at |> String.trim("/") |> String.split("/")
-
+  def call(conn, _opts) do
     cond do
-      List.ends_with?(conn.path_info, base_path ++ ["app.css"]) -> serve_css(conn)
-      List.ends_with?(conn.path_info, base_path ++ ["app.js"]) -> serve_js(conn)
+      List.ends_with?(conn.path_info, ["app.css"]) -> serve_css(conn)
+      List.ends_with?(conn.path_info, ["app.js"]) -> serve_js(conn)
       true -> serve_not_found(conn)
     end
   end

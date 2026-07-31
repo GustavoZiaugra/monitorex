@@ -12,6 +12,11 @@ defmodule Monitorex.Router do
           http_dashboard []
         end
       end
+
+  The pipeline that runs the dashboard routes must include
+  `:protect_from_forgery` (or `Plug.CSRFProtection`). The dashboard layout
+  reads the CSRF token to authenticate the LiveView socket connection, and the
+  LiveView client sends it back as `_csrf_token`.
   """
 
   @doc """
@@ -24,7 +29,13 @@ defmodule Monitorex.Router do
     * `:assets_path` — asset mount path (default: `"/dashboard-assets"`)
     * `:socket_path` — LiveSocket path of the host application's
       `Phoenix.LiveView.Socket` endpoint (default: `"/live"`)
-    * `:on_mount` — additional on_mount hooks (default: `[Monitorex.Authentication, Monitorex.MountOptions]`)
+    * `:on_mount` — additional on_mount hooks. The default is
+      `[Monitorex.Authentication, Monitorex.MountOptions]`. If you override
+      this option you **must include both** `Monitorex.Authentication` (auth)
+      and `Monitorex.MountOptions` (which assigns the mount prefix, assets path
+      and socket path to the socket for the root layout); omitting
+      `Monitorex.MountOptions` leaves the layout with its default unprefixed
+      hrefs and `/live` socket path.
     * `:api_path` — API mount path (default: `"/api"`). Set to `nil` or `false` to disable the REST API entirely.
 
   ## Example

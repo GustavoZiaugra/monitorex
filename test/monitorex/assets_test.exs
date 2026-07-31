@@ -96,7 +96,7 @@ defmodule Monitorex.AssetsTest do
       assert conn.status == 404
     end
 
-    test "returns 404 for wrong path prefix" do
+    test "serves assets under any leading path prefix" do
       base_conn = Test.conn(:get, "/other/app.css")
 
       conn =
@@ -104,7 +104,20 @@ defmodule Monitorex.AssetsTest do
         |> Map.put(:path_info, ["other", "app.css"])
         |> Assets.call(Assets.init([]))
 
-      assert conn.status == 404
+      assert conn.status == 200
+      assert Conn.get_resp_header(conn, "content-type") == ["text/css; charset=utf-8"]
+    end
+
+    test "serves assets under a custom assets_path" do
+      base_conn = Test.conn(:get, "/custom-assets/app.css")
+
+      conn =
+        base_conn
+        |> Map.put(:path_info, ["custom-assets", "app.css"])
+        |> Assets.call(Assets.init([]))
+
+      assert conn.status == 200
+      assert Conn.get_resp_header(conn, "content-type") == ["text/css; charset=utf-8"]
     end
 
     test "serves CSS when mounted under an endpoint script_name prefix" do
