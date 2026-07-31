@@ -12,6 +12,8 @@ defmodule Monitorex.Collector do
 
   use GenServer
 
+  require Logger
+
   alias Monitorex.Alerts
   alias Monitorex.Collector.Handlers
 
@@ -65,6 +67,7 @@ defmodule Monitorex.Collector do
   def init(_opts) do
     tables = create_tables()
     sources = Application.get_env(:monitorex, :sources, @default_sources)
+    warn_on_misconfigured_sources(sources)
     attach_telemetry_handlers(sources)
 
     schedule_cleanup()
@@ -179,6 +182,26 @@ defmodule Monitorex.Collector do
   end
 
   # ── Telemetry attachment ──
+
+  # Req 0.5.x removed built-in telemetry; the [:req, :request, :pipeline, :stop]
+  # events are only produced by the separate req_telemetry package. If :req is
+  # configured without it, the handler silently never fires — warn so users
+  # aren't surprised by missing outbound data.
+  @doc false
+  def warn_on_misconfigured_sources(sources) do
+    if :req in sources and not Code.ensure_loaded?(:req_telemetry) do
+      Logger.warning("""
+      Monitorex: the :req source is enabled but the req_telemetry application is not loaded.
+      Req 0.5+ removed built-in telemetry, so no outbound Req events will be captured.
+
+      Add {:req_telemetry, "~> 0.1"} to your dependencies, or use the :finch source
+      instead (Req runs on Finch, so :finch captures Req traffic with full request
+      details). See https://hex.pm/packages/monitorex for source configuration.
+      """)
+    end
+
+    :ok
+  end
 
   defp attach_telemetry_handlers(sources) do
     if :tesla in sources do

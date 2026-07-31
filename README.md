@@ -191,7 +191,7 @@ config :monitorex, :sources, [:tesla, :finch, :phoenix]
 
 Available sources: `:tesla`, `:finch`, `:req`, `:phoenix`. Only attach the sources you use.
 
-> **⚠️ Req source requires `req_telemetry`** — Req 0.5.x removed built-in telemetry. Add `{:req_telemetry, "~> 0.1"}` to your `mix.exs` deps for Req events to fire.
+> **⚠️ Req source requires `req_telemetry`** — Req 0.5.x removed built-in telemetry. Add `{:req_telemetry, "~> 0.1"}` to your `mix.exs` deps for Req events to fire. Alternatively, Req runs on Finch, so the `:finch` source captures Req traffic (with full request/response details) without `req_telemetry`.
 
 ### Inbound path filtering
 
