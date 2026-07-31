@@ -20,11 +20,13 @@ defmodule Monitorex.MountOptions do
   Returns the LiveView session map for the current request.
 
   The session is populated with the dashboard mount prefix derived from
-  `conn.script_name`, the configured assets path and the LiveSocket path.
+  `conn.script_name` (endpoint path mounts) plus the router scope segments in
+  `conn.path_info` (minus the route-param segments), the configured assets
+  path and the LiveSocket path.
   """
   def session(conn, assets_path, socket_path) do
     %{
-      "mount_prefix" => mount_prefix(conn.script_name),
+      "mount_prefix" => mount_prefix_from_conn(conn),
       "assets_path" => assets_path,
       "socket_path" => socket_path
     }
@@ -39,6 +41,13 @@ defmodule Monitorex.MountOptions do
       |> assign(:socket_path, session["socket_path"] || "/live")
 
     {:cont, socket}
+  end
+
+  defp mount_prefix_from_conn(conn) do
+    scope_segments =
+      conn.script_name ++ Enum.drop(conn.path_info, -map_size(conn.path_params))
+
+    mount_prefix(scope_segments)
   end
 
   defp mount_prefix([]), do: "/"

@@ -86,7 +86,7 @@ defmodule Monitorex.DashboardLiveTest do
 
       assert socket.assigns.page_name == "outbound"
       assert socket.assigns.page == Live.OutboundOverviewPage
-      assert socket.assigns.page_assigns == %{}
+      assert socket.assigns.page_assigns == %{mount_prefix: "/"}
     end
 
     test "assigns correct page when params specify a page" do
@@ -105,7 +105,7 @@ defmodule Monitorex.DashboardLiveTest do
 
       assert socket.assigns.page_name == "host"
       assert socket.assigns.page == Live.HostDetailPage
-      assert socket.assigns.page_assigns == %{host: "api.example.com"}
+      assert socket.assigns.page_assigns == %{host: "api.example.com", mount_prefix: "/"}
     end
 
     test "assigns timeline page" do
@@ -203,6 +203,25 @@ defmodule Monitorex.DashboardLiveTest do
       {:noreply, updated} = DashboardLive.handle_info({:navigate, "/host/api.example.com"}, socket)
 
       assert {:live, :redirect, %{to: "/host/api.example.com", kind: :push}} = updated.redirected
+    end
+
+    test "{:navigate, bare query} is prefixed with the mount prefix" do
+      socket = %Phoenix.LiveView.Socket{assigns: %{mount_prefix: "/monitoring"}}
+
+      {:noreply, updated} =
+        DashboardLive.handle_info({:navigate, "?page=timeline&selected=12345"}, socket)
+
+      assert {:live, :redirect, %{to: "/monitoring?page=timeline&selected=12345", kind: :push}} =
+               updated.redirected
+    end
+
+    test "{:navigate, real path} is prefixed with the mount prefix" do
+      socket = %Phoenix.LiveView.Socket{assigns: %{mount_prefix: "/monitoring"}}
+
+      {:noreply, updated} = DashboardLive.handle_info({:navigate, "/host/api.example.com"}, socket)
+
+      assert {:live, :redirect, %{to: "/monitoring/host/api.example.com", kind: :push}} =
+               updated.redirected
     end
   end
 

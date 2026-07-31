@@ -18,6 +18,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
   @impl true
   def update(assigns, socket) do
     route = assigns[:route]
+    mount_prefix = assigns[:mount_prefix] || "/"
 
     routes = ClusterPage.list_routes()
     route_summary = Enum.find(routes, %{}, &("#{&1.method}:#{&1.path}" == route))
@@ -47,6 +48,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
 
     socket =
       socket
+      |> assign(:mount_prefix, mount_prefix)
       |> assign(:route_key, route)
       |> assign(:method, method)
       |> assign(:path, path)
@@ -103,7 +105,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
   def render(assigns) do
     ~H"""
     <div class="route-detail">
-      <Core.back_link to="/inbound" label="Back to Inbound" />
+      <Core.back_link to={back_href(assigns, "/inbound")} label="Back to Inbound" />
 
       <Core.page_header title={@route_key} subtitle="Route detail and consumer metrics">
         <Core.export_button page_name="route_detail" />
@@ -233,4 +235,9 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
   defp format_duration(nil), do: "-"
   defp format_duration(n) when is_number(n), do: "#{Float.round(n / 1, 2)}ms"
   defp format_duration(_), do: "-"
+
+  defp back_href(assigns, path) do
+    prefix = Map.get(assigns, :mount_prefix, "/")
+    if prefix == "/", do: path, else: prefix <> path
+  end
 end

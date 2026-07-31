@@ -18,6 +18,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   @impl true
   def update(assigns, socket) do
     host = assigns[:host]
+    mount_prefix = assigns[:mount_prefix] || "/"
 
     endpoints = ClusterPage.list_endpoints_for_host(host)
 
@@ -46,6 +47,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
     socket =
       socket
       |> assign(:host, host)
+      |> assign(:mount_prefix, mount_prefix)
       |> assign(:endpoints, endpoints)
       |> assign(:endpoint_rows, endpoint_rows)
       |> assign(:total_requests, total_requests)
@@ -103,7 +105,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   def render(assigns) do
     ~H"""
     <div class="host-detail">
-      <Core.back_link to="/" label="Back to Outbound" />
+      <Core.back_link to={back_href(assigns, "/")} label="Back to Outbound" />
 
       <Core.page_header title={@host} subtitle="Host detail and performance metrics">
         <Core.export_button page_name="host_detail" />
@@ -223,4 +225,9 @@ defmodule Monitorex.Components.Live.HostDetailPage do
   defp format_duration(nil), do: "-"
   defp format_duration(n) when is_number(n), do: "#{Float.round(n, 2)}ms"
   defp format_duration(_), do: "-"
+
+  defp back_href(assigns, path) do
+    prefix = Map.get(assigns, :mount_prefix, "/")
+    if prefix == "/", do: path, else: prefix <> path
+  end
 end
