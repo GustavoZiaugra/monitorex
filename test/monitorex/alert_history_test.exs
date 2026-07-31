@@ -134,6 +134,7 @@ defmodule Monitorex.AlertHistoryTest do
   describe "trim/0" do
     test "removes oldest entries beyond max" do
       Application.put_env(:monitorex, :max_alert_history, 3)
+      on_exit(fn -> Application.delete_env(:monitorex, :max_alert_history) end)
 
       for i <- 1..5 do
         alert = %{sample_alert() | id: System.system_time(:microsecond) + i}
