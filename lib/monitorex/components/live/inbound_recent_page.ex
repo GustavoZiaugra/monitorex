@@ -21,6 +21,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
 
   @impl true
   def update(assigns, socket) do
+    mount_prefix = assigns[:mount_prefix] || "/"
     status_class = parse_status_class(assigns[:status_class])
     consumer = assigns[:consumer]
     route = assigns[:route]
@@ -55,6 +56,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
 
     socket =
       socket
+      |> assign(:mount_prefix, mount_prefix)
       |> assign(:events, events)
       |> assign(:rows, rows)
       |> assign(:show_node_column, show_node_column?)
@@ -107,7 +109,7 @@ defmodule Monitorex.Components.Live.InboundRecentPage do
     ~H"""
     <div class="inbound-recent">
     <Core.page_header title="Recent Inbound Requests" subtitle="Live feed of incoming HTTP requests">
-        <Core.export_button page_name="inbound_recent" />
+        <Core.export_button page_name="inbound_recent" prefix={@mount_prefix} />
         </Core.page_header>
 
       <div class="filters">

@@ -19,6 +19,7 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
 
   @impl true
   def update(assigns, socket) do
+    mount_prefix = assigns[:mount_prefix] || "/"
     host = assigns[:host]
     status_class = parse_status_class(assigns[:status_class])
     page = max(1, assigns[:page] || 1)
@@ -46,6 +47,7 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
 
     socket =
       socket
+      |> assign(:mount_prefix, mount_prefix)
       |> assign(:events, events)
       |> assign(:rows, rows)
       |> assign(:show_node_column, show_node_column?)
@@ -87,7 +89,7 @@ defmodule Monitorex.Components.Live.OutboundRecentPage do
     ~H"""
     <div class="outbound-recent">
     <Core.page_header title="Recent Outbound Requests" subtitle="Live feed of outgoing HTTP requests">
-        <Core.export_button page_name="outbound_recent" />
+        <Core.export_button page_name="outbound_recent" prefix={@mount_prefix} />
         </Core.page_header>
 
       <div class="filters">

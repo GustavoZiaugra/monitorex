@@ -323,8 +323,17 @@ defmodule Monitorex.Components.CoreTest do
       assigns = %{page_name: "outbound_overview"}
       html = render_component(&Core.export_button/1, assigns)
 
-      assert html =~ "/export/outbound_overview/csv"
-      assert html =~ "/export/outbound_overview/json"
+      assert html =~ ~s{href="/export/outbound_overview/csv"}
+      assert html =~ ~s{href="/export/outbound_overview/json"}
+      refute html =~ "//export/"
+    end
+
+    test "prepends the mount prefix to export links" do
+      assigns = %{page_name: "outbound_overview", prefix: "/monitoring"}
+      html = render_component(&Core.export_button/1, assigns)
+
+      assert html =~ ~s{href="/monitoring/export/outbound_overview/csv"}
+      assert html =~ ~s{href="/monitoring/export/outbound_overview/json"}
     end
   end
 

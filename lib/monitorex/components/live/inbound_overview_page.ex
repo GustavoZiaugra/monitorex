@@ -15,6 +15,7 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
 
   @impl true
   def update(assigns, socket) do
+    mount_prefix = assigns[:mount_prefix] || "/"
     routes = ClusterPage.list_routes()
 
     total_requests = Enum.reduce(routes, 0, &(&1.requests + &2))
@@ -31,6 +32,7 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
 
     socket =
       socket
+      |> assign(:mount_prefix, mount_prefix)
       |> assign(:routes, sorted_routes)
       |> assign(:route_rows, route_rows)
       |> assign(:table_columns, table_columns)
@@ -66,7 +68,7 @@ defmodule Monitorex.Components.Live.InboundOverviewPage do
     ~H"""
     <div class="inbound-overview">
     <Core.page_header title="Inbound Overview" subtitle="Monitor inbound HTTP requests">
-        <Core.export_button page_name="inbound_overview" />
+        <Core.export_button page_name="inbound_overview" prefix={@mount_prefix} />
         </Core.page_header>
 
       <div class="summary-cards">

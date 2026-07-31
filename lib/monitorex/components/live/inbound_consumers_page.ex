@@ -14,6 +14,7 @@ defmodule Monitorex.Components.Live.InboundConsumersPage do
 
   @impl true
   def update(assigns, socket) do
+    mount_prefix = assigns[:mount_prefix] || "/"
     consumers = ClusterPage.list_consumers()
 
     sort_by = assigns[:sort_by] || "requests"
@@ -25,6 +26,7 @@ defmodule Monitorex.Components.Live.InboundConsumersPage do
 
     socket =
       socket
+      |> assign(:mount_prefix, mount_prefix)
       |> assign(:consumers, sorted_consumers)
       |> assign(:consumer_rows, consumer_rows)
       |> assign(:table_columns, table_columns)
@@ -52,7 +54,7 @@ defmodule Monitorex.Components.Live.InboundConsumersPage do
     ~H"""
     <div class="inbound-consumers">
       <Core.page_header title="Inbound Consumers" subtitle="Track consumer usage and performance">
-        <Core.export_button page_name="inbound_consumers" />
+        <Core.export_button page_name="inbound_consumers" prefix={@mount_prefix} />
         </Core.page_header>
 
       <div class="summary-cards">
