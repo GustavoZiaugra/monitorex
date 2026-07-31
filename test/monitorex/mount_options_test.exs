@@ -4,8 +4,8 @@ defmodule Monitorex.MountOptionsTest do
   alias Monitorex.MountOptions
 
   describe "session/3" do
-    test "returns root mount prefix when no script_name" do
-      conn = %Plug.Conn{script_name: []}
+    test "returns root mount prefix when at root scope" do
+      conn = %Plug.Conn{script_name: [], path_info: ["timeline"], path_params: %{"page" => "timeline"}}
 
       assert MountOptions.session(conn, "/dashboard-assets", "/live") == %{
                "mount_prefix" => "/",
@@ -14,22 +14,65 @@ defmodule Monitorex.MountOptionsTest do
              }
     end
 
-    test "derives mount prefix from script_name" do
-      conn = %Plug.Conn{script_name: ["monitoring"]}
+    test "returns root mount prefix for the index route at root scope" do
+      conn = %Plug.Conn{script_name: [], path_info: [], path_params: %{}}
+
+      assert MountOptions.session(conn, "/dashboard-assets", "/live")["mount_prefix"] == "/"
+    end
+
+    test "derives mount prefix from a router scope path" do
+      conn = %Plug.Conn{
+        script_name: [],
+        path_info: ["monitoring", "timeline"],
+        path_params: %{"page" => "timeline"}
+      }
 
       assert MountOptions.session(conn, "/dashboard-assets", "/live")["mount_prefix"] ==
                "/monitoring"
     end
 
-    test "supports multi-segment script_name" do
-      conn = %Plug.Conn{script_name: ["apps", "monitoring"]}
+    test "derives mount prefix for the index route under a scope path" do
+      conn = %Plug.Conn{script_name: [], path_info: ["monitoring"], path_params: %{}}
+
+      assert MountOptions.session(conn, "/dashboard-assets", "/live")["mount_prefix"] ==
+               "/monitoring"
+    end
+
+    test "supports multi-segment scope paths" do
+      conn = %Plug.Conn{
+        script_name: [],
+        path_info: ["apps", "monitoring", "timeline"],
+        path_params: %{"page" => "timeline"}
+      }
 
       assert MountOptions.session(conn, "/dashboard-assets", "/live")["mount_prefix"] ==
                "/apps/monitoring"
     end
 
+    test "handles host/route detail pages under a scope path" do
+      conn = %Plug.Conn{
+        script_name: [],
+        path_info: ["monitoring", "host", "api.example.com"],
+        path_params: %{"page" => "host", "host" => "api.example.com"}
+      }
+
+      assert MountOptions.session(conn, "/dashboard-assets", "/live")["mount_prefix"] ==
+               "/monitoring"
+    end
+
+    test "combines endpoint script_name with scope path" do
+      conn = %Plug.Conn{
+        script_name: ["monitoring"],
+        path_info: ["timeline"],
+        path_params: %{"page" => "timeline"}
+      }
+
+      assert MountOptions.session(conn, "/dashboard-assets", "/live")["mount_prefix"] ==
+               "/monitoring"
+    end
+
     test "threads assets_path and socket_path" do
-      conn = %Plug.Conn{script_name: []}
+      conn = %Plug.Conn{script_name: [], path_info: [], path_params: %{}}
       session = MountOptions.session(conn, "/custom-assets", "/ws/live")
 
       assert session["assets_path"] == "/custom-assets"

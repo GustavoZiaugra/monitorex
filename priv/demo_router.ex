@@ -11,6 +11,12 @@ defmodule DemoWeb.Router do
     plug :put_secure_browser_headers
   end
 
+  # Assets unpiped: protect_from_forgery rejects cross-origin script GETs
+  # (403 on app.js), so the asset route must bypass it.
+  scope "/" do
+    get "/dashboard-assets/*path", Monitorex.Assets, :call
+  end
+
   scope "/" do
     pipe_through :browser
     http_dashboard []

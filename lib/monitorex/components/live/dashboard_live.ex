@@ -60,7 +60,7 @@ defmodule Monitorex.DashboardLive do
 
   @impl true
   def handle_info({:navigate, path}, socket) do
-    to = if String.starts_with?(path, "?"), do: "/" <> path, else: path
+    to = navigate_to(socket, path)
     {:noreply, push_navigate(socket, to: to)}
   end
 
@@ -112,7 +112,7 @@ defmodule Monitorex.DashboardLive do
   defp resolve_and_assign(socket, params) do
     page_name = resolve_page(params)
     component = Map.get(@pages, page_name, @pages[@default_page])
-    page_assigns = build_page_assigns(params, page_name)
+    page_assigns = build_page_assigns(params, page_name) |> Map.put_new(:mount_prefix, mount_prefix(socket))
 
     socket
     |> assign(:page, component)
@@ -134,5 +134,28 @@ defmodule Monitorex.DashboardLive do
 
   defp atomize_keys(map) do
     Map.new(map, fn {k, v} -> {String.to_existing_atom(k), v} end)
+  end
+
+  defp mount_prefix(socket) do
+    Map.get(socket.assigns, :mount_prefix, "/")
+  end
+
+  # Component events send either a bare query string ("?page=timeline&...") or
+  # a root-relative path ("/host/:host"). Both must be prefixed with the
+  # dashboard mount prefix so navigation stays inside the mounted scope
+  # instead of leaving the dashboard.
+  defp navigate_to(socket, path) do
+    prefix = Map.get(socket.assigns, :mount_prefix, "/")
+
+    cond do
+      String.starts_with?(path, "?") ->
+        prefix <> path
+
+      String.starts_with?(path, "/") ->
+        if prefix == "/", do: path, else: prefix <> path
+
+      true ->
+        path
+    end
   end
 end
