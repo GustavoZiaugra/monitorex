@@ -188,8 +188,12 @@ defmodule Monitorex.Collector do
   # configured without it, the handler silently never fires — warn so users
   # aren't surprised by missing outbound data.
   @doc false
-  def warn_on_misconfigured_sources(sources) do
-    if :req in sources and not Code.ensure_loaded?(:req_telemetry) do
+  def warn_on_misconfigured_sources(sources),
+    do: warn_on_misconfigured_sources(sources, req_telemetry_loaded?())
+
+  @doc false
+  def warn_on_misconfigured_sources(sources, req_telemetry_loaded?) do
+    if :req in sources and not req_telemetry_loaded? do
       Logger.warning("""
       Monitorex: the :req source is enabled but the req_telemetry application is not loaded.
       Req 0.5+ removed built-in telemetry, so no outbound Req events will be captured.
@@ -202,6 +206,8 @@ defmodule Monitorex.Collector do
 
     :ok
   end
+
+  defp req_telemetry_loaded?, do: Code.ensure_loaded?(ReqTelemetry)
 
   defp attach_telemetry_handlers(sources) do
     if :tesla in sources do

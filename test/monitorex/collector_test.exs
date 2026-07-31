@@ -76,17 +76,26 @@ defmodule Monitorex.CollectorTest do
     test "warns when :req source is enabled without req_telemetry loaded" do
       log =
         capture_log(fn ->
-          Collector.warn_on_misconfigured_sources([:req, :finch])
+          Collector.warn_on_misconfigured_sources([:req, :finch], false)
         end)
 
       assert log =~ "req_telemetry"
       assert log =~ ":req source is enabled"
     end
 
+    test "does not warn when req_telemetry is loaded" do
+      log =
+        capture_log(fn ->
+          Collector.warn_on_misconfigured_sources([:req, :finch], true)
+        end)
+
+      refute log =~ "req_telemetry"
+    end
+
     test "does not warn when :req is absent" do
       log =
         capture_log(fn ->
-          Collector.warn_on_misconfigured_sources([:finch, :phoenix])
+          Collector.warn_on_misconfigured_sources([:finch, :phoenix], false)
         end)
 
       refute log =~ "req_telemetry"
