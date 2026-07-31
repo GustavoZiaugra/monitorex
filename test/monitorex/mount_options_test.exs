@@ -5,7 +5,11 @@ defmodule Monitorex.MountOptionsTest do
 
   describe "session/3" do
     test "returns root mount prefix when at root scope" do
-      conn = %Plug.Conn{script_name: [], path_info: ["timeline"], path_params: %{"page" => "timeline"}}
+      conn = %Plug.Conn{
+        script_name: [],
+        path_info: ["timeline"],
+        path_params: %{"page" => "timeline"}
+      }
 
       assert MountOptions.session(conn, "/dashboard-assets", "/live") == %{
                "mount_prefix" => "/",

@@ -112,7 +112,9 @@ defmodule Monitorex.DashboardLive do
   defp resolve_and_assign(socket, params) do
     page_name = resolve_page(params)
     component = Map.get(@pages, page_name, @pages[@default_page])
-    page_assigns = build_page_assigns(params, page_name) |> Map.put_new(:mount_prefix, mount_prefix(socket))
+
+    page_assigns =
+      build_page_assigns(params, page_name) |> Map.put_new(:mount_prefix, mount_prefix(socket))
 
     socket
     |> assign(:page, component)
