@@ -670,6 +670,90 @@ defmodule Monitorex.EventHandlerTest do
       Application.delete_env(:monitorex, :store_response_body)
     end
 
+    test "handles the flat Req-adapter Finch response tuple" do
+      Application.put_env(:monitorex, :store_request_body, true)
+      Application.put_env(:monitorex, :store_response_body, true)
+
+      request = %{
+        scheme: :http,
+        host: "localhost",
+        port: 4000,
+        method: "GET",
+        path: "/echo/users",
+        headers: [{"accept", "application/json"}],
+        body: nil,
+        query: nil
+      }
+
+      metadata = %{
+        name: Req.Finch,
+        request: request,
+        result:
+          {:ok,
+           {200, [{"content-type", "application/json"}, {"x-request-id", "req-flat"}],
+            [~S({"ok":true})], []}}
+      }
+
+      measurements = %{duration: 1_000_000}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.status == 200
+
+      assert event.response_headers == [
+               {"content-type", "application/json"},
+               {"x-request-id", "req-flat"}
+             ]
+
+      assert event.response_body == ~S({"ok":true})
+
+      Application.delete_env(:monitorex, :store_request_body)
+      Application.delete_env(:monitorex, :store_response_body)
+    end
+
+    test "captures bodies for slow requests from Finch structs even without body storage" do
+      Application.put_env(:monitorex, :slow_request_threshold_ms, 1)
+
+      request = %{
+        scheme: :http,
+        host: "localhost",
+        port: 4000,
+        method: "POST",
+        path: "/echo/slow",
+        headers: [],
+        body: [~S({"slow":), "true", ~S(})],
+        query: nil
+      }
+
+      metadata = %{
+        name: Req.Finch,
+        request: request,
+        result: {:ok, {200, [{"content-type", "application/json"}], [~S({"slow":true})], []}}
+      }
+
+      measurements = %{duration: 5_000_000}
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          measurements,
+          metadata,
+          []
+        )
+
+      assert event.slow == true
+      assert event.request_body == ~S({"slow":true})
+      assert event.response_body == ~S({"slow":true})
+
+      Application.delete_env(:monitorex, :slow_request_threshold_ms)
+    end
+
     test "handles new Finch format exception event" do
       request = %{
         scheme: :https,

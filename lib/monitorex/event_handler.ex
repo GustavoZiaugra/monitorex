@@ -301,6 +301,12 @@ defmodule Monitorex.EventHandler do
             :body -> body
           end
 
+        {:ok, {_status, headers, body, _trailers}} ->
+          case field do
+            :headers -> headers
+            :body -> body
+          end
+
         {:ok, %{} = resp} ->
           Map.get(resp, field)
 
@@ -494,7 +500,6 @@ defmodule Monitorex.EventHandler do
     if Application.get_env(:monitorex, :store_response_body, false), do: body, else: nil
   end
 
-  defp to_binary(body) when is_binary(body), do: body
   defp to_binary(body) when is_list(body), do: IO.iodata_to_binary(body)
   defp to_binary(_), do: nil
 
@@ -538,8 +543,12 @@ defmodule Monitorex.EventHandler do
     threshold = Application.get_env(:monitorex, :slow_request_threshold_ms, 2_000)
 
     if threshold && threshold > 0 && event.duration_ms && event.duration_ms >= threshold do
-      req_body = metadata[:request_body] || metadata[:req_body]
-      resp_body = metadata[:response_body] || metadata[:resp_body]
+      req_body =
+        metadata[:request_body] || metadata[:req_body] || extract_finch_request_body(metadata)
+
+      resp_body =
+        metadata[:response_body] || metadata[:resp_body] ||
+          extract_finch_response(metadata, :body)
 
       max_bytes = Application.get_env(:monitorex, :max_body_bytes, 10_000)
 
@@ -562,6 +571,4 @@ defmodule Monitorex.EventHandler do
     <<trimmed::binary-size(^max), _rest::binary>> = body
     trimmed <> "\n[truncated]"
   end
-
-  defp truncate_body(_, _), do: nil
 end
