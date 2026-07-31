@@ -203,7 +203,7 @@ defmodule Monitorex.Components.Core do
 
   def node_selector(assigns) do
     ~H"""
-    <select class="node-selector" phx-change={@event} phx-target={@target}>
+    <select name={@event} class="node-selector" phx-change={@event} phx-target={@target}>
       <option value="">All Nodes</option>
       <option :for={node <- @nodes} value={node} selected={node == @selected}>
         <%= node %>

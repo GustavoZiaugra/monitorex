@@ -38,7 +38,23 @@ defmodule Monitorex.Components.Live.OutboundOverviewPageTest do
     test "renders node selector" do
       html = render_component(OutboundOverviewPage, %{id: "test"})
 
+
       assert html =~ "All Nodes"
+    end
+
+    test "filters host table by selected node" do
+      insert_outbound_event(method: "GET", path: "/users", host: "api.example.com")
+      insert_outbound_event(method: "GET", path: "/assets", host: "cdn.example.com")
+
+      html =
+        render_component(OutboundOverviewPage, %{
+          id: "test",
+          node: "api.example.com"
+        })
+
+      table = html |> Floki.parse_document!() |> Floki.find(".data-table tbody") |> Floki.text()
+      assert table =~ "api.example.com"
+      refute table =~ "cdn.example.com"
     end
 
     test "handles sort event" do
@@ -120,6 +136,27 @@ defmodule Monitorex.Components.Live.OutboundOverviewPageTest do
       assert_received {:navigate, url}
       assert url =~ "sort_by=host"
       assert url =~ "sort_dir=desc"
+    end
+
+    test "select_node event navigates with the selected node" do
+      socket = %Phoenix.LiveView.Socket{assigns: %{__changed__: %{}}}
+
+      assert {:noreply, _socket} =
+               OutboundOverviewPage.handle_event("select_node", %{"select_node" => "api.example.com"}, socket)
+
+      assert_received {:navigate, url}
+      assert url =~ "page=outbound"
+      assert url =~ "node=api.example.com"
+    end
+
+    test "select_node with empty node clears the filter" do
+      socket = %Phoenix.LiveView.Socket{assigns: %{__changed__: %{}}}
+
+      assert {:noreply, _socket} =
+               OutboundOverviewPage.handle_event("select_node", %{"select_node" => ""}, socket)
+
+      assert_received {:navigate, url}
+      assert url =~ "node="
     end
   end
 
