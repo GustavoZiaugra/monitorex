@@ -12,6 +12,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
   alias Monitorex.ClusterPage
   alias Monitorex.Components.Core
   alias Monitorex.HeaderRedactor
+  alias Monitorex.Storage
 
   @page_size 100
   @initial_load 50
@@ -122,12 +123,12 @@ defmodule Monitorex.Components.Live.TimelinePage do
           <Core.export_button page_name="timeline" />
           <div class="timeline-tabs">
             <button
-              phx-click="select_direction" phx-value-direction="outbound"
+              phx-click="select_direction" phx-value-direction="outbound" phx-target={@myself}
               class={["timeline-tab", if(@direction == "outbound", do: "active")]}>
               Outbound
             </button>
             <button
-              phx-click="select_direction" phx-value-direction="inbound"
+              phx-click="select_direction" phx-value-direction="inbound" phx-target={@myself}
               class={["timeline-tab", if(@direction == "inbound", do: "active")]}>
               Inbound
             </button>
@@ -150,11 +151,13 @@ defmodule Monitorex.Components.Live.TimelinePage do
                 placeholder="Search host or path..."
                 value={@search_query}
                 phx-keyup="search"
+                phx-target={@myself}
                 phx-debounce="300"
               />
               <button
                 :if={@search_query != "" || @filter_status != "" || @filter_method != ""}
                 phx-click="clear_filters"
+                phx-target={@myself}
                 class="tl-clear-btn"
                 title="Clear filters">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
@@ -163,22 +166,22 @@ defmodule Monitorex.Components.Live.TimelinePage do
             <div class="tl-filter-chips">
               <div class="tl-chip-group-label">Status</div>
               <div class="tl-chip-group">
-                <button phx-click="filter_status" phx-value-status="" class={["tl-chip", if(@filter_status == "", do: "active")]}>All</button>
-                <button phx-click="filter_status" phx-value-status="success" class={["tl-chip", "chip-success", if(@filter_status == "success", do: "active")]}>2xx</button>
-                <button phx-click="filter_status" phx-value-status="redirect" class={["tl-chip", "chip-redirect", if(@filter_status == "redirect", do: "active")]}>3xx</button>
-                <button phx-click="filter_status" phx-value-status="client_error" class={["tl-chip", "chip-client-error", if(@filter_status == "client_error", do: "active")]}>4xx</button>
-                <button phx-click="filter_status" phx-value-status="server_error" class={["tl-chip", "chip-server-error", if(@filter_status == "server_error", do: "active")]}>5xx</button>
+                <button phx-click="filter_status" phx-value-status="" phx-target={@myself} class={["tl-chip", if(@filter_status == "", do: "active")]}>All</button>
+                <button phx-click="filter_status" phx-value-status="success" phx-target={@myself} class={["tl-chip", "chip-success", if(@filter_status == "success", do: "active")]}>2xx</button>
+                <button phx-click="filter_status" phx-value-status="redirect" phx-target={@myself} class={["tl-chip", "chip-redirect", if(@filter_status == "redirect", do: "active")]}>3xx</button>
+                <button phx-click="filter_status" phx-value-status="client_error" phx-target={@myself} class={["tl-chip", "chip-client-error", if(@filter_status == "client_error", do: "active")]}>4xx</button>
+                <button phx-click="filter_status" phx-value-status="server_error" phx-target={@myself} class={["tl-chip", "chip-server-error", if(@filter_status == "server_error", do: "active")]}>5xx</button>
               </div>
             </div>
             <div class="tl-filter-chips">
               <div class="tl-chip-group-label">Method</div>
               <div class="tl-chip-group">
-                <button phx-click="filter_method" phx-value-method="" class={["tl-chip", if(@filter_method == "", do: "active")]}>All</button>
-                <button phx-click="filter_method" phx-value-method="GET" class={["tl-chip", "chip-get", if(@filter_method == "GET", do: "active")]}>GET</button>
-                <button phx-click="filter_method" phx-value-method="POST" class={["tl-chip", "chip-post", if(@filter_method == "POST", do: "active")]}>POST</button>
-                <button phx-click="filter_method" phx-value-method="PUT" class={["tl-chip", "chip-put", if(@filter_method == "PUT", do: "active")]}>PUT</button>
-                <button phx-click="filter_method" phx-value-method="DELETE" class={["tl-chip", "chip-delete", if(@filter_method == "DELETE", do: "active")]}>DEL</button>
-                <button phx-click="filter_method" phx-value-method="PATCH" class={["tl-chip", "chip-patch", if(@filter_method == "PATCH", do: "active")]}>PATCH</button>
+                <button phx-click="filter_method" phx-value-method="" phx-target={@myself} class={["tl-chip", if(@filter_method == "", do: "active")]}>All</button>
+                <button phx-click="filter_method" phx-value-method="GET" phx-target={@myself} class={["tl-chip", "chip-get", if(@filter_method == "GET", do: "active")]}>GET</button>
+                <button phx-click="filter_method" phx-value-method="POST" phx-target={@myself} class={["tl-chip", "chip-post", if(@filter_method == "POST", do: "active")]}>POST</button>
+                <button phx-click="filter_method" phx-value-method="PUT" phx-target={@myself} class={["tl-chip", "chip-put", if(@filter_method == "PUT", do: "active")]}>PUT</button>
+                <button phx-click="filter_method" phx-value-method="DELETE" phx-target={@myself} class={["tl-chip", "chip-delete", if(@filter_method == "DELETE", do: "active")]}>DEL</button>
+                <button phx-click="filter_method" phx-value-method="PATCH" phx-target={@myself} class={["tl-chip", "chip-patch", if(@filter_method == "PATCH", do: "active")]}>PATCH</button>
               </div>
             </div>
           </div>
@@ -196,7 +199,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
                   if(@selected_event && event.timestamp == @selected_event.timestamp, do: "selected"),
                   "tl-#{event.direction || "outbound"}",
                   "tl-#{event.status_class || :default}"
-                ]} phx-click="select_event" phx-value-id={event.timestamp}>
+                ]} phx-click="select_event" phx-value-id={event.timestamp} phx-target={@myself}>
                   <div class="tl-method">
                     <span class={["method-badge", method_class(event.method)]}>
                       <%= event.method || "-" %>
@@ -222,7 +225,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
                   </div>
                 </div>
               </div>
-              <button :if={@has_more} phx-click="load_more" class="tl-load-more">
+              <button :if={@has_more} phx-click="load_more" phx-target={@myself} class="tl-load-more">
                 Load <%= min(50, @total_matching - length(@events)) %> more events
             (<%= @total_matching - length(@events) %> remaining)
               </button>
@@ -233,7 +236,7 @@ defmodule Monitorex.Components.Live.TimelinePage do
                 </svg>
                 <p>No matching <%= @direction %> events</p>
                 <button :if={@search_query != "" || @filter_status != "" || @filter_method != ""}
-                  phx-click="clear_filters" class="tl-chip active">
+                  phx-click="clear_filters" phx-target={@myself} class="tl-chip active">
                   Clear filters
                 </button>
               </div>
@@ -417,7 +420,10 @@ defmodule Monitorex.Components.Live.TimelinePage do
   defp find_selected(_events, nil), do: nil
 
   defp find_selected(events, id) do
-    Enum.find(events, fn e -> e.timestamp == id end)
+    case Enum.find(events, fn e -> e.timestamp == id end) do
+      nil -> Storage.get_event(id)
+      event -> event
+    end
   end
 
   # ── Filtering ──

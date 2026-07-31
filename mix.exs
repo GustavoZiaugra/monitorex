@@ -13,7 +13,8 @@ defmodule Monitorex.MixProject do
       docs: docs(),
       package: package(),
       dialyzer: [
-        ignore_warnings: ".dialyzer_ignore.exs"
+        ignore_warnings: ".dialyzer_ignore.exs",
+        plt_add_apps: [:mix]
       ]
     ]
   end
@@ -27,7 +28,7 @@ defmodule Monitorex.MixProject do
 
   def application do
     [
-      extra_applications: [:logger, :hackney],
+      extra_applications: [:logger],
       mod: {Monitorex.Application, []}
     ]
   end
@@ -97,6 +98,7 @@ defmodule Monitorex.MixProject do
     [
       {:phoenix, "~> 1.8"},
       {:phoenix_live_view, "~> 1.2"},
+      {:igniter, "~> 0.6", optional: true},
       {:telemetry, "~> 1.4"},
       {:jason, "~> 1.4"},
       {:req_telemetry, "~> 0.1", optional: true},
@@ -104,6 +106,7 @@ defmodule Monitorex.MixProject do
       {:tailwind, "~> 0.5", runtime: Mix.env() == :dev},
       {:plug_cowboy, "~> 2.7", only: :dev},
       {:floki, "~> 0.38.1", only: :test},
+      {:lazy_html, ">= 0.1.0", only: :test},
       {:ex_doc, "~> 0.40.1", runtime: false},
       {:credo, "~> 1.7", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: :dev, runtime: false},

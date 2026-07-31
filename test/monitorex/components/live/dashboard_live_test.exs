@@ -181,6 +181,29 @@ defmodule Monitorex.DashboardLiveTest do
 
       assert {:noreply, _updated} = DashboardLive.handle_info({:navigate, "/host/test"}, socket)
     end
+
+    test "{:navigate, bare query string} is prefixed with / to form a valid path" do
+      initial_socket = %Phoenix.LiveView.Socket{}
+      {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
+
+      {:noreply, updated} =
+        DashboardLive.handle_info(
+          {:navigate, "?page=timeline&status=success&selected=12345"},
+          socket
+        )
+
+      assert {:live, :redirect, %{to: "/?page=timeline&status=success&selected=12345", kind: :push}} =
+               updated.redirected
+    end
+
+    test "{:navigate, real path} passes through unchanged" do
+      initial_socket = %Phoenix.LiveView.Socket{}
+      {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
+
+      {:noreply, updated} = DashboardLive.handle_info({:navigate, "/host/api.example.com"}, socket)
+
+      assert {:live, :redirect, %{to: "/host/api.example.com", kind: :push}} = updated.redirected
+    end
   end
 
   describe "render/1" do

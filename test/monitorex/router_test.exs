@@ -3,9 +3,7 @@ defmodule Monitorex.RouterTest do
 
   alias Phoenix.Router
 
-  defp build_router(name, opts) do
-    module = Module.concat(Monitorex, name)
-
+  defp build_router(module, opts) do
     Code.eval_quoted(
       quote do
         defmodule unquote(module) do
@@ -107,7 +105,7 @@ defmodule Monitorex.RouterTest do
     end
 
     test "registers health endpoint route" do
-      router = build_router(:TestRouterHealth, api_path: "/api")
+      router = build_router(Monitorex.TestRouterHealth, api_path: "/api")
       routes = Router.routes(router)
       paths = Enum.map(routes, &to_string(&1.path))
 
@@ -115,7 +113,7 @@ defmodule Monitorex.RouterTest do
     end
 
     test "registers export endpoint route" do
-      router = build_router(:TestRouterExport, api_path: "/api")
+      router = build_router(Monitorex.TestRouterExport, api_path: "/api")
       routes = Router.routes(router)
       paths = Enum.map(routes, &to_string(&1.path))
 
@@ -123,7 +121,7 @@ defmodule Monitorex.RouterTest do
     end
 
     test "registers API forward when api_path is set" do
-      router = build_router(:TestRouterWithApi, api_path: "/api")
+      router = build_router(Monitorex.TestRouterWithApi, api_path: "/api")
       routes = Router.routes(router)
 
       api_route = Enum.find(routes, fn r -> to_string(r.path) == "/api" end)
@@ -132,7 +130,7 @@ defmodule Monitorex.RouterTest do
     end
 
     test "does not register API forward when api_path is false" do
-      router = build_router(:TestRouterNoApi, api_path: false)
+      router = build_router(Monitorex.TestRouterNoApi, api_path: false)
       routes = Router.routes(router)
       plugs = Enum.map(routes, & &1.plug)
 

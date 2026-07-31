@@ -118,7 +118,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
 
       <h3>Endpoints</h3>
       <div class="endpoints-table">
-        <Core.data_table columns={[
+        <Core.data_table target={@myself} columns={[
           %{label: "Path", key: :path, sortable?: true},
           %{label: "Requests", key: :requests, sortable?: true},
           %{label: "Avg", key: :avg_latency, sortable?: true},
@@ -157,7 +157,7 @@ defmodule Monitorex.Components.Live.HostDetailPage do
         </table>
       </div>
 
-      <Core.pagination current={@recent_page} total={@recent_total_pages} event="go_recent_page" />
+      <Core.pagination current={@recent_page} total={@recent_total_pages} event="go_recent_page" target={@myself} />
     </div>
     """
   end

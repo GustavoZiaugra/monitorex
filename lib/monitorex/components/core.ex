@@ -36,6 +36,7 @@ defmodule Monitorex.Components.Core do
   attr(:empty_message, :string, default: "No data")
   attr(:sort_by, :string, default: nil)
   attr(:sort_dir, :string, default: nil)
+  attr(:target, :any, default: nil)
 
   def data_table(assigns) do
     ~H"""
@@ -43,7 +44,7 @@ defmodule Monitorex.Components.Core do
       <table class="data-table">
         <thead>
           <tr>
-            <th :for={col <- @columns} class={["data-table-th", if(col[:sortable?], do: "sortable")]} phx-click={if(col[:sortable?], do: "sort")} phx-value-key={col[:key]}>
+            <th :for={col <- @columns} class={["data-table-th", if(col[:sortable?], do: "sortable")]} phx-click={if(col[:sortable?], do: "sort")} phx-target={@target} phx-value-key={col[:key]}>
               <%= col.label %>
               <%= if @sort_by == col[:key] do %>
                 <span class="sort-indicator"><%= if @sort_dir == "asc", do: "▲", else: "▼" %></span>
@@ -198,10 +199,11 @@ defmodule Monitorex.Components.Core do
   attr(:nodes, :list, required: true)
   attr(:selected, :string, default: "")
   attr(:event, :string, default: "select_node")
+  attr(:target, :any, default: nil)
 
   def node_selector(assigns) do
     ~H"""
-    <select class="node-selector" phx-change={@event}>
+    <select class="node-selector" phx-change={@event} phx-target={@target}>
       <option value="">All Nodes</option>
       <option :for={node <- @nodes} value={node} selected={node == @selected}>
         <%= node %>
@@ -250,22 +252,23 @@ defmodule Monitorex.Components.Core do
   attr(:current, :integer, required: true)
   attr(:total, :integer, required: true)
   attr(:event, :string, default: "go_page")
+  attr(:target, :any, default: nil)
 
   def pagination(assigns) do
     ~H"""
     <div :if={@total > 1} class="pagination">
-      <button class="page-btn" :if={@current > 1} phx-click={@event} phx-value-page={@current - 1} disabled={@current <= 1}>
+      <button class="page-btn" :if={@current > 1} phx-click={@event} phx-target={@target} phx-value-page={@current - 1} disabled={@current <= 1}>
         ‹ Prev
       </button>
 
       <button :for={page <- visible_pages(@current, @total)}
         class={["page-btn", if(page == @current, do: "active")]}
-        phx-click={@event} phx-value-page={page}
+        phx-click={@event} phx-target={@target} phx-value-page={page}
         disabled={page == @current}>
         <%= page %>
       </button>
 
-      <button class="page-btn" :if={@current < @total} phx-click={@event} phx-value-page={@current + 1} disabled={@current >= @total}>
+      <button class="page-btn" :if={@current < @total} phx-click={@event} phx-target={@target} phx-value-page={@current + 1} disabled={@current >= @total}>
         Next ›
       </button>
 

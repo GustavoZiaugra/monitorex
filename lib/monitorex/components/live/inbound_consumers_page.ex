@@ -60,7 +60,7 @@ defmodule Monitorex.Components.Live.InboundConsumersPage do
       </div>
 
       <div class="consumers-table">
-        <Core.data_table columns={@table_columns} rows={@consumer_rows} empty_message="No consumers found" sort_by={@sort_by} sort_dir={@sort_dir} />
+        <Core.data_table columns={@table_columns} rows={@consumer_rows} empty_message="No consumers found" sort_by={@sort_by} sort_dir={@sort_dir} target={@myself} />
       </div>
     </div>
     """
