@@ -149,19 +149,6 @@ mix phx.server
 
 Visit your dashboard (e.g. `http://monitoring.localhost:4000` or `/monitoring`) to see it.
 
-### Mounting: path prefix vs. dedicated host
-
-`http_dashboard/1` emits **scope-relative** routes (`live "/"`, `get("/dashboard-assets/*path")`, `forward("/api")`), so a path prefix such as `scope "/monitoring"` is supported at the router level. However, the current release's bundled layout still hardcodes root-relative asset URLs (`/dashboard-assets/app.css`) and nav links; the layout-fix for prefix mounts is in progress. Until it merges, mount at the root of a dedicated host:
-
-```elixir
-scope "/", host: "monitoring." do
-  pipe_through :monitoring
-  http_dashboard api_path: false
-end
-```
-
-Point a `monitoring.` subdomain at your app and the dashboard's root-relative URLs resolve correctly. See the [Installation Guide](guides/getting_started.md) for the full matrix.
-
 ### Mounting under a path prefix
 
 The dashboard is fully mountable under a path prefix. Asset links and
