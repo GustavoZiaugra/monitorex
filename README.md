@@ -16,6 +16,8 @@ Monitorex monitors outbound (Tesla, Finch/Req) and inbound (Phoenix) HTTP traffi
 
 - **Outbound monitoring** — track HTTP requests from Tesla, Finch, or Req
 - **Inbound monitoring** — track Phoenix router dispatch with per-consumer breakdowns
+- **Mount anywhere** — works at any path prefix (e.g. `/monitoring`); nav links, assets, exports and the LiveView socket are prefix-aware
+- **One-command install** — `mix igniter.install monitorex` sets up the dependency, router mount, source detection and Tesla-on-Finch dedup
 - **Live dashboard** — 8 pages: Overview, Outbound/Inbound, host/route detail, timeline, consumer analytics
 - **Timeline inspector** — split-pane page with event list + request/response detail viewer
 - **Auto-refresh** — LiveView updates every 2 seconds
@@ -80,7 +82,7 @@ Add `monitorex` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:monitorex, "~> 0.7.0"}
+    {:monitorex, "~> 0.8.0"}
   ]
 end
 ```
