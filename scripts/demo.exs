@@ -209,33 +209,33 @@ defmodule Monitorex.DemoSeeder do
     end)
 
     # Seed recent events with various status codes
-    now = System.system_time(:millisecond)
+    now = System.system_time(:microsecond)
 
     recent_events = [
       {"api.example.com", "/users", "GET", 200, 45.2, 2_000_000},
-      {"api.example.com", "/users", "GET", 200, 12.8, 1_950_000},
+      {"api.example.com", "/users", "GET", 200, 12.8, 1_950_000_000},
       {"api.example.com", "/posts", "POST", 201, 120.5, 1_900_000},
-      {"cdn.example.com", "/images/*", "GET", 200, 3.2, 1_850_000},
+      {"cdn.example.com", "/images/*", "GET", 200, 3.2, 1_850_000_000},
       {"cdn.example.com", "/assets/*", "GET", 304, 1.1, 1_800_000},
-      {"auth.example.com", "/login", "POST", 200, 85.0, 1_750_000},
+      {"auth.example.com", "/login", "POST", 200, 85.0, 1_750_000_000},
       {"api.example.com", "/search", "GET", 500, 2500.0, 1_700_000},
-      {"api.example.com", "/upload", "POST", 502, 3000.0, 1_650_000},
+      {"api.example.com", "/upload", "POST", 502, 3000.0, 1_650_000_000},
       {"payments.example.com", "/charge", "POST", 200, 340.0, 1_600_000},
-      {"payments.example.com", "/charge", "POST", 402, 150.0, 1_550_000},
+      {"payments.example.com", "/charge", "POST", 402, 150.0, 1_550_000_000},
       {"payments.example.com", "/refund", "POST", 500, 2800.0, 1_500_000},
-      {"api.example.com", "/comments", "GET", 200, 22.4, 1_450_000},
+      {"api.example.com", "/comments", "GET", 200, 22.4, 1_450_000_000},
       {"auth.example.com", "/token/refresh", "POST", 200, 65.3, 1_400_000},
-      {"cdn.example.com", "/videos/*", "GET", 200, 450.0, 1_350_000},
+      {"cdn.example.com", "/videos/*", "GET", 200, 450.0, 1_350_000_000},
       {"api.example.com", "/users/1", "GET", 200, 8.9, 1_300_000},
-      {"api.example.com", "/posts", "GET", 200, 15.6, 1_250_000},
+      {"api.example.com", "/posts", "GET", 200, 15.6, 1_250_000_000},
       {"auth.example.com", "/login", "POST", 401, 3.2, 1_200_000},
-      {"logs.example.com", "/ingest", "POST", 200, 25.0, 1_150_000},
+      {"logs.example.com", "/ingest", "POST", 200, 25.0, 1_150_000_000},
       {"api.example.com", "/comments", "POST", 201, 35.8, 1_100_000},
-      {"cdn.example.com", "/images/logo.png", "GET", 200, 2.1, 1_050_000},
+      {"cdn.example.com", "/images/logo.png", "GET", 200, 2.1, 1_050_000_000},
       {"api.example.com", "/users", "GET", 200, 18.3, 1_000_000},
-      {"payments.example.com", "/subscription", "POST", 200, 200.5, 950_000},
+      {"payments.example.com", "/subscription", "POST", 200, 200.5, 950_000_000},
       {"api.example.com", "/search", "GET", 404, 1.5, 900_000},
-      {"api.example.com", "/upload", "POST", 200, 520.0, 850_000},
+      {"api.example.com", "/upload", "POST", 200, 520.0, 850_000_000},
       {"cdn.example.com", "/assets/app.js", "GET", 200, 1.8, 800_000}
     ]
 
@@ -311,28 +311,28 @@ defmodule Monitorex.DemoSeeder do
   end
 
   defp seed_inbound_recent do
-    now_ms = System.system_time(:millisecond)
+    now_us = System.system_time(:microsecond)
 
     inbound_events = [
-      {"GET", "/api/users", "myapp-web", 200, 4.2, 5_000},
-      {"GET", "/api/users", "myapp-web", 200, 3.8, 10_000},
-      {"POST", "/api/users", "myapp-web", 201, 45.1, 15_000},
-      {"GET", "/api/users", "myapp-worker", 200, 2.1, 20_000},
-      {"GET", "/api/posts", "myapp-web", 200, 8.5, 25_000},
-      {"GET", "/api/posts", "myapp-worker", 200, 6.3, 30_000},
-      {"POST", "/api/posts", "myapp-cron", 201, 22.0, 35_000},
-      {"GET", "/api/search", "myapp-web", 500, 250.0, 40_000},
-      {"GET", "/api/search", "myapp-web", 200, 15.2, 45_000},
-      {"GET", "/api/search", "partner-integration", 200, 18.7, 50_000},
-      {"PUT", "/api/users/:id", "myapp-web", 200, 3.5, 55_000},
-      {"PUT", "/api/users/:id", "myapp-worker", 200, 4.1, 60_000},
-      {"DELETE", "/api/comments", "myapp-cron", 204, 1.2, 65_000},
-      {"GET", "/api/users", "partner-integration", 401, 0.8, 70_000},
-      {"POST", "/api/posts", "myapp-worker", 422, 35.6, 75_000}
+      {"GET", "/api/users", "myapp-web", 200, 4.2, 5_000_000},
+      {"GET", "/api/users", "myapp-web", 200, 3.8, 10_000_000},
+      {"POST", "/api/users", "myapp-web", 201, 45.1, 15_000_000},
+      {"GET", "/api/users", "myapp-worker", 200, 2.1, 20_000_000},
+      {"GET", "/api/posts", "myapp-web", 200, 8.5, 25_000_000},
+      {"GET", "/api/posts", "myapp-worker", 200, 6.3, 30_000_000},
+      {"POST", "/api/posts", "myapp-cron", 201, 22.0, 35_000_000},
+      {"GET", "/api/search", "myapp-web", 500, 250.0, 40_000_000},
+      {"GET", "/api/search", "myapp-web", 200, 15.2, 45_000_000},
+      {"GET", "/api/search", "partner-integration", 200, 18.7, 50_000_000},
+      {"PUT", "/api/users/:id", "myapp-web", 200, 3.5, 55_000_000},
+      {"PUT", "/api/users/:id", "myapp-worker", 200, 4.1, 60_000_000},
+      {"DELETE", "/api/comments", "myapp-cron", 204, 1.2, 65_000_000},
+      {"GET", "/api/users", "partner-integration", 401, 0.8, 70_000_000},
+      {"POST", "/api/posts", "myapp-worker", 422, 35.6, 75_000_000}
     ]
 
     Enum.each(inbound_events, fn {method, path, consumer, status, duration_ms, ts_ago} ->
-      ts = now_ms - ts_ago
+      ts = now_us - ts_ago
 
       event = %Event{
         source: :demo,
