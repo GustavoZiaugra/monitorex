@@ -1,6 +1,38 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 (2026-08-01)
+
+### Breaking
+
+- **Dashboard is mountable at any path prefix** — the mount contract was broken for any non-root scope (#107, #119). Nav links, asset hrefs, export links and the LiveView socket path are now derived from the mount point (`conn.script_name` + router scope). The previous root-only constraint is removed; `http_dashboard/1` gains a `:socket_path` option. Rebuild asset/nav links as needed if you relied on the old root-absolute hrefs (#119, #125, #132).
+- **LiveView client is now shipped** — the dashboard previously rendered without any Phoenix client (no `LiveSocket`), so `phx-click` bindings were inert and the UI never updated. `priv/static/app.js` now bundles the LiveSocket client; the layout emits a CSRF token meta and the host socket path (#101, #119).
+
+### Added
+
+- **Igniter installer** — `mix igniter.install monitorex` sets up the dependency, router mount (`scope "/monitoring"` + dedicated pipeline without `protect_from_forgery`), source detection (tesla/finch/req), Tesla-on-Finch dedup, and `api_path: false` (#114, #122).
+- **Outbound nav section** — the sidebar now groups Outbound (Overview, Recent), Inbound, Analysis (Timeline, Alerts), and Cluster symmetrically (#112, #124).
+- **`http_dashboard` `:socket_path` option** — override the host LiveView socket path (default `"/live"`).
+- **Runtime warning when `:req` source is misconfigured** — modern Req (0.5+) doesn't emit `[:req, :request, :pipeline, :stop]`; monitorex now warns at boot when `:req` is enabled without `req_telemetry`, and documents the `:finch` alternative (#129, #134).
+
+### Fixed
+
+- **Host apps could not boot** — `:hackney` was in `extra_applications` despite being `optional: true`, forcing every host to include hackney (#102, #116).
+- **AlertHistory crashed on every cleanup** — the cleanup handler called the public API from inside the GenServer process (`process attempted to call itself`), restart-looping and discarding alert state (#108, #117).
+- **LiveView interactive layer restored** — `phx-target={@myself}` was missing on 30+ bindings across the timeline, outbound/inbound recent, and shared `Core` components; `push_navigate` was called with bare query strings; `find_selected` only searched the visible page; the timeline search box emitted an untargeted `phx-keyup` (#103, #104, #110, #111, #120).
+- **Export links were root-absolute** — `export_button` hrefs ignored the mount prefix, so CSV/JSON exports broke under a scope mount (#127, #132).
+- **Outbound Overview node selector crashed the LiveView** — `Core.node_selector` emitted a `select_node` event with no handler; the dropdown now filters the host table (#128, #133).
+- **Finch telemetry dropped request/response headers and bodies** — the Req adapter returns the response as a `{status, headers, body, trailers}` tuple; headers/bodies (iodata) are now extracted, redacted and stored when body capture is enabled (#126).
+- **Demo seeded aggregates with wrong timestamps** — `scripts/demo.exs` seeded `last_seen` in milliseconds while the storage layer prunes in microseconds, so every host/route/consumer was evicted immediately; the demo now renders full data (#136, #137).
+- **`immutable` cache on unversioned asset URLs** — assets are now versioned (`app.css?v=<hash>`) so browsers don't pin stale bundles for a year (#109, #119).
+- **CI flaky tests** — the alerts notifier tests raced the background collector's debounce; the timeline status-filter test matched raw status digits in epoch timestamps; both are stable now (#115, #121, #123).
+- **Removed the broken `priv/` demo** — `priv/demo_app.ex`/`demo_router.ex`/`run_demo.exs` referenced nonexistent modules; the working demo is `scripts/demo.exs` (#130, #135).
+
+### Changed
+
+- **CI is enforced** — credo no longer runs with `|| true`, and the `test` job is a required status check on `main` (#115, #121).
+- **README screenshots refreshed** — outbound overview, host detail and timeline now show the new nav and live data.
+- **Docs** — real installation guide covering path-prefix mounts, `api_path`, CSP, pipeline requirements, Tesla/Finch dedup, body capture and data lifetime (#113, #118).
+- **Test hygiene** — `on_exit` cleanup for config leaks in alert-history and alerts tests (#131, #135).
 
 ## 0.7.2 (2026-07-28)
 

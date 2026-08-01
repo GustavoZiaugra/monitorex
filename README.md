@@ -16,6 +16,8 @@ Monitorex monitors outbound (Tesla, Finch/Req) and inbound (Phoenix) HTTP traffi
 
 - **Outbound monitoring** — track HTTP requests from Tesla, Finch, or Req
 - **Inbound monitoring** — track Phoenix router dispatch with per-consumer breakdowns
+- **Mount anywhere** — works at any path prefix (e.g. `/monitoring`); nav links, assets, exports and the LiveView socket are prefix-aware
+- **One-command install** — `mix igniter.install monitorex` sets up the dependency, router mount, source detection and Tesla-on-Finch dedup
 - **Live dashboard** — 8 pages: Overview, Outbound/Inbound, host/route detail, timeline, consumer analytics
 - **Timeline inspector** — split-pane page with event list + request/response detail viewer
 - **Auto-refresh** — LiveView updates every 2 seconds
@@ -80,7 +82,7 @@ Add `monitorex` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:monitorex, "~> 0.7.0"}
+    {:monitorex, "~> 0.8.0"}
   ]
 end
 ```
@@ -146,19 +148,6 @@ mix phx.server
 ```
 
 Visit your dashboard (e.g. `http://monitoring.localhost:4000` or `/monitoring`) to see it.
-
-### Mounting: path prefix vs. dedicated host
-
-`http_dashboard/1` emits **scope-relative** routes (`live "/"`, `get("/dashboard-assets/*path")`, `forward("/api")`), so a path prefix such as `scope "/monitoring"` is supported at the router level. However, the current release's bundled layout still hardcodes root-relative asset URLs (`/dashboard-assets/app.css`) and nav links; the layout-fix for prefix mounts is in progress. Until it merges, mount at the root of a dedicated host:
-
-```elixir
-scope "/", host: "monitoring." do
-  pipe_through :monitoring
-  http_dashboard api_path: false
-end
-```
-
-Point a `monitoring.` subdomain at your app and the dashboard's root-relative URLs resolve correctly. See the [Installation Guide](guides/getting_started.md) for the full matrix.
 
 ### Mounting under a path prefix
 

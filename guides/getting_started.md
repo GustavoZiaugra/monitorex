@@ -22,7 +22,7 @@ Add `monitorex` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:monitorex, "~> 0.7.0"}
+    {:monitorex, "~> 0.8.0"}
   ]
 end
 ```
@@ -33,7 +33,7 @@ also need `req_telemetry`:
 ```elixir
 def deps do
   [
-    {:monitorex, "~> 0.7.0"},
+    {:monitorex, "~> 0.8.0"},
     {:req_telemetry, "~> 0.1"}
   ]
 end
@@ -150,21 +150,9 @@ scope "/monitoring" do
 end
 ```
 
-However, in the current release the bundled layout and asset plug still
-**hardcode root-relative URLs** (`/dashboard-assets/app.css`, nav links to `/`,
-`/timeline`, …). Until that fix lands (in progress), a prefix mount renders the
-dashboard but its assets and navigation point at the root. The reliable option
-today is a **dedicated host**:
-
-```elixir
-scope "/", host: "monitoring." do
-  pipe_through :monitoring
-  http_dashboard api_path: false
-end
-```
-
-Point the `monitoring.` subdomain at your app's endpoint, and the dashboard's
-root-relative URLs resolve correctly.
+Asset links, navigation links, and export links are all derived from the
+mount point, so the dashboard works fully under a path prefix (or mounted
+behind a reverse proxy).
 
 ## 4. The REST API: disable it
 
