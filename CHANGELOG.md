@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.8.1 (2026-08-30)
+
+### Security
+
+- **Dependency bump for security advisories** — phoenix 1.8.9→1.8.13, phoenix_live_view 1.2.7→1.2.11 (fixes EEF-CVE-2026-64941 open redirect), hackney 4.6.0→4.7.4, exqlite 0.39.0→0.40.0, plus transitive bumps (cowboy, cowlib, hpax, mint, plug_crypto, ranch, quic, webtransport, spitfire). Resolves advisories for mint, hpax, cowboy, phoenix_live_view (#140).
+
+### Fixed
+
+- **Credo findings and formatting drift resolved** — single-clause `with/else` blocks converted to `case` in the Igniter install task (`lib/mix/tasks/monitorex.install.ex`), variable rebinding removed in 9 test blocks, and `mix format` normalized across `lib` and `test` (#139).
+
+### Changed
+
+- **Test coverage** — install task now covers 3-arg and bare Finch adapter detection; test hygiene improvements across LiveView component, API, storage and notifier suites (#139).
+
 ## 0.8.0 (2026-08-01)
 
 ### Breaking
