@@ -64,15 +64,16 @@ defmodule Monitorex.Components.Live.AlertsPageTest do
     AlertHistory.record_alert(alert)
 
     html =
-      render_component(AlertsPage, %{id: "alerts"}) |> tap(fn _ ->
+      render_component(AlertsPage, %{id: "alerts"})
+      |> tap(fn _ ->
         assert AlertHistory.firing_count() == 1
       end)
 
     assert html =~ "High error rate"
 
-    html = render_component(AlertsPage, %{id: "alerts"})
+    html_2 = render_component(AlertsPage, %{id: "alerts"})
 
-    assert html =~ "Alert Center"
+    assert html_2 =~ "Alert Center"
   end
 
   test "renders firing alert with host details" do

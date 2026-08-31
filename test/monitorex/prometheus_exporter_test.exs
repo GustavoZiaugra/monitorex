@@ -119,7 +119,8 @@ defmodule Monitorex.PrometheusExporterTest do
 
       :ets.insert(
         :monitorex_outbound_endpoints,
-        {{"api.test.com", "/users"}, %{requests: 10, errors: 1, total_duration: 100.0, last_seen: System.monotonic_time()}}
+        {{"api.test.com", "/users"},
+         %{requests: 10, errors: 1, total_duration: 100.0, last_seen: System.monotonic_time()}}
       )
 
       output = PrometheusExporter.format()
@@ -135,7 +136,8 @@ defmodule Monitorex.PrometheusExporterTest do
 
       :ets.insert(
         :monitorex_inbound_routes,
-        {route_key, %{requests: 25, errors: 0, total_duration: 250.0, last_seen: System.monotonic_time()}}
+        {route_key,
+         %{requests: 25, errors: 0, total_duration: 250.0, last_seen: System.monotonic_time()}}
       )
 
       output = PrometheusExporter.format()
@@ -149,7 +151,8 @@ defmodule Monitorex.PrometheusExporterTest do
 
       :ets.insert(
         :monitorex_inbound_consumers,
-        {"alice", %{requests: 7, errors: 0, total_duration: 70.0, last_seen: System.monotonic_time()}}
+        {"alice",
+         %{requests: 7, errors: 0, total_duration: 70.0, last_seen: System.monotonic_time()}}
       )
 
       output = PrometheusExporter.format()

@@ -126,17 +126,17 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp router_has_scope?(igniter, router, path) do
-      with {:ok, {_igniter, _source, zipper}} <-
-             Igniter.Project.Module.find_module(igniter, router) do
-        Igniter.Code.Function.move_to_function_call(zipper, :scope, [1, 2, 3], fn fc ->
-          Igniter.Code.Function.argument_equals?(fc, 0, path)
-        end)
-        |> case do
-          {:ok, _} -> true
-          _ -> false
-        end
-      else
-        _ -> false
+      case Igniter.Project.Module.find_module(igniter, router) do
+        {:ok, {_igniter, _source, zipper}} ->
+          case Igniter.Code.Function.move_to_function_call(zipper, :scope, [1, 2, 3], fn fc ->
+                 Igniter.Code.Function.argument_equals?(fc, 0, path)
+               end) do
+            {:ok, _} -> true
+            _ -> false
+          end
+
+        _ ->
+          false
       end
     end
 
@@ -169,7 +169,9 @@ if Code.ensure_loaded?(Igniter) do
           plug :accepts, ["html"]
           plug :fetch_session
           plug :fetch_live_flash
-          """, router: router)
+          """,
+          router: router
+        )
       end
     end
 
@@ -180,7 +182,10 @@ if Code.ensure_loaded?(Igniter) do
         """
         pipe_through :monitoring
         http_dashboard(api_path: false)
-        """, router: router, placement: :after)
+        """,
+        router: router,
+        placement: :after
+      )
     end
 
     defp configure_sources(igniter) do
@@ -229,32 +234,28 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp zipper_has_tesla_finch_adapter?(zipper) do
-      with {:ok, _zipper} <-
-             Igniter.Code.Function.move_to_function_call_in_current_scope(
-               zipper,
-               :config,
-               [
-                 2,
-                 3
-               ],
-               fn fc ->
-                 Igniter.Code.Function.argument_equals?(fc, 0, :tesla) &&
-                   config_call_has_finch_adapter?(fc)
-               end
-             ) do
-        true
-      else
-        _ ->
-          false
+      case Igniter.Code.Function.move_to_function_call_in_current_scope(
+             zipper,
+             :config,
+             [
+               2,
+               3
+             ],
+             fn fc ->
+               Igniter.Code.Function.argument_equals?(fc, 0, :tesla) &&
+                 config_call_has_finch_adapter?(fc)
+             end
+           ) do
+        {:ok, _zipper} -> true
+        _ -> false
       end
     end
 
     defp config_call_has_finch_adapter?(fc) do
       if Igniter.Code.Function.argument_equals?(fc, 1, :adapter) do
         # 3-arg form: config :tesla, :adapter, value
-        with {:ok, value} <- Igniter.Code.Function.move_to_nth_argument(fc, 2) do
-          finch_adapter_literal?(value)
-        else
+        case Igniter.Code.Function.move_to_nth_argument(fc, 2) do
+          {:ok, value} -> finch_adapter_literal?(value)
           _ -> false
         end
       else

@@ -38,7 +38,6 @@ defmodule Monitorex.Components.Live.OutboundOverviewPageTest do
     test "renders node selector" do
       html = render_component(OutboundOverviewPage, %{id: "test"})
 
-
       assert html =~ "All Nodes"
     end
 
@@ -142,7 +141,11 @@ defmodule Monitorex.Components.Live.OutboundOverviewPageTest do
       socket = %Phoenix.LiveView.Socket{assigns: %{__changed__: %{}}}
 
       assert {:noreply, _socket} =
-               OutboundOverviewPage.handle_event("select_node", %{"select_node" => "api.example.com"}, socket)
+               OutboundOverviewPage.handle_event(
+                 "select_node",
+                 %{"select_node" => "api.example.com"},
+                 socket
+               )
 
       assert_received {:navigate, url}
       assert url =~ "page=outbound"
@@ -164,16 +167,38 @@ defmodule Monitorex.Components.Live.OutboundOverviewPageTest do
     test "sorts by client, avg_latency, p95, error_rate and unknown keys" do
       :ets.insert(:monitorex_outbound_hosts, {
         "host-a",
-        %{host: "host-a", client: "client-a", requests: 10, errors: 1, total_duration: 100.0, avg_latency: 10.0, p95: 20.0, error_rate: 0.1, last_seen: System.system_time(:microsecond)}
+        %{
+          host: "host-a",
+          client: "client-a",
+          requests: 10,
+          errors: 1,
+          total_duration: 100.0,
+          avg_latency: 10.0,
+          p95: 20.0,
+          error_rate: 0.1,
+          last_seen: System.system_time(:microsecond)
+        }
       })
 
       :ets.insert(:monitorex_outbound_hosts, {
         "host-b",
-        %{host: "host-b", client: "client-b", requests: 5, errors: 0, total_duration: 50.0, avg_latency: 10.0, p95: 10.0, error_rate: 0.0, last_seen: System.system_time(:microsecond)}
+        %{
+          host: "host-b",
+          client: "client-b",
+          requests: 5,
+          errors: 0,
+          total_duration: 50.0,
+          avg_latency: 10.0,
+          p95: 10.0,
+          error_rate: 0.0,
+          last_seen: System.system_time(:microsecond)
+        }
       })
 
       for sort_by <- ["client", "avg_latency", "p95", "error_rate", "unknown"] do
-        html = render_component(OutboundOverviewPage, %{id: "test", sort_by: sort_by, sort_dir: "asc"})
+        html =
+          render_component(OutboundOverviewPage, %{id: "test", sort_by: sort_by, sort_dir: "asc"})
+
         assert html =~ "host-a"
         assert html =~ "host-b"
       end

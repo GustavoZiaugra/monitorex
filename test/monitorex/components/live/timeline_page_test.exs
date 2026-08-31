@@ -84,7 +84,11 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
     end
 
     test "filters events by search query" do
-      insert_outbound_event(method: "GET", path: "/users", full_url: "https://api.example.com/users")
+      insert_outbound_event(
+        method: "GET",
+        path: "/users",
+        full_url: "https://api.example.com/users"
+      )
 
       insert_outbound_event(
         method: "POST",
@@ -125,7 +129,11 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
     end
 
     test "filters events by method" do
-      insert_outbound_event(method: "GET", path: "/users", full_url: "https://api.example.com/users")
+      insert_outbound_event(
+        method: "GET",
+        path: "/users",
+        full_url: "https://api.example.com/users"
+      )
 
       insert_outbound_event(
         method: "POST",
@@ -158,14 +166,14 @@ defmodule Monitorex.Components.Live.TimelinePageTest do
       assert html =~ "Load"
       assert html =~ "more events"
 
-      html =
+      html_all =
         render_component(TimelinePage, %{
           id: "timeline-test",
           direction: "outbound",
           show_all: "true"
         })
 
-      refute html =~ "Load"
+      refute html_all =~ "Load"
     end
 
     test "renders selected event with headers, error and body truncation" do

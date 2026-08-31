@@ -25,7 +25,12 @@ defmodule Monitorex.Components.Live.InboundConsumersPageTest do
     end
 
     test "renders consumers with real data" do
-      insert_inbound_event(method: "GET", path: "/api/items", consumer: "svc-a", duration_ms: 15.0)
+      insert_inbound_event(
+        method: "GET",
+        path: "/api/items",
+        consumer: "svc-a",
+        duration_ms: 15.0
+      )
 
       insert_inbound_event(
         method: "POST",
@@ -85,12 +90,24 @@ defmodule Monitorex.Components.Live.InboundConsumersPageTest do
       # Insert synthetic consumer aggregates directly so every sort key exists.
       :ets.insert(:monitorex_inbound_consumers, {
         "svc-b",
-        %{requests: 100, errors: 30, total_duration: 10_000.0, avg_latency: 100.0, last_seen: base_ts}
+        %{
+          requests: 100,
+          errors: 30,
+          total_duration: 10_000.0,
+          avg_latency: 100.0,
+          last_seen: base_ts
+        }
       })
 
       :ets.insert(:monitorex_inbound_consumers, {
         "svc-a",
-        %{requests: 10, errors: 0, total_duration: 100.0, avg_latency: 10.0, last_seen: base_ts - 1}
+        %{
+          requests: 10,
+          errors: 0,
+          total_duration: 100.0,
+          avg_latency: 10.0,
+          last_seen: base_ts - 1
+        }
       })
 
       :ets.insert(:monitorex_inbound_consumers, {
@@ -99,7 +116,9 @@ defmodule Monitorex.Components.Live.InboundConsumersPageTest do
       })
 
       for sort_by <- ["consumer", "error_rate", "avg_latency", "last_seen", "unknown"] do
-        html = render_component(InboundConsumersPage, %{id: "test", sort_by: sort_by, sort_dir: "asc"})
+        html =
+          render_component(InboundConsumersPage, %{id: "test", sort_by: sort_by, sort_dir: "asc"})
+
         assert html =~ "svc-a"
         assert html =~ "svc-b"
       end
@@ -109,10 +128,18 @@ defmodule Monitorex.Components.Live.InboundConsumersPageTest do
       insert_inbound_event(method: "GET", path: "/a", consumer: "svc-z")
       insert_inbound_event(method: "GET", path: "/b", consumer: "svc-a")
 
-      asc = render_component(InboundConsumersPage, %{id: "test", sort_by: "consumer", sort_dir: "asc"})
+      asc =
+        render_component(InboundConsumersPage, %{id: "test", sort_by: "consumer", sort_dir: "asc"})
+
       assert asc =~ "svc-a"
 
-      desc = render_component(InboundConsumersPage, %{id: "test", sort_by: "consumer", sort_dir: "desc"})
+      desc =
+        render_component(InboundConsumersPage, %{
+          id: "test",
+          sort_by: "consumer",
+          sort_dir: "desc"
+        })
+
       assert desc =~ "svc-z"
     end
   end

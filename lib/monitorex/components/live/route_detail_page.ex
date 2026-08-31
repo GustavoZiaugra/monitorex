@@ -82,6 +82,7 @@ defmodule Monitorex.Components.Live.RouteDetailPage do
   def handle_event("go_recent_page", %{"page" => page_str}, socket) do
     page = String.to_integer(page_str)
     base = "?page=route&host=#{URI.encode(socket.assigns.route_key)}"
+
     sort_params =
       %{
         "sort_by" => socket.assigns.sort_by,

@@ -19,7 +19,8 @@ defmodule Monitorex.Components.Live.OutboundOverviewPage do
     nodes = Enum.map(hosts, & &1.host)
     selected_node = assigns[:node] || ""
 
-    filtered_hosts = if selected_node == "", do: hosts, else: Enum.filter(hosts, &(&1.host == selected_node))
+    filtered_hosts =
+      if selected_node == "", do: hosts, else: Enum.filter(hosts, &(&1.host == selected_node))
 
     total_requests = Enum.reduce(filtered_hosts, 0, &(&1.requests + &2))
     total_errors = Enum.reduce(filtered_hosts, 0, &(&1.errors + &2))

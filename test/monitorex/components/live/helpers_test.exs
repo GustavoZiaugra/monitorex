@@ -17,7 +17,6 @@ defmodule Monitorex.Components.Live.HelpersTest do
     test "returns fallback for invalid timestamp" do
       assert Helpers.format_timestamp("not_a_number") == "-"
     end
-
   end
 
   describe "status_chip_class/2" do

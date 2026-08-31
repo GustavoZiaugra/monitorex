@@ -64,7 +64,11 @@ defmodule Monitorex.Components.Live.InboundOverviewPageTest do
       }
 
       assert {:noreply, _socket} =
-               InboundOverviewPage.handle_event("navigate", %{"path" => "/route/GET:/api"}, socket)
+               InboundOverviewPage.handle_event(
+                 "navigate",
+                 %{"path" => "/route/GET:/api"},
+                 socket
+               )
 
       assert_received {:navigate, "/route/GET:/api"}
     end
@@ -92,16 +96,34 @@ defmodule Monitorex.Components.Live.InboundOverviewPageTest do
     test "sorts by method, path, requests, p95 and unknown keys" do
       :ets.insert(:monitorex_inbound_routes, {
         "GET:/api/a",
-        %{method: "GET", path: "/api/a", requests: 10, errors: 0, total_duration: 100.0, p95: 20.0, last_seen: System.system_time(:microsecond)}
+        %{
+          method: "GET",
+          path: "/api/a",
+          requests: 10,
+          errors: 0,
+          total_duration: 100.0,
+          p95: 20.0,
+          last_seen: System.system_time(:microsecond)
+        }
       })
 
       :ets.insert(:monitorex_inbound_routes, {
         "POST:/api/b",
-        %{method: "POST", path: "/api/b", requests: 5, errors: 1, total_duration: 50.0, p95: 10.0, last_seen: System.system_time(:microsecond)}
+        %{
+          method: "POST",
+          path: "/api/b",
+          requests: 5,
+          errors: 1,
+          total_duration: 50.0,
+          p95: 10.0,
+          last_seen: System.system_time(:microsecond)
+        }
       })
 
       for sort_by <- ["method", "path", "requests", "p95", "unknown"] do
-        html = render_component(InboundOverviewPage, %{id: "test", sort_by: sort_by, sort_dir: "asc"})
+        html =
+          render_component(InboundOverviewPage, %{id: "test", sort_by: sort_by, sort_dir: "asc"})
+
         assert html =~ "GET"
         assert html =~ "POST"
       end

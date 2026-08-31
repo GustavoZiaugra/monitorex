@@ -30,7 +30,10 @@ defmodule Monitorex.ExportPlugTest do
 
   describe "CSV exports" do
     test "exports outbound_overview as CSV" do
-      :ets.insert(:monitorex_outbound_hosts, {"host-a", %{requests: 10, errors: 1, total_duration: 100.0, last_seen: 1000}})
+      :ets.insert(
+        :monitorex_outbound_hosts,
+        {"host-a", %{requests: 10, errors: 1, total_duration: 100.0, last_seen: 1000}}
+      )
 
       conn = call("outbound_overview", "csv")
       assert conn.status == 200
@@ -40,7 +43,10 @@ defmodule Monitorex.ExportPlugTest do
     end
 
     test "exports inbound_overview as CSV" do
-      :ets.insert(:monitorex_inbound_routes, {"GET:/api/users", %{requests: 3, errors: 0, total_duration: 30.0, last_seen: 1000}})
+      :ets.insert(
+        :monitorex_inbound_routes,
+        {"GET:/api/users", %{requests: 3, errors: 0, total_duration: 30.0, last_seen: 1000}}
+      )
 
       conn = call("inbound_overview", "csv")
       assert conn.status == 200
@@ -48,7 +54,10 @@ defmodule Monitorex.ExportPlugTest do
     end
 
     test "exports inbound_consumers as CSV" do
-      :ets.insert(:monitorex_inbound_consumers, {"alice", %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}})
+      :ets.insert(
+        :monitorex_inbound_consumers,
+        {"alice", %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}}
+      )
 
       conn = call("inbound_consumers", "csv")
       assert conn.status == 200
@@ -80,7 +89,10 @@ defmodule Monitorex.ExportPlugTest do
     end
 
     test "exports route_detail as CSV" do
-      :ets.insert(:monitorex_inbound_consumers, {"alice", %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}})
+      :ets.insert(
+        :monitorex_inbound_consumers,
+        {"alice", %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}}
+      )
 
       conn = call("route_detail", "csv")
       assert conn.status == 200
@@ -115,7 +127,10 @@ defmodule Monitorex.ExportPlugTest do
     end
 
     test "exports inbound_consumers as JSON" do
-      :ets.insert(:monitorex_inbound_consumers, {"alice", %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}})
+      :ets.insert(
+        :monitorex_inbound_consumers,
+        {"alice", %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}}
+      )
 
       conn = call("inbound_consumers", "json")
       assert conn.status == 200

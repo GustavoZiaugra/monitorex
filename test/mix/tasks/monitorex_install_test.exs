@@ -99,9 +99,43 @@ defmodule Mix.Tasks.Monitorex.InstallTest do
         project(@mix_exs, config)
         |> run_install()
 
-      config = file_content(igniter, "config/config.exs")
+      config_content = file_content(igniter, "config/config.exs")
 
-      assert config =~
+      assert config_content =~
+               "config :monitorex, sources: [:tesla, :finch, :phoenix], clients: [:tesla, :finch]"
+    end
+
+    test "detects 3-arg finch adapter config and sets clients" do
+      config = """
+      import Config
+
+      config :tesla, :adapter, {Tesla.Adapter.Finch, name: MyFinch}
+      """
+
+      igniter =
+        project(@mix_exs, config)
+        |> run_install()
+
+      config_content = file_content(igniter, "config/config.exs")
+
+      assert config_content =~
+               "config :monitorex, sources: [:tesla, :finch, :phoenix], clients: [:tesla, :finch]"
+    end
+
+    test "detects bare Tesla.Adapter.Finch adapter config and sets clients" do
+      config = """
+      import Config
+
+      config :tesla, :adapter, Tesla.Adapter.Finch
+      """
+
+      igniter =
+        project(@mix_exs, config)
+        |> run_install()
+
+      config_content = file_content(igniter, "config/config.exs")
+
+      assert config_content =~
                "config :monitorex, sources: [:tesla, :finch, :phoenix], clients: [:tesla, :finch]"
     end
 
