@@ -98,9 +98,7 @@ defmodule Monitorex.Components.Live.OutboundRecentPageTest do
     end
 
     test "renders long urls truncated" do
-      insert_outbound_event(
-        full_url: "https://api.example.com/" <> String.duplicate("a", 100)
-      )
+      insert_outbound_event(full_url: "https://api.example.com/" <> String.duplicate("a", 100))
 
       html = render_component(OutboundRecentPage, %{id: "test"})
 

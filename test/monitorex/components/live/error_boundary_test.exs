@@ -26,13 +26,28 @@ defmodule Monitorex.Components.Live.ErrorBoundaryTest do
   end
 
   test "render function returns rendered struct" do
-    rendered = ErrorBoundary.render(%{__changed__: %{}, error: nil, component_id: "x", myself: nil, inner_block: []})
+    rendered =
+      ErrorBoundary.render(%{
+        __changed__: %{},
+        error: nil,
+        component_id: "x",
+        myself: nil,
+        inner_block: []
+      })
+
     assert is_struct(rendered, Phoenix.LiveView.Rendered)
   end
 
   test "render function returns rendered struct with error" do
-    rendered = ErrorBoundary.render(%{__changed__: %{}, error: "boom", component_id: "x", myself: nil, inner_block: []})
+    rendered =
+      ErrorBoundary.render(%{
+        __changed__: %{},
+        error: "boom",
+        component_id: "x",
+        myself: nil,
+        inner_block: []
+      })
+
     assert is_struct(rendered, Phoenix.LiveView.Rendered)
   end
-
 end

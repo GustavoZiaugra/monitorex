@@ -29,15 +29,23 @@ defmodule Monitorex.Notifiers.DiscordTest do
 
   test "returns error on non-2xx response" do
     :meck.new(:hackney, [:unstick])
-    :meck.expect(:hackney, :post, fn _url, _headers, _body, _opts -> {:ok, 429, [], "rate limited"} end)
 
-    assert Discord.notify(@alert, "https://discord.com/api/webhooks/test") == {:error, {:http_error, 429}}
+    :meck.expect(:hackney, :post, fn _url, _headers, _body, _opts ->
+      {:ok, 429, [], "rate limited"}
+    end)
+
+    assert Discord.notify(@alert, "https://discord.com/api/webhooks/test") ==
+             {:error, {:http_error, 429}}
   end
 
   test "returns error on hackney failure" do
     :meck.new(:hackney, [:unstick])
-    :meck.expect(:hackney, :post, fn _url, _headers, _body, _opts -> {:error, :connect_timeout} end)
 
-    assert Discord.notify(@alert, "https://discord.com/api/webhooks/test") == {:error, :connect_timeout}
+    :meck.expect(:hackney, :post, fn _url, _headers, _body, _opts ->
+      {:error, :connect_timeout}
+    end)
+
+    assert Discord.notify(@alert, "https://discord.com/api/webhooks/test") ==
+             {:error, :connect_timeout}
   end
 end

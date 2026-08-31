@@ -48,7 +48,10 @@ defmodule Monitorex.ApiPlugTest do
 
   describe "GET /api/hosts" do
     test "returns list of hosts" do
-      :ets.insert(:monitorex_outbound_hosts, {"host-a", %{requests: 10, errors: 1, total_duration: 100.0, last_seen: 1000}})
+      :ets.insert(
+        :monitorex_outbound_hosts,
+        {"host-a", %{requests: 10, errors: 1, total_duration: 100.0, last_seen: 1000}}
+      )
 
       conn = call(["hosts"])
       assert conn.status == 200
@@ -59,8 +62,15 @@ defmodule Monitorex.ApiPlugTest do
 
   describe "GET /api/hosts/:host" do
     test "returns host detail with endpoints" do
-      :ets.insert(:monitorex_outbound_hosts, {"host-a", %{requests: 10, errors: 1, total_duration: 100.0, last_seen: 1000}})
-      :ets.insert(:monitorex_outbound_endpoints, {{"host-a", "/x"}, %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}})
+      :ets.insert(
+        :monitorex_outbound_hosts,
+        {"host-a", %{requests: 10, errors: 1, total_duration: 100.0, last_seen: 1000}}
+      )
+
+      :ets.insert(
+        :monitorex_outbound_endpoints,
+        {{"host-a", "/x"}, %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}}
+      )
 
       conn = call(["hosts", "host-a"])
       assert conn.status == 200
@@ -77,7 +87,10 @@ defmodule Monitorex.ApiPlugTest do
 
   describe "GET /api/routes" do
     test "returns routes" do
-      :ets.insert(:monitorex_inbound_routes, {"GET:/api/users", %{requests: 3, errors: 0, total_duration: 30.0, last_seen: 1000}})
+      :ets.insert(
+        :monitorex_inbound_routes,
+        {"GET:/api/users", %{requests: 3, errors: 0, total_duration: 30.0, last_seen: 1000}}
+      )
 
       conn = call(["routes"])
       assert conn.status == 200
@@ -89,7 +102,10 @@ defmodule Monitorex.ApiPlugTest do
 
   describe "GET /api/consumers" do
     test "returns consumers" do
-      :ets.insert(:monitorex_inbound_consumers, {"alice", %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}})
+      :ets.insert(
+        :monitorex_inbound_consumers,
+        {"alice", %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}}
+      )
 
       conn = call(["consumers"])
       assert conn.status == 200
@@ -100,7 +116,18 @@ defmodule Monitorex.ApiPlugTest do
 
   describe "GET /api/events" do
     test "returns outbound events with pagination headers" do
-      :ets.insert(:monitorex_outbound_recent, {1, %Event{timestamp: 1, method: "GET", host: "a", path: "/x", status: 200, status_class: :success}})
+      :ets.insert(
+        :monitorex_outbound_recent,
+        {1,
+         %Event{
+           timestamp: 1,
+           method: "GET",
+           host: "a",
+           path: "/x",
+           status: 200,
+           status_class: :success
+         }}
+      )
 
       conn = call(["events"])
       assert conn.status == 200
@@ -109,7 +136,19 @@ defmodule Monitorex.ApiPlugTest do
     end
 
     test "filters by direction inbound" do
-      :ets.insert(:monitorex_inbound_recent, {1, %Event{direction: :inbound, timestamp: 1, method: "GET", path: "/api", status: 200, status_class: :success, consumer: "alice"}})
+      :ets.insert(
+        :monitorex_inbound_recent,
+        {1,
+         %Event{
+           direction: :inbound,
+           timestamp: 1,
+           method: "GET",
+           path: "/api",
+           status: 200,
+           status_class: :success,
+           consumer: "alice"
+         }}
+      )
 
       conn = call(["events"], %{"direction" => "inbound"})
       assert conn.status == 200
@@ -118,8 +157,31 @@ defmodule Monitorex.ApiPlugTest do
     end
 
     test "post-filters by method and status" do
-      :ets.insert(:monitorex_outbound_recent, {1, %Event{timestamp: 1, method: "GET", host: "a", path: "/x", status: 200, status_class: :success}})
-      :ets.insert(:monitorex_outbound_recent, {2, %Event{timestamp: 2, method: "POST", host: "a", path: "/y", status: 500, status_class: :server_error}})
+      :ets.insert(
+        :monitorex_outbound_recent,
+        {1,
+         %Event{
+           timestamp: 1,
+           method: "GET",
+           host: "a",
+           path: "/x",
+           status: 200,
+           status_class: :success
+         }}
+      )
+
+      :ets.insert(
+        :monitorex_outbound_recent,
+        {2,
+         %Event{
+           timestamp: 2,
+           method: "POST",
+           host: "a",
+           path: "/y",
+           status: 500,
+           status_class: :server_error
+         }}
+      )
 
       conn = call(["events"], %{"method" => "POST", "status" => "500"})
       assert conn.status == 200
@@ -130,8 +192,32 @@ defmodule Monitorex.ApiPlugTest do
 
     test "post-filters by since" do
       now = System.system_time(:microsecond)
-      :ets.insert(:monitorex_outbound_recent, {1, %Event{timestamp: now - 10_000_000, method: "GET", host: "a", path: "/x", status: 200, status_class: :success}})
-      :ets.insert(:monitorex_outbound_recent, {2, %Event{timestamp: now, method: "GET", host: "a", path: "/y", status: 200, status_class: :success}})
+
+      :ets.insert(
+        :monitorex_outbound_recent,
+        {1,
+         %Event{
+           timestamp: now - 10_000_000,
+           method: "GET",
+           host: "a",
+           path: "/x",
+           status: 200,
+           status_class: :success
+         }}
+      )
+
+      :ets.insert(
+        :monitorex_outbound_recent,
+        {2,
+         %Event{
+           timestamp: now,
+           method: "GET",
+           host: "a",
+           path: "/y",
+           status: 200,
+           status_class: :success
+         }}
+      )
 
       since = DateTime.to_iso8601(DateTime.from_unix!(div(now - 1_000_000, 1_000_000)))
       conn = call(["events"], %{"since" => since})
@@ -142,7 +228,15 @@ defmodule Monitorex.ApiPlugTest do
 
   describe "GET /api/events/:timestamp" do
     test "returns event by timestamp" do
-      event = %Event{timestamp: 123, method: "GET", host: "a", path: "/x", status: 200, status_class: :success}
+      event = %Event{
+        timestamp: 123,
+        method: "GET",
+        host: "a",
+        path: "/x",
+        status: 200,
+        status_class: :success
+      }
+
       :ets.insert(:monitorex_outbound_recent, {123, event})
 
       conn = call(["events", "123"])
@@ -163,7 +257,19 @@ defmodule Monitorex.ApiPlugTest do
 
   describe "GET /api/metrics" do
     test "returns aggregated metrics" do
-      :ets.insert(:monitorex_outbound_hosts, {"host-a", %{requests: 10, errors: 1, total_duration: 100.0, last_seen: 1000, p50: 5.0, p95: 10.0, p99: 15.0}})
+      :ets.insert(
+        :monitorex_outbound_hosts,
+        {"host-a",
+         %{
+           requests: 10,
+           errors: 1,
+           total_duration: 100.0,
+           last_seen: 1000,
+           p50: 5.0,
+           p95: 10.0,
+           p99: 15.0
+         }}
+      )
 
       conn = call(["metrics"])
       assert conn.status == 200
@@ -173,8 +279,15 @@ defmodule Monitorex.ApiPlugTest do
     end
 
     test "filters metrics by host" do
-      :ets.insert(:monitorex_outbound_hosts, {"host-a", %{requests: 10, errors: 1, total_duration: 100.0, last_seen: 1000}})
-      :ets.insert(:monitorex_outbound_hosts, {"host-b", %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}})
+      :ets.insert(
+        :monitorex_outbound_hosts,
+        {"host-a", %{requests: 10, errors: 1, total_duration: 100.0, last_seen: 1000}}
+      )
+
+      :ets.insert(
+        :monitorex_outbound_hosts,
+        {"host-b", %{requests: 5, errors: 0, total_duration: 50.0, last_seen: 1000}}
+      )
 
       conn = call(["metrics"], %{"host" => "host-a"})
       assert conn.status == 200

@@ -6,8 +6,7 @@ defmodule Monitorex.ApiTest do
 
   describe "json_ok/3" do
     test "sends success JSON envelope" do
-      conn = Test.conn(:get, "/")
-      conn = Api.json_ok(conn, %{foo: "bar"})
+      conn = Test.conn(:get, "/") |> Api.json_ok(%{foo: "bar"})
 
       assert conn.status == 200
       assert {"content-type", "application/json; charset=utf-8"} in conn.resp_headers
@@ -15,8 +14,7 @@ defmodule Monitorex.ApiTest do
     end
 
     test "supports custom status and headers" do
-      conn = Test.conn(:get, "/")
-      conn = Api.json_ok(conn, %{}, status: 201, headers: [{"x-custom", "yes"}])
+      conn = Test.conn(:get, "/") |> Api.json_ok(%{}, status: 201, headers: [{"x-custom", "yes"}])
 
       assert conn.status == 201
       assert {"x-custom", "yes"} in conn.resp_headers
@@ -25,16 +23,14 @@ defmodule Monitorex.ApiTest do
 
   describe "json_error/3" do
     test "sends error JSON envelope" do
-      conn = Test.conn(:get, "/")
-      conn = Api.json_error(conn, "bad request", 400)
+      conn = Test.conn(:get, "/") |> Api.json_error("bad request", 400)
 
       assert conn.status == 400
       assert Jason.decode!(conn.resp_body) == %{"ok" => false, "error" => "bad request"}
     end
 
     test "defaults to status 400" do
-      conn = Test.conn(:get, "/")
-      conn = Api.json_error(conn, "bad request")
+      conn = Test.conn(:get, "/") |> Api.json_error("bad request")
 
       assert conn.status == 400
       assert Jason.decode!(conn.resp_body) == %{"ok" => false, "error" => "bad request"}
@@ -43,8 +39,7 @@ defmodule Monitorex.ApiTest do
 
   describe "set_cors/1" do
     test "adds CORS headers" do
-      conn = Test.conn(:get, "/")
-      conn = Api.set_cors(conn)
+      conn = Test.conn(:get, "/") |> Api.set_cors()
 
       assert {"access-control-allow-origin", "*"} in conn.resp_headers
       assert {"access-control-allow-methods", "GET, OPTIONS"} in conn.resp_headers

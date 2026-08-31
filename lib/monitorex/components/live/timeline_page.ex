@@ -389,7 +389,8 @@ defmodule Monitorex.Components.Live.TimelinePage do
           search: overrides[:search] || Map.get(assigns, :search_query, "") || "",
           status: overrides[:status] || Map.get(assigns, :filter_status, "") || "",
           method: overrides[:method] || Map.get(assigns, :filter_method, "") || "",
-          show_all: overrides[:show_all] || if(Map.get(assigns, :show_all), do: "true", else: nil),
+          show_all:
+            overrides[:show_all] || if(Map.get(assigns, :show_all), do: "true", else: nil),
           selected: overrides[:selected] || Map.get(assigns, :selected)
         },
         fn {_, v} -> is_nil(v) || v == "" end

@@ -297,24 +297,24 @@ defmodule Monitorex.Components.CoreTest do
     end
 
     test "renders ellipsis for large page counts" do
-      assigns = %{current: 2, total: 20}
-      html = render_component(&Core.pagination/1, assigns)
+      assigns_1 = %{current: 2, total: 20}
+      html_1 = render_component(&Core.pagination/1, assigns_1)
 
-      assert html =~ "5"
-      assert html =~ "20"
+      assert html_1 =~ "5"
+      assert html_1 =~ "20"
 
-      assigns = %{current: 19, total: 20}
-      html = render_component(&Core.pagination/1, assigns)
+      assigns_2 = %{current: 19, total: 20}
+      html_2 = render_component(&Core.pagination/1, assigns_2)
 
-      assert html =~ "16"
-      assert html =~ "20"
+      assert html_2 =~ "16"
+      assert html_2 =~ "20"
 
-      assigns = %{current: 10, total: 20}
-      html = render_component(&Core.pagination/1, assigns)
+      assigns_3 = %{current: 10, total: 20}
+      html_3 = render_component(&Core.pagination/1, assigns_3)
 
-      assert html =~ "9"
-      assert html =~ "10"
-      assert html =~ "11"
+      assert html_3 =~ "9"
+      assert html_3 =~ "10"
+      assert html_3 =~ "11"
     end
   end
 

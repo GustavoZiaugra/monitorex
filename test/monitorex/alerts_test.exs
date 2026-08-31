@@ -60,7 +60,9 @@ defmodule Monitorex.AlertsTest do
 
   describe "list_rules/0, add_rule/1, remove_rule/1" do
     test "add_rule adds a runtime rule" do
-      assert :ok = Alerts.add_rule(%{name: "Runtime", metric: :error_rate, op: :gt, threshold: 0.1})
+      assert :ok =
+               Alerts.add_rule(%{name: "Runtime", metric: :error_rate, op: :gt, threshold: 0.1})
+
       rules = Alerts.list_rules()
       assert Enum.any?(rules, &(&1.name == "Runtime"))
 
@@ -251,7 +253,15 @@ defmodule Monitorex.AlertsTest do
     test "triggers alert when p99 latency exceeds threshold" do
       seed_hosts([
         {"api.slow.com",
-         %{requests: 10, errors: 0, total_duration: 1000.0, p50: 50.0, p95: 90.0, p99: 2500.0, last_seen: System.monotonic_time()}}
+         %{
+           requests: 10,
+           errors: 0,
+           total_duration: 1000.0,
+           p50: 50.0,
+           p95: 90.0,
+           p99: 2500.0,
+           last_seen: System.monotonic_time()
+         }}
       ])
 
       Application.put_env(:monitorex, :alerts, [
@@ -274,7 +284,8 @@ defmodule Monitorex.AlertsTest do
 
     test "triggers alert when requests_per_min exceeds threshold" do
       seed_hosts([
-        {"api.busy.com", %{requests: 500, errors: 0, total_duration: 1000.0, last_seen: System.monotonic_time()}}
+        {"api.busy.com",
+         %{requests: 500, errors: 0, total_duration: 1000.0, last_seen: System.monotonic_time()}}
       ])
 
       Application.put_env(:monitorex, :alerts, [
@@ -297,7 +308,8 @@ defmodule Monitorex.AlertsTest do
 
     test "supports less-than operator" do
       seed_hosts([
-        {"api.quiet.com", %{requests: 5, errors: 0, total_duration: 5000.0, last_seen: System.monotonic_time()}}
+        {"api.quiet.com",
+         %{requests: 5, errors: 0, total_duration: 5000.0, last_seen: System.monotonic_time()}}
       ])
 
       Application.put_env(:monitorex, :alerts, [
@@ -320,7 +332,8 @@ defmodule Monitorex.AlertsTest do
 
     test "webhook notifier fires asynchronously" do
       seed_hosts([
-        {"api.bad.com", %{requests: 100, errors: 50, total_duration: 5000.0, last_seen: System.monotonic_time()}}
+        {"api.bad.com",
+         %{requests: 100, errors: 50, total_duration: 5000.0, last_seen: System.monotonic_time()}}
       ])
 
       Application.put_env(:monitorex, :alerts, [
@@ -345,7 +358,8 @@ defmodule Monitorex.AlertsTest do
 
     test "webhook handles 2xx, non-2xx and error responses" do
       seed_hosts([
-        {"api.bad.com", %{requests: 100, errors: 50, total_duration: 5000.0, last_seen: System.monotonic_time()}}
+        {"api.bad.com",
+         %{requests: 100, errors: 50, total_duration: 5000.0, last_seen: System.monotonic_time()}}
       ])
 
       on_exit(fn -> Application.delete_env(:monitorex, :alerts) end)
@@ -397,7 +411,8 @@ defmodule Monitorex.AlertsTest do
 
     test "evaluate handles unknown metric gracefully" do
       seed_hosts([
-        {"api.example.com", %{requests: 10, errors: 0, total_duration: 100.0, last_seen: System.monotonic_time()}}
+        {"api.example.com",
+         %{requests: 10, errors: 0, total_duration: 100.0, last_seen: System.monotonic_time()}}
       ])
 
       Application.put_env(:monitorex, :alerts, [
@@ -440,7 +455,8 @@ defmodule Monitorex.AlertsTest do
 
   defp assert_notifier_fires(module, key) do
     seed_hosts([
-      {"api.#{key}.com", %{requests: 100, errors: 50, total_duration: 5000.0, last_seen: System.monotonic_time()}}
+      {"api.#{key}.com",
+       %{requests: 100, errors: 50, total_duration: 5000.0, last_seen: System.monotonic_time()}}
     ])
 
     :meck.new(module, [:unstick, :passthrough])

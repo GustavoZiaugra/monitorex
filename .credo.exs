@@ -29,7 +29,7 @@
         {Credo.Check.Refactor.FilterCount, priority: :low},
         {Credo.Check.Refactor.MapInto, priority: :low},
         {Credo.Check.Refactor.MapJoin, priority: :low},
-        {Credo.Check.Refactor.ModuleDependencies},
+        {Credo.Check.Refactor.ModuleDependencies, max_deps: 20},
         {Credo.Check.Refactor.NegatedConditionsInUnless},
         {Credo.Check.Refactor.Nesting, max_nesting: 3},
         {Credo.Check.Refactor.PipeChainStart, priority: :low},

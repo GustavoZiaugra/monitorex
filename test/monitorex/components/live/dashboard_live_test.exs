@@ -139,7 +139,9 @@ defmodule Monitorex.DashboardLiveTest do
       {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
       assert socket.assigns.page_name == "outbound"
 
-      {:noreply, updated} = DashboardLive.handle_params(%{"page" => "inbound"}, "/inbound", socket)
+      {:noreply, updated} =
+        DashboardLive.handle_params(%{"page" => "inbound"}, "/inbound", socket)
+
       assert updated.assigns.page_name == "inbound"
       assert updated.assigns.page == Live.InboundOverviewPage
     end
@@ -192,7 +194,8 @@ defmodule Monitorex.DashboardLiveTest do
           socket
         )
 
-      assert {:live, :redirect, %{to: "/?page=timeline&status=success&selected=12345", kind: :push}} =
+      assert {:live, :redirect,
+              %{to: "/?page=timeline&status=success&selected=12345", kind: :push}} =
                updated.redirected
     end
 
@@ -200,7 +203,8 @@ defmodule Monitorex.DashboardLiveTest do
       initial_socket = %Phoenix.LiveView.Socket{}
       {:ok, socket} = DashboardLive.mount(%{}, %{}, initial_socket)
 
-      {:noreply, updated} = DashboardLive.handle_info({:navigate, "/host/api.example.com"}, socket)
+      {:noreply, updated} =
+        DashboardLive.handle_info({:navigate, "/host/api.example.com"}, socket)
 
       assert {:live, :redirect, %{to: "/host/api.example.com", kind: :push}} = updated.redirected
     end
@@ -218,7 +222,8 @@ defmodule Monitorex.DashboardLiveTest do
     test "{:navigate, real path} is prefixed with the mount prefix" do
       socket = %Phoenix.LiveView.Socket{assigns: %{mount_prefix: "/monitoring"}}
 
-      {:noreply, updated} = DashboardLive.handle_info({:navigate, "/host/api.example.com"}, socket)
+      {:noreply, updated} =
+        DashboardLive.handle_info({:navigate, "/host/api.example.com"}, socket)
 
       assert {:live, :redirect, %{to: "/monitoring/host/api.example.com", kind: :push}} =
                updated.redirected
@@ -227,7 +232,8 @@ defmodule Monitorex.DashboardLiveTest do
 
   describe "render/1" do
     test "renders live component for current page" do
-      {:ok, socket} = DashboardLive.mount(%{"page" => "outbound"}, %{}, %Phoenix.LiveView.Socket{})
+      {:ok, socket} =
+        DashboardLive.mount(%{"page" => "outbound"}, %{}, %Phoenix.LiveView.Socket{})
 
       rendered = DashboardLive.render(socket.assigns)
       assert is_struct(rendered, Phoenix.LiveView.Rendered)

@@ -1044,7 +1044,18 @@ defmodule Monitorex.StorageTest do
     test "returns slow outbound events" do
       create_tables()
 
-      :ets.insert(:monitorex_slow_outbound, {1, %Event{timestamp: 1, method: "GET", host: "a", path: "/x", status: 200, status_class: :success}})
+      :ets.insert(
+        :monitorex_slow_outbound,
+        {1,
+         %Event{
+           timestamp: 1,
+           method: "GET",
+           host: "a",
+           path: "/x",
+           status: 200,
+           status_class: :success
+         }}
+      )
 
       [event] = Storage.list_slow_outbound()
       assert event.host == "a"
@@ -1059,7 +1070,18 @@ defmodule Monitorex.StorageTest do
     test "returns slow inbound events" do
       create_tables()
 
-      :ets.insert(:monitorex_slow_inbound, {1, %Event{timestamp: 1, method: "GET", path: "/api", status: 200, status_class: :success, consumer: "alice"}})
+      :ets.insert(
+        :monitorex_slow_inbound,
+        {1,
+         %Event{
+           timestamp: 1,
+           method: "GET",
+           path: "/api",
+           status: 200,
+           status_class: :success,
+           consumer: "alice"
+         }}
+      )
 
       [event] = Storage.list_slow_inbound()
       assert event.path == "/api"

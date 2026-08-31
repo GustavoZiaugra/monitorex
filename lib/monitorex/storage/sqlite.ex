@@ -180,8 +180,8 @@ if Code.ensure_loaded?(Exqlite.Sqlite3) do
              total_duration = total_duration + ?4,
              last_seen = ?5;",
           [
-    key,
-    hd(String.split(key, ":")),
+            key,
+            hd(String.split(key, ":")),
             error_inc,
             event.duration_ms || 0.0,
             System.system_time(:microsecond)

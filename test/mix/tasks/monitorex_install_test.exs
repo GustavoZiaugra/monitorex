@@ -99,9 +99,9 @@ defmodule Mix.Tasks.Monitorex.InstallTest do
         project(@mix_exs, config)
         |> run_install()
 
-      config = file_content(igniter, "config/config.exs")
+      config_content = file_content(igniter, "config/config.exs")
 
-      assert config =~
+      assert config_content =~
                "config :monitorex, sources: [:tesla, :finch, :phoenix], clients: [:tesla, :finch]"
     end
 

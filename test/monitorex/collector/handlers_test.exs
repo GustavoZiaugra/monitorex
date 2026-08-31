@@ -238,7 +238,8 @@ defmodule Monitorex.Collector.HandlersTest do
       metadata = %{conn: conn}
       measurements = %{duration: 1_000_000}
 
-      assert :ok = Handlers.phoenix([:phoenix, :router_dispatch, :stop], measurements, metadata, [])
+      assert :ok =
+               Handlers.phoenix([:phoenix, :router_dispatch, :stop], measurements, metadata, [])
 
       routes = wait_for(&Storage.list_routes/0)
       assert length(routes) == 1
