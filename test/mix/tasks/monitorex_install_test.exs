@@ -176,7 +176,7 @@ defmodule Mix.Tasks.Monitorex.InstallTest do
       refute config =~ ":req"
     end
 
-    test "adds req_telemetry when req is present but req_telemetry is absent" do
+    test "uses the finch source for req without adding req_telemetry" do
       mix_exs = """
       defmodule Test.MixProject do
         use Mix.Project
@@ -208,13 +208,14 @@ defmodule Mix.Tasks.Monitorex.InstallTest do
         |> run_install()
 
       mix = file_content(igniter, "mix.exs")
-      assert mix =~ ~s|{:req_telemetry, "~> 0.1"}|
+      refute mix =~ "req_telemetry"
 
       config = file_content(igniter, "config/config.exs")
-      assert config =~ "config :monitorex, sources: [:req, :phoenix]"
+      assert config =~ "config :monitorex, sources: [:finch, :phoenix]"
+      refute config =~ ":req"
     end
 
-    test "does not add req_telemetry when it is already a dep" do
+    test "keeps an existing req_telemetry dep but uses the finch source" do
       mix_exs = """
       defmodule Test.MixProject do
         use Mix.Project
@@ -248,6 +249,9 @@ defmodule Mix.Tasks.Monitorex.InstallTest do
 
       mix = file_content(igniter, "mix.exs")
       assert length(String.split(mix, "req_telemetry")) == 2
+
+      config = file_content(igniter, "config/config.exs")
+      assert config =~ "config :monitorex, sources: [:finch, :phoenix]"
     end
 
     test "warns when mount path collides with an existing scope" do

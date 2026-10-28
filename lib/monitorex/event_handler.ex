@@ -160,6 +160,8 @@ defmodule Monitorex.EventHandler do
           config :: keyword()
         ) :: Event.t() | nil
   def handle_finch_event([:finch, :request, :stop], measurements, metadata, _config) do
+    release_finch_sync_marker()
+
     {url_str, method, host, path, req_headers, status} =
       case metadata do
         %{request: %{method: m} = req} ->
@@ -185,6 +187,7 @@ defmodule Monitorex.EventHandler do
 
     req_body = extract_finch_request_body(metadata) || metadata[:request_body]
     resp_body = extract_finch_response(metadata, :body) || metadata[:response_body]
+    error = finch_error(metadata)
 
     ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
     pid = metadata[:pid] || self()
@@ -198,20 +201,23 @@ defmodule Monitorex.EventHandler do
         path: path,
         full_url: URLRedactor.redact(url_str),
         status: status,
-        status_class: Event.classify_status(status || 0),
+        status_class: if(error, do: :server_error, else: Event.classify_status(status || 0)),
         duration_ms: Event.duration_ms(measurements.duration),
         timestamp: System.system_time(:microsecond),
         dedup_key: {pid, ts},
         request_headers: req_headers,
         response_headers: resp_headers,
         request_body: maybe_store_body(req_body, :request),
-        response_body: maybe_store_body(resp_body, :response)
+        response_body: maybe_store_body(resp_body, :response),
+        error: error
       },
       metadata
     )
   end
 
   def handle_finch_event([:finch, :request, :exception], measurements, metadata, _config) do
+    release_finch_sync_marker()
+
     ts = metadata[:monotonic_time] || measurements[:monotonic_time] || System.monotonic_time()
     pid = metadata[:pid] || self()
 
@@ -263,6 +269,128 @@ defmodule Monitorex.EventHandler do
   # Catch-all for unexpected Finch telemetry events
   def handle_finch_event(_event_name, _measurements, _metadata, _config), do: nil
 
+  @doc """
+  Marks the start of a synchronous Finch request in the calling process.
+
+  Finch emits `[:finch, :request, :start]` for `Finch.request/3` and
+  `Finch.stream/5`, but not for `Finch.async_request/3`. The marker lets the
+  `[:finch, :recv, :stop]` handler distinguish synchronous HTTP/1 requests
+  (already handled by `handle_finch_event/4`) from async ones.
+  """
+  def handle_finch_start_event([:finch, :request, :start], _measurements, _metadata, _config) do
+    Process.put(:monitorex_finch_sync, Process.get(:monitorex_finch_sync, 0) + 1)
+    :ok
+  end
+
+  def handle_finch_start_event(_event_name, _measurements, _metadata, _config), do: :ok
+
+  @doc """
+  Captures async Finch/receive events that have no `[:finch, :request, :stop]`
+  counterpart (notably `Finch.async_request/3` used by `Req` `into: :self`).
+
+  HTTP/1 receive events carry the response status; HTTP/2 events do not, so
+  HTTP/2 async requests remain outside this path because Finch does not emit a
+  request-level start event for them.
+  """
+  def handle_finch_recv_event([:finch, :recv, :stop], measurements, metadata, _config) do
+    if async_finch_request?(metadata), do: build_finch_recv_event(measurements, metadata)
+  end
+
+  def handle_finch_recv_event([:finch, :recv, :exception], measurements, metadata, _config) do
+    if async_finch_request?(metadata),
+      do: build_finch_recv_exception_event(measurements, metadata)
+  end
+
+  def handle_finch_recv_event(_event_name, _measurements, _metadata, _config), do: nil
+
+  defp async_finch_request?(metadata) do
+    Process.get(:monitorex_finch_sync, 0) == 0 and is_integer(metadata[:status])
+  end
+
+  defp release_finch_sync_marker do
+    case Process.get(:monitorex_finch_sync, 0) do
+      count when count > 1 -> Process.put(:monitorex_finch_sync, count - 1)
+      _ -> Process.delete(:monitorex_finch_sync)
+    end
+  end
+
+  defp finch_error(metadata) do
+    case metadata[:result] do
+      {:error, reason, _acc} -> inspect(reason)
+      {:error, reason} -> inspect(reason)
+      _ -> if metadata[:error], do: inspect(metadata[:error]), else: nil
+    end
+  end
+
+  defp build_finch_recv_event(measurements, metadata) do
+    case metadata[:request] do
+      %{method: method, host: host} = request ->
+        url_str = build_finch_url(request)
+        status = metadata[:status]
+        error = finch_error(metadata)
+        ts = System.monotonic_time()
+        pid = self()
+
+        tag_slow_request(
+          %Event{
+            source: :finch,
+            direction: :outbound,
+            method: Event.normalize_method(method),
+            host: host,
+            path: url_str && URI.parse(url_str).path,
+            full_url: url_str && URLRedactor.redact(url_str),
+            status: status,
+            status_class: if(error, do: :server_error, else: Event.classify_status(status || 0)),
+            duration_ms: Event.duration_ms(measurements[:duration] || 0),
+            timestamp: System.system_time(:microsecond),
+            dedup_key: {pid, ts},
+            request_headers: redact_headers_from_metadata(request.headers || []),
+            response_headers: redact_headers_from_metadata(metadata[:headers] || []),
+            request_body: nil,
+            response_body: nil,
+            error: error
+          },
+          metadata
+        )
+
+      _ ->
+        nil
+    end
+  end
+
+  defp build_finch_recv_exception_event(measurements, metadata) do
+    case metadata[:request] do
+      %{method: method, host: host} = request ->
+        url_str = build_finch_url(request)
+        ts = System.monotonic_time()
+        pid = self()
+
+        tag_slow_request(
+          %Event{
+            source: :finch,
+            direction: :outbound,
+            method: Event.normalize_method(method),
+            host: host,
+            path: url_str && URI.parse(url_str).path,
+            full_url: (url_str && URLRedactor.redact(url_str)) || "unknown",
+            status: nil,
+            status_class: :server_error,
+            duration_ms: Event.duration_ms(measurements[:duration] || 0),
+            timestamp: System.system_time(:microsecond),
+            dedup_key: {pid, ts},
+            error: inspect(metadata[:reason] || metadata[:error] || "Finch exception"),
+            request_headers: redact_headers_from_metadata(request.headers || []),
+            response_headers: nil,
+            slow: false
+          },
+          metadata
+        )
+
+      _ ->
+        nil
+    end
+  end
+
   defp build_finch_url(%{scheme: scheme, host: host, port: port, path: path} = req) do
     query = if req.query && req.query != "", do: "?#{req.query}", else: ""
     "#{scheme}://#{host}#{if port != 443 && port != 80, do: ":#{port}"}#{path}#{query}"
@@ -279,6 +407,7 @@ defmodule Monitorex.EventHandler do
         case metadata[:result] do
           {:ok, {_req, {status, _headers, _body, _trailers}}} when is_integer(status) -> status
           {:ok, {status, _headers, _body, _trailers}} when is_integer(status) -> status
+          {:ok, {_req, %{status: status}}} -> status
           {:ok, %{status: status}} -> status
           _ -> metadata[:status]
         end
@@ -306,6 +435,9 @@ defmodule Monitorex.EventHandler do
             :headers -> headers
             :body -> body
           end
+
+        {:ok, {_req, %{} = resp}} ->
+          Map.get(resp, field)
 
         {:ok, %{} = resp} ->
           Map.get(resp, field)

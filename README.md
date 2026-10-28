@@ -63,15 +63,14 @@ The installer detects from your application's AST:
 
 | Decision | Detection |
 |---|---|
-| Which sources to enable | which of `:tesla` / `:finch` / `:req` are in your dep tree (`:phoenix` is always enabled) |
+| Which sources to enable | which of `:tesla` / `:finch` are in your dep tree; `:req` maps to `:finch` because Req runs on Finch (`:phoenix` is always enabled) |
 | Whether dedup is needed | `config :tesla, adapter: {Tesla.Adapter.Finch, _}` present → sets `clients: [:tesla, :finch]` |
 | REST API handling | the built-in API is disabled (`http_dashboard api_path: false`) so it never collides with an existing `scope "/api"` |
 | Where to mount | `--path` option, default `/monitoring` (warns if it collides with an existing scope) |
-| `req_telemetry` requirement | `:req` present but `:req_telemetry` absent → offered as a dependency |
 
 It writes the `config :monitorex, :sources` config, adds `import Monitorex.Router` plus a
-`scope` + `pipe_through :monitoring` mount in your router, and adds `req_telemetry` when
-needed. The mount uses a dedicated `:monitoring` pipeline **without** `protect_from_forgery`
+`scope` + `pipe_through :monitoring` mount in your router, and maps Req applications to the
+`:finch` source. The mount uses a dedicated `:monitoring` pipeline **without** `protect_from_forgery`
 so the dashboard assets aren't rejected with a 403 (see the installation guide). The manual
 steps below remain fully supported — the installer automates them, it does not replace them.
 
@@ -103,7 +102,8 @@ In `config/config.exs`:
 
 ```elixir
 # Only attach the sources you use. :phoenix monitors inbound; the rest are outbound.
-config :monitorex, :sources, [:tesla, :finch, :req, :phoenix]
+# Req runs on Finch, so :finch also captures Req traffic.
+config :monitorex, :sources, [:tesla, :finch, :phoenix]
 
 # REQUIRED if Tesla runs on the Finch adapter (very common): both libraries
 # emit telemetry for the same request, so without this every outbound request
@@ -180,7 +180,9 @@ config :monitorex, :sources, [:tesla, :finch, :phoenix]
 
 Available sources: `:tesla`, `:finch`, `:req`, `:phoenix`. Only attach the sources you use.
 
-> **⚠️ Req source requires `req_telemetry`** — Req 0.5.x removed built-in telemetry. Add `{:req_telemetry, "~> 0.1"}` to your `mix.exs` deps for Req events to fire. Alternatively, Req runs on Finch, so the `:finch` source captures Req traffic (with full request/response details) without `req_telemetry`.
+> **ℹ️ Req users: use the `:finch` source.** Req runs on Finch, so `:finch` captures Req traffic with full request/response details. The legacy `:req` source requires the third-party `req_telemetry` package, which pins Req 0.5 (the line affected by CVE-2026-49755); prefer `:finch` for Req 0.6+.
+>
+> Async Req streams (`into: :self`) are captured on HTTP/1 pools. Finch does not emit a request-level event for HTTP/2 async requests, so those remain outside the dashboard.
 
 ### Inbound path filtering
 
