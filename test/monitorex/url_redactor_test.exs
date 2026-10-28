@@ -1,5 +1,6 @@
 defmodule Monitorex.URLRedactorTest do
-  use ExUnit.Case, async: true
+  # These tests mutate the global :sensitive_query_params application env.
+  use ExUnit.Case, async: false
 
   alias Monitorex.URLRedactor
 
