@@ -13,7 +13,9 @@
   0.8.5 (CVE-2026-82584).
 - Added dependency floors for `mint >= 1.10.2`, `finch >= 0.24.0`, and
   `plug_crypto >= 2.2.1` to keep known HTTP/crypto advisories out of downstream
-  resolutions.
+  resolutions. Some of the advisories above are optional or test-only
+  dependencies (`req`, `hackney`, `lazy_html`, `igniter`); the runtime floors
+  are Mint, Finch, and Plug.Crypto.
 
 ### Changed
 
@@ -21,6 +23,9 @@
   no longer adds `req_telemetry`. Req runs on Finch, and `req_telemetry` pins
   Req 0.5, which is affected by CVE-2026-49755.
 - The smoke test now uses Bandit instead of Plug.Cowboy.
+- Updated Phoenix, Phoenix LiveView, and related runtime dependencies
+  (`phoenix` 1.8.16, `phoenix_live_view` 1.2.13, `phoenix_pubsub` 2.4.1,
+  `websock_adapter` 0.7.0).
 
 ### Fixed
 
@@ -32,9 +37,9 @@
 
 ### Upgrade notes
 
-- **Finch >= 0.24.0 is required.** Hosts pinned to an older Finch must upgrade
-  before adopting this release; Finch 0.23 with Mint 1.11 can reuse a timed-out
-  HTTP/1 connection.
+- **Applications using Finch must use >= 0.24.0.** Hosts pinned below that must
+  upgrade before adopting this release; Finch 0.23 with Mint 1.11 can reuse a
+  timed-out HTTP/1 connection.
 - **Req applications now use the `:finch` source.** The installer no longer
   adds `req_telemetry`; Req 0.6+ users should rely on Finch telemetry. The
   legacy `:req` source remains available for projects that already depend on
