@@ -26,7 +26,7 @@ jobs:
       fail-fast: false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
@@ -36,7 +36,7 @@ jobs:
           otp-version: ${{ matrix.otp }}
 
       - name: Cache deps
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: deps
           key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
@@ -44,7 +44,7 @@ jobs:
             ${{ runner.os }}-mix-
 
       - name: Cache _build
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: _build
           key: ${{ runner.os }}-build-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
@@ -52,7 +52,7 @@ jobs:
             ${{ runner.os }}-build-${{ matrix.elixir }}-${{ matrix.otp }}-
 
       - name: Cache Dialyzer PLTs
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: _build/plt
           key: ${{ runner.os }}-plt-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
@@ -80,7 +80,7 @@ jobs:
   security:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           persist-credentials: false
 
