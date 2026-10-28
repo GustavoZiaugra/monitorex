@@ -81,6 +81,7 @@ defmodule Monitorex.CollectorTest do
 
       assert log =~ "req_telemetry"
       assert log =~ ":req source is enabled"
+      assert log =~ ":finch source"
     end
 
     test "does not warn when req_telemetry is loaded" do

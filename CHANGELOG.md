@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased
+
+### Security
+
+- Added dependency floors for `mint >= 1.10.2`, `finch >= 0.24.0`, and
+  `plug_crypto >= 2.2.1` to keep known HTTP/crypto advisories out of downstream
+  resolutions. Hosts pinned below Finch 0.24.0 must upgrade Finch before
+  adopting this release.
+
+### Changed
+
+- The Igniter installer now maps Req applications to the `:finch` source and
+  no longer adds `req_telemetry`. Req runs on Finch, and `req_telemetry` pins
+  Req 0.5, which is affected by CVE-2026-49755.
+- The smoke test now uses Bandit instead of Plug.Cowboy.
+
+### Fixed
+
+- Finch telemetry now extracts Req streaming accumulators, classifies Finch
+  connection errors as server errors, and captures HTTP/1 async requests such
+  as `Req.get!(url, into: :self)` without double-counting synchronous requests.
+
 ## 0.8.1 (2026-08-30)
 
 ### Security

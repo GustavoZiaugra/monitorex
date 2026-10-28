@@ -27,17 +27,10 @@ def deps do
 end
 ```
 
-If you monitor the `:req` source, Req 0.5.x removed built-in telemetry — you
-also need `req_telemetry`:
-
-```elixir
-def deps do
-  [
-    {:monitorex, "~> 0.8.1"},
-    {:req_telemetry, "~> 0.1"}
-  ]
-end
-```
+If you use Req, enable the `:finch` source. Req runs on Finch, so Monitorex
+captures Req traffic through Finch telemetry — no extra package is needed.
+(The legacy `:req` source requires `req_telemetry`, which pins Req 0.5 and is
+not recommended for Req 0.6+.)
 
 Then fetch dependencies:
 
@@ -58,7 +51,7 @@ import Config
 config :monitorex,
   # Only the clients you actually use. :phoenix monitors inbound traffic;
   # the rest monitor outbound requests.
-  sources: [:tesla, :finch, :req, :phoenix],
+  sources: [:tesla, :finch, :phoenix],
 
   # REQUIRED if Tesla runs on the Finch adapter (very common): Tesla's Finch
   # adapter emits BOTH a Tesla and a Finch telemetry event for the same
@@ -218,7 +211,8 @@ config :monitorex, :clients, [:tesla, :finch]
 ```
 
 The `:clients` list must contain **both** `:tesla` and `:finch` for the dedup
-table to be created. Add any other clients you use (e.g. `:req`) as well.
+table to be created. Req traffic is already covered by `:finch`; add other
+clients only if they emit their own telemetry events.
 
 ## 7. Body capture and slow-request tracing
 

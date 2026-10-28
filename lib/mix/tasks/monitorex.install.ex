@@ -9,14 +9,16 @@ if Code.ensure_loaded?(Igniter) do
 
     It detects from the host application's AST:
 
-      * which sources to enable (`:tesla`, `:finch` and/or `:req`, based on the dep tree)
+      * which sources to enable (`:tesla` and/or `:finch`, based on the dep tree;
+        Req applications use `:finch` because Req runs on Finch)
       * whether dedup is needed (a `config :tesla, adapter: {Tesla.Adapter.Finch, _}` sets
         `clients: [:tesla, :finch]`)
       * whether an existing `scope "/api"` in the router makes the built-in REST API
         redundant (it is disabled with `api_path: false` either way)
       * where to mount (a `--path` option, defaulting to `/monitoring`, warned about when it
         collides with an existing scope)
-      * whether `:req_telemetry` should be added (`:req` present but `:req_telemetry` absent)
+      * Req traffic is captured through the `:finch` source (no `req_telemetry`
+        dependency is added)
 
     The mount uses a dedicated `:monitoring` pipeline — deliberately **not** your
     `:browser` pipeline. `:browser` includes `protect_from_forgery`, which rejects the
@@ -72,7 +74,6 @@ if Code.ensure_loaded?(Igniter) do
         |> add_mount_scope(router, mount_path)
         |> configure_sources()
         |> maybe_configure_clients()
-        |> maybe_add_req_telemetry()
       end
     end
 
@@ -189,9 +190,22 @@ if Code.ensure_loaded?(Igniter) do
     end
 
     defp configure_sources(igniter) do
-      sources =
-        [:tesla, :finch, :req]
+      outbound =
+        [:tesla, :finch]
         |> Enum.filter(&Igniter.Project.Deps.has_dep?(igniter, &1))
+
+      # Req runs on Finch. req_telemetry pins Req 0.5, so the supported path is
+      # to capture Req traffic through the :finch source instead.
+      outbound =
+        if Igniter.Project.Deps.has_dep?(igniter, :req) do
+          [:finch | outbound]
+        else
+          outbound
+        end
+
+      sources =
+        outbound
+        |> Enum.uniq()
         |> Kernel.++([:phoenix])
 
       Igniter.Project.Config.configure(igniter, "config.exs", :monitorex, [:sources], sources)
@@ -275,26 +289,6 @@ if Code.ensure_loaded?(Igniter) do
         {:ok, Tesla.Adapter.Finch} -> true
         _ -> false
       end
-    end
-
-    defp maybe_add_req_telemetry(igniter) do
-      if Igniter.Project.Deps.has_dep?(igniter, :req) and
-           not Igniter.Project.Deps.has_dep?(igniter, :req_telemetry) do
-        if yes?(
-             igniter,
-             "Add {:req_telemetry, \"~> 0.1\"} to enable Req telemetry for Monitorex?"
-           ) do
-          Igniter.Project.Deps.add_dep(igniter, {:req_telemetry, "~> 0.1"})
-        else
-          igniter
-        end
-      else
-        igniter
-      end
-    end
-
-    defp yes?(igniter, prompt) do
-      igniter.args.options[:yes] || igniter.assigns[:test_mode?] || Igniter.Util.IO.yes?(prompt)
     end
   end
 else

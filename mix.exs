@@ -98,13 +98,26 @@ defmodule Monitorex.MixProject do
     [
       {:phoenix, "~> 1.8"},
       {:phoenix_live_view, "~> 1.2"},
-      {:igniter, "~> 0.6", optional: true},
+      {:igniter, "~> 0.8.5", optional: true},
       {:telemetry, "~> 1.4"},
       {:jason, "~> 1.4"},
-      {:req_telemetry, "~> 0.1", optional: true},
       {:esbuild, "~> 0.10.0", runtime: false},
       {:tailwind, "~> 0.5", runtime: Mix.env() == :dev},
-      {:plug_cowboy, "~> 2.7", only: :dev},
+      # Dev-only HTTP server for scripts/smoke_test.exs (Phoenix 1.8 adapter).
+      # Replaces plug_cowboy, whose cowlib dependency has no fixed release for
+      # CVE-2026-43966 yet.
+      {:bandit, "~> 1.0", only: :dev},
+      # Security floors for transitive dependencies. Optional so they don't
+      # force an HTTP client / crypto stack on consumers; the version floor
+      # still applies when another dependency (Phoenix, Finch, Req) pulls them.
+      # CVE-2026-82728 / -82729 / -82672 / -91043 / -92103 / -94194.
+      # 1.10.2 is the first release with the full HTTP/1 timeout fix set.
+      {:mint, ">= 1.10.2 and < 2.0.0", optional: true},
+      # Finch 0.23.0 can return a timed-out HTTP/1 connection to its pool when
+      # Mint 1.11.0 is resolved; 0.24.0 handles the closed connection correctly.
+      {:finch, ">= 0.24.0 and < 1.0.0", optional: true},
+      # CVE-2026-105963
+      {:plug_crypto, ">= 2.2.1 and < 3.0.0", optional: true},
       {:floki, "~> 0.38.1", only: :test},
       {:lazy_html, ">= 0.1.0", only: :test},
       {:ex_doc, "~> 0.40.1", runtime: false},

@@ -820,6 +820,163 @@ defmodule Monitorex.EventHandlerTest do
       assert event.full_url =~ "q=hello"
       assert event.full_url =~ "page=1"
     end
+
+    test "extracts status and headers from a Req streaming accumulator" do
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/stream",
+        headers: [],
+        body: nil,
+        query: nil
+      }
+
+      response = %{
+        status: 503,
+        headers: [{"content-type", "text/plain"}],
+        body: nil
+      }
+
+      metadata = %{
+        name: :test_pool,
+        request: request,
+        result: {:ok, {%{method: "GET"}, response}}
+      }
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          %{duration: 1_000_000},
+          metadata,
+          []
+        )
+
+      assert event.status == 503
+      assert event.status_class == :server_error
+      assert event.response_headers == [{"content-type", "text/plain"}]
+    end
+
+    test "classifies a Finch connection error in a stop event as an error" do
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/fail",
+        headers: [],
+        body: nil,
+        query: nil
+      }
+
+      metadata = %{
+        name: :test_pool,
+        request: request,
+        result: {:error, %{reason: :econnrefused}, {%{}, {nil, [], [], []}}}
+      }
+
+      event =
+        EventHandler.handle_finch_event(
+          [:finch, :request, :stop],
+          %{duration: 1_000_000},
+          metadata,
+          []
+        )
+
+      assert event.status == nil
+      assert event.status_class == :server_error
+      assert event.error =~ "econnrefused"
+    end
+
+    test "captures async HTTP/1 Finch recv events" do
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/async",
+        headers: [],
+        body: nil,
+        query: nil
+      }
+
+      metadata = %{
+        name: :test_pool,
+        request: request,
+        status: 200,
+        headers: [{"x-test", "1"}]
+      }
+
+      event =
+        EventHandler.handle_finch_recv_event(
+          [:finch, :recv, :stop],
+          %{duration: 2_000_000},
+          metadata,
+          []
+        )
+
+      assert event.source == :finch
+      assert event.status == 200
+      assert event.status_class == :success
+      assert event.response_headers == [{"x-test", "1"}]
+    end
+
+    test "does not double-count synchronous HTTP/1 recv events" do
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/sync",
+        headers: [],
+        body: nil,
+        query: nil
+      }
+
+      EventHandler.handle_finch_start_event([:finch, :request, :start], %{}, %{}, [])
+
+      metadata = %{
+        name: :test_pool,
+        request: request,
+        status: 200,
+        headers: []
+      }
+
+      assert EventHandler.handle_finch_recv_event(
+               [:finch, :recv, :stop],
+               %{duration: 1_000_000},
+               metadata,
+               []
+             ) == nil
+
+      EventHandler.handle_finch_event(
+        [:finch, :request, :stop],
+        %{duration: 1_000_000},
+        %{name: :test_pool, request: request, result: {:ok, %{status: 200, headers: []}}},
+        []
+      )
+    end
+
+    test "ignores recv events without an HTTP/1 response status" do
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/http2",
+        headers: [],
+        body: nil,
+        query: nil
+      }
+
+      assert EventHandler.handle_finch_recv_event(
+               [:finch, :recv, :stop],
+               %{duration: 1_000_000},
+               %{name: :test_pool, request: request, status: nil},
+               []
+             ) == nil
+    end
   end
 
   # ── Req handler ──

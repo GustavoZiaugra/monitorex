@@ -111,6 +111,9 @@ defmodule Monitorex.Collector do
   def terminate(_reason, state) do
     :telemetry.detach({Monitorex.Collector, :tesla})
     :telemetry.detach({Monitorex.Collector, :finch})
+    :telemetry.detach({Monitorex.Collector, :finch_start})
+    :telemetry.detach({Monitorex.Collector, :finch_recv})
+    :telemetry.detach({Monitorex.Collector, :finch_recv_exception})
     :telemetry.detach({Monitorex.Collector, :req})
     :telemetry.detach({Monitorex.Collector, :phoenix})
 
@@ -184,9 +187,10 @@ defmodule Monitorex.Collector do
   # ── Telemetry attachment ──
 
   # Req 0.5.x removed built-in telemetry; the [:req, :request, :pipeline, :stop]
-  # events are only produced by the separate req_telemetry package. If :req is
-  # configured without it, the handler silently never fires — warn so users
-  # aren't surprised by missing outbound data.
+  # events are only produced by the legacy req_telemetry package, which pins
+  # Req 0.5. Prefer the :finch source (Req runs on Finch). If :req is configured
+  # without req_telemetry, the handler never fires — warn so users aren't
+  # surprised by missing outbound data.
   @doc false
   def warn_on_misconfigured_sources(sources),
     do: warn_on_misconfigured_sources(sources, req_telemetry_loaded?())
@@ -196,11 +200,12 @@ defmodule Monitorex.Collector do
     if :req in sources and not req_telemetry_loaded? do
       Logger.warning("""
       Monitorex: the :req source is enabled but the req_telemetry application is not loaded.
-      Req 0.5+ removed built-in telemetry, so no outbound Req events will be captured.
+      Req 0.5+ removed built-in telemetry, and req_telemetry pins Req 0.5, which has
+      known security advisories.
 
-      Add {:req_telemetry, "~> 0.1"} to your dependencies, or use the :finch source
-      instead (Req runs on Finch, so :finch captures Req traffic with full request
-      details). See https://hex.pm/packages/monitorex for source configuration.
+      Use the :finch source instead: Req runs on Finch, so :finch captures Req traffic
+      with full request details. See https://hex.pm/packages/monitorex for source
+      configuration.
       """)
     end
 
@@ -238,6 +243,27 @@ defmodule Monitorex.Collector do
         {Monitorex.Collector, :finch_exception},
         [:finch, :request, :exception],
         &Handlers.finch/4,
+        nil
+      )
+
+      :telemetry.attach(
+        {Monitorex.Collector, :finch_start},
+        [:finch, :request, :start],
+        &Handlers.finch_start/4,
+        nil
+      )
+
+      :telemetry.attach(
+        {Monitorex.Collector, :finch_recv},
+        [:finch, :recv, :stop],
+        &Handlers.finch_recv/4,
+        nil
+      )
+
+      :telemetry.attach(
+        {Monitorex.Collector, :finch_recv_exception},
+        [:finch, :recv, :exception],
+        &Handlers.finch_recv/4,
         nil
       )
     end
@@ -334,6 +360,24 @@ defmodule Monitorex.Collector do
         {Monitorex.Collector, :finch},
         [:finch, :request, :stop],
         &Handlers.finch/4
+      )
+
+      safe_reattach(
+        {Monitorex.Collector, :finch_start},
+        [:finch, :request, :start],
+        &Handlers.finch_start/4
+      )
+
+      safe_reattach(
+        {Monitorex.Collector, :finch_recv},
+        [:finch, :recv, :stop],
+        &Handlers.finch_recv/4
+      )
+
+      safe_reattach(
+        {Monitorex.Collector, :finch_recv_exception},
+        [:finch, :recv, :exception],
+        &Handlers.finch_recv/4
       )
     end
 
