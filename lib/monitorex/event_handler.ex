@@ -288,13 +288,13 @@ defmodule Monitorex.EventHandler do
   Captures async Finch/receive events that have no `[:finch, :request, :stop]`
   counterpart (notably `Finch.async_request/3` used by `Req` `into: :self`).
 
-  HTTP/1 stops carry either a response status or an error. Status-less stops
-  without an error are excluded as HTTP/2 events, so HTTP/2 async requests
-  remain outside this path because Finch does not emit a request-level start
-  event for them.
+  HTTP/1 receive stops include `:idle_time` in their measurements; HTTP/2
+  stops do not. HTTP/2 async requests remain outside this path because Finch
+  does not emit a request-level start event for them.
   """
   def handle_finch_recv_event([:finch, :recv, :stop], measurements, metadata, _config) do
-    if async_finch_stop?(metadata), do: build_finch_recv_event(measurements, metadata)
+    if async_finch_stop?(measurements, metadata),
+      do: build_finch_recv_event(measurements, metadata)
   end
 
   def handle_finch_recv_event([:finch, :recv, :exception], measurements, metadata, _config) do
@@ -319,8 +319,9 @@ defmodule Monitorex.EventHandler do
 
   def handle_finch_phase_event(_event_name, _measurements, _metadata, _config), do: :ok
 
-  defp async_finch_stop?(metadata) do
+  defp async_finch_stop?(measurements, metadata) do
     Process.get(:monitorex_finch_sync, 0) == 0 and
+      Map.has_key?(measurements, :idle_time) and
       (is_integer(metadata[:status]) or not is_nil(metadata[:error]))
   end
 

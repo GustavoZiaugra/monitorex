@@ -911,7 +911,7 @@ defmodule Monitorex.EventHandlerTest do
       event =
         EventHandler.handle_finch_recv_event(
           [:finch, :recv, :stop],
-          %{duration: 2_000_000},
+          %{duration: 2_000_000, idle_time: 0},
           metadata,
           []
         )
@@ -971,7 +971,7 @@ defmodule Monitorex.EventHandlerTest do
       event =
         EventHandler.handle_finch_recv_event(
           [:finch, :recv, :stop],
-          %{duration: 1_000_000},
+          %{duration: 1_000_000, idle_time: 0},
           metadata,
           []
         )
@@ -1005,7 +1005,7 @@ defmodule Monitorex.EventHandlerTest do
       event =
         EventHandler.handle_finch_recv_event(
           [:finch, :recv, :stop],
-          %{duration: 1_000},
+          %{duration: 1_000, idle_time: 0},
           %{name: :test_pool, request: request, status: 200, headers: []},
           []
         )
@@ -1036,7 +1036,7 @@ defmodule Monitorex.EventHandlerTest do
 
       assert EventHandler.handle_finch_recv_event(
                [:finch, :recv, :stop],
-               %{duration: 1_000_000},
+               %{duration: 1_000_000, idle_time: 0},
                metadata,
                []
              ) == nil
@@ -1047,6 +1047,26 @@ defmodule Monitorex.EventHandlerTest do
         %{name: :test_pool, request: request, result: {:ok, %{status: 200, headers: []}}},
         []
       )
+    end
+
+    test "ignores synchronous HTTP/2 receive stops" do
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/http2",
+        headers: [],
+        body: nil,
+        query: nil
+      }
+
+      assert EventHandler.handle_finch_recv_event(
+               [:finch, :recv, :stop],
+               %{duration: 1_000_000},
+               %{name: :test_pool, request: request, status: 200, headers: []},
+               []
+             ) == nil
     end
 
     test "does not double-count synchronous recv exceptions" do
@@ -1092,7 +1112,7 @@ defmodule Monitorex.EventHandlerTest do
 
       assert EventHandler.handle_finch_recv_event(
                [:finch, :recv, :stop],
-               %{duration: 1_000_000},
+               %{duration: 1_000_000, idle_time: 0},
                %{name: :test_pool, request: request, status: nil},
                []
              ) == nil
