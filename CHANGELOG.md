@@ -4,10 +4,14 @@
 
 ### Security
 
+- Patched dependency advisories: `plug_crypto` 2.2.1 (CVE-2026-105963),
+  `req` 0.7.5 (CVE-2026-49755 / -49756), `mint` 1.11.0 (CVE-2026-82728,
+  -82729, -82672, -91043, -92103, -94194), `hackney` 4.9.1 (CVE-2026-115693
+  and related advisories), `lazy_html` 0.1.13 (CVE-2026-92106), and `igniter`
+  0.8.5 (CVE-2026-82584).
 - Added dependency floors for `mint >= 1.10.2`, `finch >= 0.24.0`, and
   `plug_crypto >= 2.2.1` to keep known HTTP/crypto advisories out of downstream
-  resolutions. Hosts pinned below Finch 0.24.0 must upgrade Finch before
-  adopting this release.
+  resolutions.
 
 ### Changed
 
@@ -23,6 +27,19 @@
   as `Req.get!(url, into: :self)` without double-counting synchronous requests.
   Async receive exceptions are captured, and their duration includes pool,
   send, and receive phases rather than receive time only.
+
+### Upgrade notes
+
+- **Finch >= 0.24.0 is required.** Hosts pinned to an older Finch must upgrade
+  before adopting this release; Finch 0.23 with Mint 1.11 can reuse a timed-out
+  HTTP/1 connection.
+- **Req applications now use the `:finch` source.** The installer no longer
+  adds `req_telemetry`; Req 0.6+ users should rely on Finch telemetry. The
+  legacy `:req` source remains available for projects that already depend on
+  `req_telemetry`.
+- **Async HTTP/1 Req streams (`into: :self`) are captured; HTTP/2 async streams
+  are not.** Finch does not emit a request-level event for HTTP/2 async
+  requests, so those remain outside the dashboard.
 
 ## 0.8.1 (2026-08-30)
 
