@@ -47,17 +47,15 @@ jobs:
         uses: actions/cache@v6
         with:
           path: _build
+          # No restore-keys: a cache built against an older lockfile can contain
+          # stale compiled dependencies and break `mix compile`.
           key: ${{ runner.os }}-build-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ matrix.elixir }}-${{ matrix.otp }}-
 
       - name: Cache Dialyzer PLTs
         uses: actions/cache@v6
         with:
           path: _build/plt
           key: ${{ runner.os }}-plt-${{ matrix.elixir }}-${{ matrix.otp }}-${{ hashFiles('**/mix.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-plt-${{ matrix.elixir }}-${{ matrix.otp }}-
 
       - name: Install dependencies
         run: mix deps.get --check-locked
