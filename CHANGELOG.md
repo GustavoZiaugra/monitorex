@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.9.0 (2026-10-28)
+
 ### Security
 
 - Patched dependency advisories: `plug_crypto` 2.2.1 (CVE-2026-105963),
