@@ -114,6 +114,7 @@ defmodule Monitorex.Collector do
     :telemetry.detach({Monitorex.Collector, :finch_start})
     :telemetry.detach({Monitorex.Collector, :finch_recv})
     :telemetry.detach({Monitorex.Collector, :finch_recv_exception})
+    :telemetry.detach({Monitorex.Collector, :finch_phase})
     :telemetry.detach({Monitorex.Collector, :req})
     :telemetry.detach({Monitorex.Collector, :phoenix})
 
@@ -266,6 +267,13 @@ defmodule Monitorex.Collector do
         &Handlers.finch_recv/4,
         nil
       )
+
+      :telemetry.attach(
+        {Monitorex.Collector, :finch_phase},
+        [:finch, :queue, :start],
+        &Handlers.finch_phase/4,
+        nil
+      )
     end
 
     if :req in sources do
@@ -378,6 +386,12 @@ defmodule Monitorex.Collector do
         {Monitorex.Collector, :finch_recv_exception},
         [:finch, :recv, :exception],
         &Handlers.finch_recv/4
+      )
+
+      safe_reattach(
+        {Monitorex.Collector, :finch_phase},
+        [:finch, :queue, :start],
+        &Handlers.finch_phase/4
       )
     end
 

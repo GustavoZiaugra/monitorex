@@ -288,23 +288,55 @@ defmodule Monitorex.EventHandler do
   Captures async Finch/receive events that have no `[:finch, :request, :stop]`
   counterpart (notably `Finch.async_request/3` used by `Req` `into: :self`).
 
-  HTTP/1 receive events carry the response status; HTTP/2 events do not, so
-  HTTP/2 async requests remain outside this path because Finch does not emit a
-  request-level start event for them.
+  HTTP/1 stops carry either a response status or an error. Status-less stops
+  without an error are excluded as HTTP/2 events, so HTTP/2 async requests
+  remain outside this path because Finch does not emit a request-level start
+  event for them.
   """
   def handle_finch_recv_event([:finch, :recv, :stop], measurements, metadata, _config) do
-    if async_finch_request?(metadata), do: build_finch_recv_event(measurements, metadata)
+    if async_finch_stop?(metadata), do: build_finch_recv_event(measurements, metadata)
   end
 
   def handle_finch_recv_event([:finch, :recv, :exception], measurements, metadata, _config) do
-    if async_finch_request?(metadata),
+    if async_finch_exception?(metadata),
       do: build_finch_recv_exception_event(measurements, metadata)
   end
 
   def handle_finch_recv_event(_event_name, _measurements, _metadata, _config), do: nil
 
-  defp async_finch_request?(metadata) do
-    Process.get(:monitorex_finch_sync, 0) == 0 and is_integer(metadata[:status])
+  @doc """
+  Records the start of the earliest async HTTP/1 phase so the receive stop can
+  report the full request duration instead of only the receive phase.
+  """
+  def handle_finch_phase_event([:finch, :queue, :start], _measurements, _metadata, _config) do
+    if Process.get(:monitorex_finch_sync, 0) == 0 and
+         is_nil(Process.get(:monitorex_finch_async_start)) do
+      Process.put(:monitorex_finch_async_start, System.monotonic_time())
+    end
+
+    :ok
+  end
+
+  def handle_finch_phase_event(_event_name, _measurements, _metadata, _config), do: :ok
+
+  defp async_finch_stop?(metadata) do
+    Process.get(:monitorex_finch_sync, 0) == 0 and
+      (is_integer(metadata[:status]) or not is_nil(metadata[:error]))
+  end
+
+  defp async_finch_exception?(_metadata) do
+    Process.get(:monitorex_finch_sync, 0) == 0
+  end
+
+  defp async_finch_duration(measurements) do
+    case Process.get(:monitorex_finch_async_start) do
+      nil ->
+        Event.duration_ms(measurements[:duration] || 0)
+
+      start ->
+        Process.delete(:monitorex_finch_async_start)
+        Event.duration_ms(System.monotonic_time() - start)
+    end
   end
 
   defp release_finch_sync_marker do
@@ -328,6 +360,7 @@ defmodule Monitorex.EventHandler do
         url_str = build_finch_url(request)
         status = metadata[:status]
         error = finch_error(metadata)
+        duration_ms = async_finch_duration(measurements)
         ts = System.monotonic_time()
         pid = self()
 
@@ -341,7 +374,7 @@ defmodule Monitorex.EventHandler do
             full_url: url_str && URLRedactor.redact(url_str),
             status: status,
             status_class: if(error, do: :server_error, else: Event.classify_status(status || 0)),
-            duration_ms: Event.duration_ms(measurements[:duration] || 0),
+            duration_ms: duration_ms,
             timestamp: System.system_time(:microsecond),
             dedup_key: {pid, ts},
             request_headers: redact_headers_from_metadata(request.headers || []),
@@ -362,6 +395,7 @@ defmodule Monitorex.EventHandler do
     case metadata[:request] do
       %{method: method, host: host} = request ->
         url_str = build_finch_url(request)
+        duration_ms = async_finch_duration(measurements)
         ts = System.monotonic_time()
         pid = self()
 
@@ -375,7 +409,7 @@ defmodule Monitorex.EventHandler do
             full_url: (url_str && URLRedactor.redact(url_str)) || "unknown",
             status: nil,
             status_class: :server_error,
-            duration_ms: Event.duration_ms(measurements[:duration] || 0),
+            duration_ms: duration_ms,
             timestamp: System.system_time(:microsecond),
             dedup_key: {pid, ts},
             error: inspect(metadata[:reason] || metadata[:error] || "Finch exception"),

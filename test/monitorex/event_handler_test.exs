@@ -922,6 +922,97 @@ defmodule Monitorex.EventHandlerTest do
       assert event.response_headers == [{"x-test", "1"}]
     end
 
+    test "captures async Finch recv exceptions" do
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/async-exception",
+        headers: [],
+        body: nil,
+        query: nil
+      }
+
+      metadata = %{name: :test_pool, request: request, reason: :timeout}
+
+      event =
+        EventHandler.handle_finch_recv_event(
+          [:finch, :recv, :exception],
+          %{duration: 1_000_000},
+          metadata,
+          []
+        )
+
+      assert event.status == nil
+      assert event.status_class == :server_error
+      assert event.error =~ "timeout"
+    end
+
+    test "captures async HTTP/1 errored stops with no status" do
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/async-error",
+        headers: [],
+        body: nil,
+        query: nil
+      }
+
+      metadata = %{
+        name: :test_pool,
+        request: request,
+        status: nil,
+        error: %{reason: :closed}
+      }
+
+      event =
+        EventHandler.handle_finch_recv_event(
+          [:finch, :recv, :stop],
+          %{duration: 1_000_000},
+          metadata,
+          []
+        )
+
+      assert event.status == nil
+      assert event.status_class == :server_error
+      assert event.error =~ "closed"
+    end
+
+    test "uses the earliest async phase for the reported duration" do
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/async-duration",
+        headers: [],
+        body: nil,
+        query: nil
+      }
+
+      EventHandler.handle_finch_phase_event(
+        [:finch, :queue, :start],
+        %{},
+        %{request: request},
+        []
+      )
+
+      Process.sleep(20)
+
+      event =
+        EventHandler.handle_finch_recv_event(
+          [:finch, :recv, :stop],
+          %{duration: 1_000},
+          %{name: :test_pool, request: request, status: 200, headers: []},
+          []
+        )
+
+      assert event.duration_ms >= 10
+    end
+
     test "does not double-count synchronous HTTP/1 recv events" do
       request = %{
         scheme: :https,
@@ -954,6 +1045,35 @@ defmodule Monitorex.EventHandlerTest do
         [:finch, :request, :stop],
         %{duration: 1_000_000},
         %{name: :test_pool, request: request, result: {:ok, %{status: 200, headers: []}}},
+        []
+      )
+    end
+
+    test "does not double-count synchronous recv exceptions" do
+      request = %{
+        scheme: :https,
+        host: "api.example.com",
+        port: 443,
+        method: "GET",
+        path: "/sync-exception",
+        headers: [],
+        body: nil,
+        query: nil
+      }
+
+      EventHandler.handle_finch_start_event([:finch, :request, :start], %{}, %{}, [])
+
+      assert EventHandler.handle_finch_recv_event(
+               [:finch, :recv, :exception],
+               %{duration: 1_000_000},
+               %{name: :test_pool, request: request, reason: :timeout},
+               []
+             ) == nil
+
+      EventHandler.handle_finch_event(
+        [:finch, :request, :exception],
+        %{duration: 1_000_000},
+        %{name: :test_pool, request: request, reason: :timeout},
         []
       )
     end
