@@ -32,6 +32,10 @@ defmodule Monitorex.Collector.Handlers do
     end
   end
 
+  def finch_phase(event_name, measurements, metadata, config) do
+    EventHandler.handle_finch_phase_event(event_name, measurements, metadata, config)
+  end
+
   def req(event_name, measurements, metadata, config) do
     case EventHandler.handle_req_event(event_name, measurements, metadata, config) do
       nil -> :ok

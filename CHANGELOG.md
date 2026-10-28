@@ -21,6 +21,8 @@
 - Finch telemetry now extracts Req streaming accumulators, classifies Finch
   connection errors as server errors, and captures HTTP/1 async requests such
   as `Req.get!(url, into: :self)` without double-counting synchronous requests.
+  Async receive exceptions are captured, and their duration includes pool,
+  send, and receive phases rather than receive time only.
 
 ## 0.8.1 (2026-08-30)
 
