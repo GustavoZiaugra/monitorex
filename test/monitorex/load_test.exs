@@ -227,6 +227,9 @@ defmodule Monitorex.LoadTest do
 
       Enum.each(events, &Collector.handle_event(&1, pid))
 
+      # Wait until every cast has been processed before sampling ETS.
+      :sys.get_state(pid)
+
       # Wait for cleanup cycles to trim recent buffer (interval=200ms)
       await_cleanup(pid, 1000)
 
