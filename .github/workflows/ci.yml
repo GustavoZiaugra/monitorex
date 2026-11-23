@@ -18,8 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # hackney 4.12 pulls quic 3.2, which requires OTP 27+.
         elixir: ['1.15', '1.17']
-        otp: ['26', '27']
+        otp: ['27']
         include:
           - elixir: '1.20'
             otp: '29'
