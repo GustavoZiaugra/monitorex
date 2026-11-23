@@ -22,7 +22,7 @@ Add `monitorex` to your `mix.exs`:
 ```elixir
 def deps do
   [
-    {:monitorex, "~> 0.9.0"}
+    {:monitorex, "~> 0.9.1"}
   ]
 end
 ```

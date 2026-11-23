@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+## 0.9.1 (2026-11-23)
+
+### Security
+
+- Patched dependency advisories: `phoenix` 1.8.17 (EEF-CVE-2026-128361,
+  EEF-CVE-2026-129344), `phoenix_html` 4.4.0 (EEF-CVE-2026-117645), and
+  `phoenix_live_view` 1.2.15 (EEF-CVE-2026-126334).
+
+### Changed
+
+- Updated dependencies: `bandit` 1.15.0, `finch` 0.25.0, `plug` 1.20.4,
+  `hackney` 4.12.2, `telemetry` 1.4.3, `websock_adapter` 0.7.2,
+  `webtransport` 0.5.12, and transitive dependencies.
+- Dropped OTP 26 from the CI test matrix: `hackney` 4.12 pulls `quic` 3.2,
+  which requires OTP 27+. CI now covers Elixir 1.15 and 1.17 on OTP 27 and
+  Elixir 1.20 on OTP 29.
+
 ## 0.9.0 (2026-10-28)
 
 ### Security
